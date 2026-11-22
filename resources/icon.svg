@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="50%" stop-color="#FB7185"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFBEB"/>
+      <stop offset="100%" stop-color="#FEF3C7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <!-- Soft decorative circles -->
+  <circle cx="200" cy="210" r="90" fill="#FFFFFF" opacity="0.18"/>
+  <circle cx="840" cy="820" r="110" fill="#FFFFFF" opacity="0.16"/>
+  <!-- Inner rounded tile -->
+  <rect x="152" y="152" width="720" height="720" rx="170" fill="url(#card)" stroke="#FFFFFF" stroke-width="24"/>
+  <!-- Hebrew Alef -->
+  <text x="512" y="645" font-family="Arial, sans-serif" font-weight="900" font-size="470" text-anchor="middle" fill="#4338CA">א</text>
+  <!-- Top-right golden star -->
+  <path d="M770 190 L795 245 L855 253 L812 295 L822 355 L770 326 L718 355 L728 295 L685 253 L745 245 Z" fill="#F59E0B" stroke="#FFFFFF" stroke-width="12" stroke-linejoin="round"/>
+</svg>

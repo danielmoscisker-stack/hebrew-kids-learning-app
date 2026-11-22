@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">אותיות ומספרים לגיל 4</string>
+    <string name="title_activity_main">אותיות ומספרים לגיל 4</string>
+    <string name="package_name">com.learningapp.hebrewkids</string>
+    <string name="custom_url_scheme">com.learningapp.hebrewkids</string>
+</resources>
