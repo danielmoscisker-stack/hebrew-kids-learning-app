@@ -21,7 +21,7 @@ const LETTERS_TO_GENERATE = [
   { id: 'nun', text: 'נוּן!', haotText: 'הָאוֹת נוּן!', filename: 'nun.mp3' },
   { id: 'samech', text: 'סָמֶךְ!', haotText: 'הָאוֹת סָמֶךְ!', filename: 'samech.mp3' },
   { id: 'ayin', text: 'עַיִן!', haotText: 'הָאוֹת עַיִן!', filename: 'ayin.mp3' },
-  { id: 'pe_dagesh', text: 'פֵּא!', haotText: 'הָאוֹת פֵּא!', filename: 'pe_dagesh.mp3' },
+  { id: 'pe_dagesh', text: 'פֶּי', haotText: 'הָאוֹת פֶּי', filename: 'pe_dagesh.mp3' },
   { id: 'fe', text: 'פֵיי', haotText: 'הָאוֹת פֵיי', filename: 'fe.mp3' },
   { id: 'tsadi', text: 'סָאדִי', haotText: 'הָאוֹת סָאדִי', filename: 'tsadi.mp3' },
   { id: 'kof', text: 'קוּף!', haotText: 'הָאוֹת קוּף!', filename: 'kof.mp3' },
