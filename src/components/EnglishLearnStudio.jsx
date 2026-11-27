@@ -343,10 +343,15 @@ export default function EnglishLearnStudio({
 
             <div className="flex flex-wrap items-center justify-center gap-2 text-sm sm:text-base font-black">
               <span className="px-3.5 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-950">
-                {tr(lang, `צְלִיל בְּעִבְרִית: "${currentAbc.soundHe}"`, `Hebrew sound cue: ${currentAbc.soundHe}`, `Sonido: ${currentAbc.soundHe}`)}
+                {tr(
+                  lang,
+                  `צְלִיל בְּעִבְרִית: "${currentAbc.soundHe}"`,
+                  `Phonics: ${currentAbc.soundEn}`,
+                  `Sonido: "${currentAbc.soundEs}"`
+                )}
               </span>
               <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-950">
-                {currentAbc.he}
+                {tr(lang, currentAbc.he, `${currentAbc.word} (${currentAbc.he})`, currentAbc.es)}
               </span>
             </div>
 
@@ -472,7 +477,7 @@ export default function EnglishLearnStudio({
               {cardFlipped ? (
                 <div className="flex flex-col items-center gap-2.5 mt-1 animate-pop-in">
                   <span className="px-4 py-1.5 rounded-full bg-white border-2 border-emerald-400 text-emerald-950 font-black text-lg sm:text-xl">
-                    {currentFlashcard.he}
+                    {tr(lang, currentFlashcard.he, currentFlashcard.enDef, currentFlashcard.es)}
                   </span>
                   <div className="bg-white/90 rounded-2xl border border-emerald-200 px-4 py-2.5 text-sm sm:text-base font-bold text-slate-800" dir="ltr">
                     “{currentFlashcard.example}”
@@ -480,7 +485,7 @@ export default function EnglishLearnStudio({
                 </div>
               ) : (
                 <span className="text-xs sm:text-sm font-black text-indigo-700 bg-white/80 px-3.5 py-1 rounded-full border border-indigo-200">
-                  {tr(lang, 'לַחֲצוּ עַל הַכַּרְטִיס לְגַלּוֹת תַּרְגּוּם וְדֻגְמָה 👆', 'Tap card to reveal Hebrew & example 👆', 'Toca para ver traducción y ejemplo 👆')}
+                  {tr(lang, 'לַחֲצוּ עַל הַכַּרְטִיס לְגַלּוֹת תַּרְגּוּם וְדֻגְמָה 👆', 'Tap card to reveal meaning & example 👆', 'Toca para ver traducción y ejemplo 👆')}
                 </span>
               )}
             </div>
@@ -544,7 +549,9 @@ export default function EnglishLearnStudio({
 
           <div className="flex flex-col items-center gap-2">
             <span className="text-6xl">{currentSpell.emoji}</span>
-            <div className="text-xl sm:text-2xl font-black text-slate-800">{currentSpell.he}</div>
+            <div className="text-xl sm:text-2xl font-black text-slate-800">
+              {tr(lang, currentSpell.he, currentSpell.en, currentSpell.es)}
+            </div>
             <button
               type="button"
               onClick={() => speakEnglish(currentSpell.word, 0.82)}
@@ -557,7 +564,7 @@ export default function EnglishLearnStudio({
 
           {showSpellHint && (
             <div className="px-4 py-2 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 font-bold text-sm">
-              💡 {currentSpell.hintHe}
+              💡 {tr(lang, currentSpell.hintHe, currentSpell.hintEn, currentSpell.hintEs)}
             </div>
           )}
 
@@ -668,7 +675,9 @@ export default function EnglishLearnStudio({
 
           <div className="flex flex-col items-center gap-2">
             <span className="text-5xl">{currentSent.emoji}</span>
-            <p className="text-lg sm:text-xl font-black text-slate-900">{currentSent.he}</p>
+            <p className="text-lg sm:text-xl font-black text-slate-900">
+              {tr(lang, currentSent.he, currentSent.en, currentSent.es)}
+            </p>
             <p className="text-xs sm:text-sm font-bold text-slate-500">
               {tr(lang, 'סַדְּרוּ אֶת הַמִּלִּים לְמִשְׁפָּט נָכוֹן בְּאַנְגְּלִית:', 'Tap the words in order to build the English sentence:', 'Ordena las palabras en inglés:')}
             </p>
@@ -684,7 +693,7 @@ export default function EnglishLearnStudio({
 
           {showSentHint && (
             <div className="px-4 py-2 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 font-bold text-sm">
-              💡 {currentSent.hintHe}
+              💡 {tr(lang, currentSent.hintHe, currentSent.hintEn, currentSent.hintEs)}
             </div>
           )}
 

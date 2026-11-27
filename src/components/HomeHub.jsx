@@ -103,6 +103,8 @@ export const ACTIVITY_TILES = [
     ages: [7],
     icon: '🧮',
     badge: 'גִּיל 7',
+    badgeEn: 'Age 7',
+    badgeEs: 'Edad 7',
     titleHe: 'חֶשְׁבּוֹן גִּיל 7',
     titleEn: 'Math • Age 7',
     titleEs: 'Mates • Edad 7',
@@ -119,6 +121,8 @@ export const ACTIVITY_TILES = [
     ages: [7],
     icon: '📖',
     badge: 'מנצפ״ך',
+    badgeEn: 'Final',
+    badgeEs: 'Final',
     titleHe: 'עִבְרִית וּכְתִיב',
     titleEn: 'Hebrew & Spelling',
     titleEs: 'Hebreo y Ortografía',
@@ -167,6 +171,8 @@ export const ACTIVITY_TILES = [
     ages: [7],
     icon: '🃏',
     badge: '8 כרטיסים',
+    badgeEn: '8 Cards',
+    badgeEs: '8 Cartas',
     titleHe: 'זִכָּרוֹן חֶשְׁבּוֹן וּמִלִּים',
     titleEn: 'Math & Word Memory',
     titleEs: 'Memoria Mates',
@@ -185,6 +191,8 @@ export const ACTIVITY_TILES = [
     ages: [9],
     icon: '🚀',
     badge: 'גִּיל 9',
+    badgeEn: 'Age 9',
+    badgeEs: 'Edad 9',
     titleHe: 'חֶשְׁבּוֹן גִּיל 9',
     titleEn: 'Math • Age 9',
     titleEs: 'Mates • Edad 9',
@@ -201,6 +209,8 @@ export const ACTIVITY_TILES = [
     ages: [9],
     icon: '📚',
     badge: 'שָׁרָשִׁים',
+    badgeEn: 'Roots',
+    badgeEs: 'Raíces',
     titleHe: 'עִבְרִית וְלָשׁוֹן',
     titleEn: 'Hebrew Grammar',
     titleEs: 'Gramática Hebrea',
@@ -249,6 +259,8 @@ export const ACTIVITY_TILES = [
     ages: [9],
     icon: '🃏',
     badge: '12 כרטיסים',
+    badgeEn: '12 Cards',
+    badgeEs: '12 Cartas',
     titleHe: 'זִכָּרוֹן כֶּפֶל וְאַנְגְּלִית',
     titleEn: 'Pro Memory Match',
     titleEs: 'Memoria Pro',
@@ -658,7 +670,7 @@ export default function HomeHub({
                     </span>
                   ) : (
                     <span className="text-[11px] font-black bg-white/85 text-slate-800 px-2.5 py-0.5 rounded-full shadow-sm">
-                      {tile.badge}
+                      {tr(lang, tile.badge, tile.badgeEn || tile.badge, tile.badgeEs || tile.badgeEn || tile.badge)}
                     </span>
                   )}
                 </div>

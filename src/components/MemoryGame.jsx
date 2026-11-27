@@ -26,13 +26,13 @@ const AGE7_MATH_PAIRS = [
 ];
 
 const AGE7_WORD_PAIRS = [
-  { id: 'w1', left: 'אַבַטִּיחַ', right: '🍉' },
-  { id: 'w2', left: 'בַּלּוֹן', right: '🎈' },
-  { id: 'w3', left: 'גְּלִידָה', right: '🍦' },
-  { id: 'w4', left: 'שֶׁמֶשׁ', right: '☀️' },
-  { id: 'w5', left: 'תַּפּוּחַ', right: '🍎' },
-  { id: 'w6', left: 'כּוֹכָב', right: '⭐' },
-  { id: 'w7', left: 'רַכֶּבֶת', right: '🚂' }
+  { id: 'w1', left: 'אַבַטִּיחַ', leftEn: 'Watermelon', leftEs: 'Sandía', right: '🍉' },
+  { id: 'w2', left: 'בַּלּוֹן', leftEn: 'Balloon', leftEs: 'Globo', right: '🎈' },
+  { id: 'w3', left: 'גְּלִידָה', leftEn: 'Ice Cream', leftEs: 'Helado', right: '🍦' },
+  { id: 'w4', left: 'שֶׁמֶשׁ', leftEn: 'Sun', leftEs: 'Sol', right: '☀️' },
+  { id: 'w5', left: 'תַּפּוּחַ', leftEn: 'Apple', leftEs: 'Manzana', right: '🍎' },
+  { id: 'w6', left: 'כּוֹכָב', leftEn: 'Star', leftEs: 'Estrella', right: '⭐' },
+  { id: 'w7', left: 'רַכֶּבֶת', leftEn: 'Train', leftEs: 'Tren', right: '🚂' }
 ];
 
 const AGE9_MATH_PAIRS = [
@@ -48,14 +48,14 @@ const AGE9_MATH_PAIRS = [
 ];
 
 const AGE9_VOCAB_PAIRS = [
-  { id: 'v1', left: 'Library', right: 'סִפְרִיָּה', leftLtr: true },
-  { id: 'v2', left: 'Weather', right: 'מֶזֶג אֲוִיר', leftLtr: true },
-  { id: 'v3', left: 'Breakfast', right: 'אֲרוּחַת בֹּקֶר', leftLtr: true },
-  { id: 'v4', left: 'Yesterday', right: 'אֶתְמוֹל', leftLtr: true },
-  { id: 'v5', left: 'Question', right: 'שְׁאֵלָה', leftLtr: true },
-  { id: 'v6', left: 'Mountain', right: 'הַר', leftLtr: true },
-  { id: 'v7', left: 'Friend', right: 'חָבֵר', leftLtr: true },
-  { id: 'v8', left: 'Science', right: 'מַדָּע', leftLtr: true }
+  { id: 'v1', left: 'Library', right: 'סִפְרִיָּה', rightEn: '📚', rightEs: 'Biblioteca', leftLtr: true },
+  { id: 'v2', left: 'Weather', right: 'מֶזֶג אֲוִיר', rightEn: '🌤️', rightEs: 'Clima', leftLtr: true },
+  { id: 'v3', left: 'Breakfast', right: 'אֲרוּחַת בֹּקֶר', rightEn: '🥞', rightEs: 'Desayuno', leftLtr: true },
+  { id: 'v4', left: 'Yesterday', right: 'אֶתְמוֹל', rightEn: '📅', rightEs: 'Ayer', leftLtr: true },
+  { id: 'v5', left: 'Question', right: 'שְׁאֵלָה', rightEn: '❓', rightEs: 'Pregunta', leftLtr: true },
+  { id: 'v6', left: 'Mountain', right: 'הַר', rightEn: '⛰️', rightEs: 'Montaña', leftLtr: true },
+  { id: 'v7', left: 'Friend', right: 'חָבֵר', rightEn: '🤝', rightEs: 'Amigo', leftLtr: true },
+  { id: 'v8', left: 'Science', right: 'מַדָּע', rightEn: '🔬', rightEs: 'Ciencia', leftLtr: true }
 ];
 
 function buildDeck(ageMode, deckKind) {
@@ -88,6 +88,8 @@ function buildDeck(ageMode, deckKind) {
       pairId: pair.id,
       side: 'left',
       content: pair.left,
+      contentEn: pair.leftEn,
+      contentEs: pair.leftEs,
       ltr: Boolean(pair.ltr || pair.leftLtr),
       isLetter: Boolean(pair.isLetter)
     });
@@ -96,6 +98,8 @@ function buildDeck(ageMode, deckKind) {
       pairId: pair.id,
       side: 'right',
       content: pair.right,
+      contentEn: pair.rightEn,
+      contentEs: pair.rightEs,
       ltr: Boolean(pair.ltr),
       wordEn: pair.wordEn,
       wordHe: pair.wordHe,
@@ -256,7 +260,7 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
                 deckKind === 'words' ? 'bg-white text-sky-900 shadow' : 'text-white hover:bg-white/20'
               }`}
             >
-              📖 {tr(lang, 'קְרִיאַת מִלִּים', 'Hebrew Words', 'Palabras')}
+              📖 {tr(lang, 'קְרִיאַת מִלִּים', 'Words & Pictures', 'Palabras y Dibujos')}
             </button>
           </div>
         )}
@@ -287,7 +291,7 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
                 deckKind === 'vocab' ? 'bg-white text-indigo-900 shadow' : 'text-white hover:bg-white/20'
               }`}
             >
-              🌍 {tr(lang, 'אַנְגְּלִית ⇄ עִבְרִית', 'English ⇄ Hebrew', 'Inglés ⇄ Hebreo')}
+              🌍 {tr(lang, 'אַנְגְּלִית ⇄ עִבְרִית', 'English Vocabulary', 'Inglés ⇄ Español')}
             </button>
           </div>
         )}
@@ -348,25 +352,35 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
                 }`}
               >
                 {isFlipped ? (
-                  <>
-                    <span
-                      dir={card.ltr ? 'ltr' : undefined}
-                      className={`font-black leading-tight text-center ${
-                        ageMode === 4
-                          ? 'text-5xl md:text-6xl mb-1'
-                          : String(card.content).length > 6
-                            ? 'text-lg sm:text-xl text-slate-900'
-                            : 'text-2xl sm:text-3xl text-slate-900'
-                      }`}
-                    >
-                      {card.content}
-                    </span>
-                    {ageMode === 4 && card.wordHe && (
-                      <span className="text-xs font-black text-slate-700">
-                        {tr(lang, card.wordHe, card.wordEn, card.wordEs || card.wordEn)}
-                      </span>
-                    )}
-                  </>
+                  (() => {
+                    const displayContent = tr(
+                      lang,
+                      card.content,
+                      card.contentEn || card.content,
+                      card.contentEs || card.contentEn || card.content
+                    );
+                    return (
+                      <>
+                        <span
+                          dir={card.ltr || (!isHe && (card.contentEn || card.contentEs)) ? 'ltr' : undefined}
+                          className={`font-black leading-tight text-center ${
+                            ageMode === 4
+                              ? 'text-5xl md:text-6xl mb-1'
+                              : String(displayContent).length > 6
+                                ? 'text-lg sm:text-xl text-slate-900'
+                                : 'text-2xl sm:text-3xl text-slate-900'
+                          }`}
+                        >
+                          {displayContent}
+                        </span>
+                        {ageMode === 4 && card.wordHe && (
+                          <span className="text-xs font-black text-slate-700">
+                            {tr(lang, card.wordHe, card.wordEn, card.wordEs || card.wordEn)}
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()
                 ) : (
                   <span className="text-4xl text-white/90 font-black">?</span>
                 )}

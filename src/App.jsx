@@ -956,6 +956,7 @@ export default function App() {
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
           lang={lang}
+          setLang={setLang}
           stars={stars}
           soundEnabled={soundEnabled}
           setSoundEnabled={setSoundEnabled}

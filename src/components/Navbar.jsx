@@ -9,6 +9,7 @@ export default function Navbar({
   currentTab,
   setCurrentTab,
   lang,
+  setLang,
   stars,
   soundEnabled,
   setSoundEnabled,
@@ -24,6 +25,14 @@ export default function Navbar({
 }) {
   const isHe = lang === 'he';
   const activeTile = ACTIVITY_TILES.find((t) => t.id === currentTab);
+
+  const handleSwitchLang = (nextLang) => {
+    if (!setLang || nextLang === lang) return;
+    playSound('pop');
+    setLang(nextLang);
+    document.documentElement.lang = nextLang;
+    document.documentElement.dir = nextLang === 'he' ? 'rtl' : 'ltr';
+  };
 
   const goHome = () => {
     playSound('whoosh');
@@ -47,7 +56,7 @@ export default function Navbar({
       className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-4 border-amber-300 shadow-sm pt-[env(safe-area-inset-top)]"
       dir={isHe ? 'rtl' : 'ltr'}
     >
-      <div className="max-w-6xl mx-auto px-3 md:px-5 py-2.5 flex items-center justify-between gap-2">
+      <div className="max-w-6xl mx-auto px-3 md:px-5 py-2 flex flex-wrap items-center justify-between gap-2">
         {/* Left / Start: Huge Home Button inside games OR Mascot Brand on Home */}
         {currentTab !== 'home' ? (
           <div className="flex items-center gap-2.5 min-w-0">
@@ -62,7 +71,7 @@ export default function Navbar({
             </button>
 
             {activeTile && (
-              <div className="hidden sm:flex items-center gap-2 bg-amber-50 border-2 border-amber-200 px-3.5 py-1.5 rounded-2xl truncate">
+              <div className="hidden md:flex items-center gap-2 bg-amber-50 border-2 border-amber-200 px-3.5 py-1.5 rounded-2xl truncate">
                 <span className="text-2xl">{activeTile.icon}</span>
                 <span className="font-black text-slate-800 text-base truncate">
                   {tr(lang, activeTile.titleHe, activeTile.titleEn, activeTile.titleEs)}
@@ -87,8 +96,42 @@ export default function Navbar({
           </div>
         )}
 
-        {/* Right / End Controls: Kid-friendly large 48px+ targets */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Right / End Controls: Always-visible Language Switcher + Kid-friendly 48px+ targets */}
+        <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
+          {/* Instant 3-Way Language Switcher (Hebrew / English / Spanish) */}
+          {setLang && (
+            <div
+              className="flex items-center bg-slate-100 border-2 border-slate-300 rounded-2xl p-0.5 h-12"
+              role="group"
+              aria-label={tr(lang, 'בְּחִירַת שָׂפָה', 'Choose Language', 'Elegir Idioma')}
+              dir="ltr"
+            >
+              {[
+                { code: 'he', label: 'עב', flag: '🇮🇱', title: 'עברית (Hebrew)' },
+                { code: 'en', label: 'EN', flag: '🇬🇧', title: 'English' },
+                { code: 'es', label: 'ES', flag: '🇪🇸', title: 'Español (Spanish)' }
+              ].map((opt) => {
+                const active = lang === opt.code;
+                return (
+                  <button
+                    key={opt.code}
+                    type="button"
+                    aria-pressed={active}
+                    title={opt.title}
+                    onClick={() => handleSwitchLang(opt.code)}
+                    className={`h-full px-2 sm:px-2.5 rounded-xl font-black text-xs transition flex items-center gap-1 cursor-pointer ${
+                      active
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-700 hover:bg-white'
+                    }`}
+                  >
+                    <span className="text-sm leading-none">{opt.flag}</span>
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {/* Active Kid Profile & Age Switcher Pill (guarded during Fullscreen Lock) */}
           <button
             type="button"
