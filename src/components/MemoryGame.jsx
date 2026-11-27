@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sparkles, Trophy, RefreshCw, Star, Volume2 } from 'lucide-react';
 import { playSound, speakLetterName, playWordAudio, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
@@ -20,9 +20,23 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
   const [flipped, setFlipped] = useState([]);
   const [matched, setMatched] = useState([]);
   const [isLocked, setIsLocked] = useState(false);
+  const mismatchTimeoutRef = useRef(null);
+  const praiseTimeoutRef = useRef(null);
 
-  const initGame = () => {
-    playSound('whoosh');
+  const clearPendingTimeouts = useCallback(() => {
+    if (mismatchTimeoutRef.current) {
+      clearTimeout(mismatchTimeoutRef.current);
+      mismatchTimeoutRef.current = null;
+    }
+    if (praiseTimeoutRef.current) {
+      clearTimeout(praiseTimeoutRef.current);
+      praiseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const initGame = useCallback((playWhoosh = false) => {
+    clearPendingTimeouts();
+    if (playWhoosh) playSound('whoosh');
     // Pick 3 random pairs for age 4 (6 cards total)
     const shuffledPairs = [...ALL_PAIRS].sort(() => 0.5 - Math.random()).slice(0, 3);
     const deck = [];
@@ -33,17 +47,16 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
         pairId: pair.id,
         type: 'letter',
         content: pair.letter,
-        speakText: pair.letter,
-        subtext: tr(lang, 'אוֹת', 'Letter', 'Letra')
+        speakText: pair.letter
       });
       deck.push({
         uniqueId: `pic-${idx}`,
         pairId: pair.id,
         wordEn: pair.wordEn,
         wordHe: pair.wordHe,
+        wordEs: pair.wordEs,
         type: 'picture',
-        content: pair.emoji,
-        subtext: tr(lang, pair.wordHe, pair.wordEn, pair.wordEs)
+        content: pair.emoji
       });
     });
 
@@ -51,11 +64,12 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
     setFlipped([]);
     setMatched([]);
     setIsLocked(false);
-  };
+  }, [clearPendingTimeouts]);
 
   useEffect(() => {
-    initGame();
-  }, [lang]);
+    initGame(false);
+    return () => clearPendingTimeouts();
+  }, [initGame, clearPendingTimeouts]);
 
   const handleCardClick = (card, idx) => {
     if (isLocked || flipped.includes(idx) || matched.includes(card.pairId)) return;
@@ -79,25 +93,27 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
 
       if (firstCard.pairId === secondCard.pairId) {
         // Matched!
-        playSound('star');
+        const isLastMatch = matched.length + 1 === 3;
+        if (isLastMatch) {
+          playSound('win');
+          triggerConfetti();
+          if (soundEnabled) {
+            praiseTimeoutRef.current = setTimeout(() => {
+              playPhraseAudio('great_job', gender);
+            }, 500);
+          }
+        } else {
+          playSound('star');
+        }
         triggerStarBurst();
         onEarnStar();
         setMatched((prev) => [...prev, firstCard.pairId]);
         setFlipped([]);
         setIsLocked(false);
-
-        if (matched.length + 1 === 3) {
-          playSound('win');
-          triggerConfetti();
-          if (soundEnabled) {
-            setTimeout(() => {
-              playPhraseAudio('great_job', gender);
-            }, 500);
-          }
-        }
       } else {
         // No match, flip back after brief moment
-        setTimeout(() => {
+        mismatchTimeoutRef.current = setTimeout(() => {
+          mismatchTimeoutRef.current = null;
           playSound('whoosh');
           setFlipped([]);
           setIsLocked(false);
@@ -129,7 +145,9 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
         </p>
 
         <button
-          onClick={() => playPhraseAudio('inst_memory', gender)}
+          onClick={() => {
+            if (soundEnabled) playPhraseAudio('inst_memory', gender);
+          }}
           className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full font-bold text-xs text-white shadow-sm"
           title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
         >
@@ -163,7 +181,9 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
                       {card.content}
                     </span>
                     <span className="text-xs font-bold text-slate-700">
-                      {card.subtext}
+                      {card.type === 'letter'
+                        ? tr(lang, 'אוֹת', 'Letter', 'Letra')
+                        : tr(lang, card.wordHe, card.wordEn, card.wordEs)}
                     </span>
                   </>
                 ) : (
@@ -178,19 +198,28 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
 
         {/* Win / Reset Buttons */}
         {isGameComplete ? (
-          <div className="p-4 bg-emerald-100 border-2 border-emerald-400 rounded-2xl text-emerald-900 font-black text-lg flex items-center gap-2 animate-bounce">
+          <div className="p-4 bg-emerald-100 border-2 border-emerald-400 rounded-2xl text-emerald-900 font-black text-lg flex flex-wrap justify-center items-center gap-2 animate-bounce">
             <Trophy className="w-7 h-7 text-emerald-600" />
-            <span>{tr(lang, 'כָּל הַכָּבוֹד! מָצָאתָ אֶת כָּל הַזּוּגוֹת! 🏆', 'You found all pairs! Awesome! 🏆', '¡Encontraste todas las parejas! ¡Genial! 🏆')}</span>
+            <span>
+              {tr(
+                lang,
+                gender === 'girl'
+                  ? 'כָּל הַכָּבוֹד! מָצָאת אֶת כָּל הַזּוּגוֹת! 🏆'
+                  : 'כָּל הַכָּבוֹד! מָצָאתָ אֶת כָּל הַזּוּגוֹת! 🏆',
+                'You found all pairs! Awesome! 🏆',
+                '¡Encontraste todas las parejas! ¡Genial! 🏆'
+              )}
+            </span>
             <button
-              onClick={initGame}
-              className="mr-3 px-3 py-1 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow"
+              onClick={() => initGame(true)}
+              className="ms-3 px-3 py-1 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow"
             >
               {tr(lang, 'סִבּוּב חָדָשׁ', 'New Round', 'Nueva ronda')}
             </button>
           </div>
         ) : (
           <button
-            onClick={initGame}
+            onClick={() => initGame(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-sm transition"
           >
             <RefreshCw className="w-4 h-4" />

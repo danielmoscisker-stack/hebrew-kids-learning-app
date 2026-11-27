@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Star, Play, CheckCircle2, Trophy, Sparkles, Volume2 } from 'lucide-react';
 import { READING_TRAIN_DATA, LETTER_NAMES_DICT } from '../data/curriculumData';
 import { playSound, speakLetterName, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
+import { useDeviceType } from '../utils/useDeviceType';
 import { tr } from '../utils/i18n';
 
 export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
@@ -11,12 +12,25 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
   const [activeRowIdx, setActiveRowIdx] = useState(0);
   const [activeLetterIdx, setActiveLetterIdx] = useState(null);
   const lastHoverLetterTime = useRef(0);
+  const rowIntervalRef = useRef(null);
+  const { isTouch } = useDeviceType();
+
+  const clearRowInterval = () => {
+    if (rowIntervalRef.current) {
+      clearInterval(rowIntervalRef.current);
+      rowIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => clearRowInterval();
+  }, []);
 
   const isHe = lang === 'he';
   const currentLevel = READING_TRAIN_DATA[activeLevelIdx];
 
   const handleWagonHover = (char) => {
-    if (!soundEnabled) return;
+    if (isTouch || !soundEnabled) return;
     const now = Date.now();
     if (now - lastHoverLetterTime.current < 450) return;
     lastHoverLetterTime.current = now;
@@ -24,6 +38,7 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
   };
 
   const handleLevelChange = (idx) => {
+    clearRowInterval();
     playSound('pop');
     setActiveLevelIdx(idx);
     setActiveRowIdx(0);
@@ -59,20 +74,23 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
   };
 
   const playEntireRow = (rowIdx) => {
+    clearRowInterval();
     playSound('train');
     setActiveRowIdx(rowIdx);
     const letters = currentLevel.rows[rowIdx].letters;
     let i = 0;
 
-    const interval = setInterval(() => {
+    rowIntervalRef.current = setInterval(() => {
       if (i < letters.length) {
         const char = letters[i];
         setActiveLetterIdx(i);
-        speakLetterName(char);
+        if (soundEnabled) {
+          speakLetterName(char);
+        }
         playSound('pop');
         i++;
       } else {
-        clearInterval(interval);
+        clearRowInterval();
         setActiveLetterIdx(null);
         const rowKey = `${activeLevelIdx}-${rowIdx}`;
         if (!completedRows[rowKey]) {
@@ -80,7 +98,9 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
           playSound('win');
           triggerConfetti();
           onEarnStar();
-          playPhraseAudio('great_job', gender);
+          if (soundEnabled) {
+            playPhraseAudio('great_job', gender);
+          }
         }
       }
     }, 850);
@@ -104,7 +124,12 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
         {/* Level Selector Tabs & Hear Instructions */}
         <div className="flex flex-wrap justify-center items-center gap-2 mt-4">
           <button
-            onClick={() => playPhraseAudio('inst_train', gender)}
+            onClick={() => {
+              playSound('pop');
+              if (soundEnabled) {
+                playPhraseAudio('inst_train', gender);
+              }
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-2xl font-bold text-xs text-white"
             title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
           >
@@ -168,7 +193,7 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
               {/* Train Wagon Letters (Strict Right-to-Left order in Hebrew) */}
               <div
                 className="flex items-center gap-2 py-3 overflow-visible no-scrollbar justify-center flex-wrap sm:flex-nowrap"
-                dir={isHe ? 'rtl' : 'ltr'}
+                dir="rtl"
               >
                 {row.letters.map((char, charIdx) => {
                   const isCharActive = isRowActive && activeLetterIdx === charIdx;
@@ -176,7 +201,7 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
                     <button
                       key={charIdx}
                       onClick={() => handleLetterClick(rowIdx, charIdx, char)}
-                      onMouseEnter={() => handleWagonHover(char)}
+                      onMouseEnter={!isTouch ? () => handleWagonHover(char) : undefined}
                       className={`w-12 h-14 md:w-14 md:h-16 flex-shrink-0 rounded-2xl flex items-center justify-center font-black text-2xl md:text-3xl transition-transform duration-150 btn-press-3d border-2 relative cursor-pointer ${
                         isCharActive
                           ? 'bg-amber-400 text-slate-900 border-amber-600 scale-110 shadow-xl ring-4 ring-amber-300'

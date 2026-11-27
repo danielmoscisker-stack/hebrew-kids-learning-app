@@ -17,10 +17,12 @@ export default function ProUpgradeModal({
   isPro,
   onUnlockPro,
   serverConfig,
-  user
+  user,
+  skipGate = false,
+  onOpenParentZone
 }) {
   const isHe = lang === 'he';
-  const [unlockedGate, setUnlockedGate] = useState(false);
+  const [unlockedGate, setUnlockedGate] = useState(Boolean(skipGate));
   const [challenge, setChallenge] = useState({ a: 4, b: 3, ans: 7, options: [5, 6, 7, 8] });
   const [wrong, setWrong] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
@@ -35,20 +37,22 @@ export default function ProUpgradeModal({
 
   useEffect(() => {
     if (open) {
-      setUnlockedGate(false);
+      setUnlockedGate(Boolean(skipGate));
       setWrong(false);
       setStatusMsg(null);
-      const a = 3 + Math.floor(Math.random() * 5);
-      const b = 2 + Math.floor(Math.random() * 4);
-      const ans = a + b;
-      const opts = new Set([ans]);
-      while (opts.size < 4) {
-        opts.add(ans + (Math.floor(Math.random() * 5) - 2) || ans + 3);
+      if (!skipGate) {
+        const a = 3 + Math.floor(Math.random() * 5);
+        const b = 2 + Math.floor(Math.random() * 4);
+        const ans = a + b;
+        const opts = new Set([ans]);
+        while (opts.size < 4) {
+          opts.add(ans + (Math.floor(Math.random() * 5) - 2) || ans + 3);
+        }
+        setChallenge({ a, b, ans, options: [...opts].sort(() => 0.5 - Math.random()) });
+        playAudioFile('/audio/phrases/parents_only.mp3');
       }
-      setChallenge({ a, b, ans, options: [...opts].sort(() => 0.5 - Math.random()) });
-      playAudioFile('/audio/phrases/parents_only.mp3');
     }
-  }, [open]);
+  }, [open, skipGate]);
 
   useEffect(() => {
     if (!open) return;
@@ -80,7 +84,10 @@ export default function ProUpgradeModal({
       });
     } catch (err) {
       playSound('whoosh');
-      setStatusMsg({ ok: false, text: err.message || 'Purchase failed' });
+      setStatusMsg({
+        ok: false,
+        text: err.message || tr(lang, 'הָרְכִישָׁה נִכְשְׁלָה', 'Purchase failed', 'Error en la compra')
+      });
     } finally {
       setBusy(false);
     }
@@ -100,7 +107,10 @@ export default function ProUpgradeModal({
       });
     } catch (err) {
       playSound('whoosh');
-      setStatusMsg({ ok: false, text: err.message || 'No active subscription found' });
+      setStatusMsg({
+        ok: false,
+        text: err.message || tr(lang, 'לֹא נִמְצָא מַנּוּי פָּעִיל', 'No active subscription found', 'No se encontró ninguna suscripción activa')
+      });
     } finally {
       setBusy(false);
     }
@@ -131,6 +141,12 @@ export default function ProUpgradeModal({
           )
         });
       }
+    } catch (err) {
+      playSound('whoosh');
+      setStatusMsg({
+        ok: false,
+        text: err?.message || tr(lang, 'הָרִעְנוּן נִכְשַׁל', 'Refresh failed', 'Error al actualizar')
+      });
     } finally {
       setBusy(false);
     }
@@ -140,12 +156,19 @@ export default function ProUpgradeModal({
     <div
       className="fixed inset-0 z-50 bg-black/55 backdrop-blur-sm flex items-center justify-center p-4"
       dir={isHe ? 'rtl' : 'ltr'}
+      onClick={onClose}
     >
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-4 border-amber-400 max-h-[90vh] overflow-y-auto animate-pop-in">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pro-modal-title"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-4 border-amber-400 max-h-[90vh] overflow-y-auto animate-pop-in"
+      >
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
           <div className="flex items-center gap-2">
-            {unlockedGate ? <Crown className="w-6 h-6 text-amber-500" /> : <Lock className="w-6 h-6 text-indigo-600" />}
-            <h3 className="text-xl font-black text-slate-800">
+            {unlockedGate ? <Crown className="w-6 h-6 text-amber-500" aria-hidden="true" /> : <Lock className="w-6 h-6 text-indigo-600" aria-hidden="true" />}
+            <h3 id="pro-modal-title" className="text-xl font-black text-slate-800">
               {unlockedGate
                 ? tr(lang, 'מַנּוּי מִשְׁפָּחָה PRO', 'Family Pro Subscription', 'Suscripción Familiar Pro')
                 : tr(lang, 'אֵזוֹר הוֹרִים בִּלְבַד', 'Parents Only', 'Solo para Padres')}
@@ -304,6 +327,19 @@ export default function ProUpgradeModal({
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>{tr(lang, 'כְּבָר נִרְשַׁמְתִּי בְּ-Android — רַעֲנֵן גִּישָׁה', 'Already Subscribed on Android — Refresh Access', 'Ya estoy suscrito en Android — Actualizar acceso')}</span>
                 </button>
+
+                {!user && onOpenParentZone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('pop');
+                      onOpenParentZone();
+                    }}
+                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-2xl shadow flex items-center justify-center gap-1.5 btn-press-3d cursor-pointer"
+                  >
+                    <span>{tr(lang, 'הִתְחַבְּרוּ עִם Google (אֵזוֹר הוֹרִים)', 'Sign in with Google (Parent Zone)', 'Iniciar sesión con Google (Zona de Padres)')}</span>
+                  </button>
+                )}
               </div>
             )}
 

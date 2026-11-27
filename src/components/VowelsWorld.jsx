@@ -75,8 +75,10 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
           type="button"
           onClick={() => {
             playSound('pop');
-            const instKey = isTouch ? 'inst_vowels_touch' : 'inst_vowels_mouse';
-            playPhraseAudio(instKey, gender);
+            if (soundEnabled) {
+              const instKey = isTouch ? 'inst_vowels_touch' : 'inst_vowels_mouse';
+              playPhraseAudio(instKey, gender);
+            }
           }}
           className="mx-auto mt-3 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-2xl font-black text-xs md:text-sm transition-all btn-press-3d border border-white/40 flex items-center gap-1.5"
         >
@@ -94,10 +96,10 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
               : tr(
                   lang,
                   gender === 'girl'
-                    ? 'הַעֲבִירִי עַכְבָּר עַל הַצְּלִילִים (🔊 שִׁמְעִי הוֹרָאוֹת)'
-                    : 'הַעֲבֵר עַכְבָּר עַל הַצְּלִילִים (🔊 שְׁמַע הוֹרָאוֹת)',
-                  'Move mouse over sounds! (🔊 Hear Instructions)',
-                  '¡Pasa el ratón sobre los sonidos! (🔊 Escuchar instrucciones)'
+                    ? 'לַחֲצִי עַל הַצְּלִילִים! (🔊 שִׁמְעִי הוֹרָאוֹת)'
+                    : 'לְחַץ עַל הַצְּלִילִים! (🔊 שְׁמַע הוֹרָאוֹת)',
+                  'Click the sounds! (🔊 Hear Instructions)',
+                  '¡Haz clic en los sonidos! (🔊 Escuchar instrucciones)'
                 )}
           </span>
         </button>
@@ -193,7 +195,7 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2" dir={isHe ? 'rtl' : 'ltr'}>
+                <div className="flex items-center gap-2" dir="rtl">
                   {row.letters.map((char, charIdx) => (
                     <button
                       key={charIdx}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Volume2, Sparkles, Heart } from 'lucide-react';
 import { LETTERS_DATA } from '../data/curriculumData';
 import { playSound, speakLetterName, playWordAudio, playPhraseAudio } from '../utils/audio';
@@ -12,6 +12,17 @@ export default function AlphabetCards({ lang, soundEnabled, gender = 'boy', onEa
   const [pupikPopped, setPupikPopped] = useState(false);
   const [isLetterBouncing, setIsLetterBouncing] = useState(false);
   const { isTouch } = useDeviceType();
+  const bounceTimerRef = useRef(null);
+  const pupikTimerRef = useRef(null);
+  const hoverTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (bounceTimerRef.current) clearTimeout(bounceTimerRef.current);
+      if (pupikTimerRef.current) clearTimeout(pupikTimerRef.current);
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, [currentIndex]);
 
   const isHe = lang === 'he';
   const currentLetter = LETTERS_DATA[currentIndex];
@@ -42,7 +53,8 @@ export default function AlphabetCards({ lang, soundEnabled, gender = 'boy', onEa
   const playLetterName = () => {
     playSound('pop');
     setIsLetterBouncing(true);
-    setTimeout(() => setIsLetterBouncing(false), 650);
+    if (bounceTimerRef.current) clearTimeout(bounceTimerRef.current);
+    bounceTimerRef.current = setTimeout(() => setIsLetterBouncing(false), 650);
     if (soundEnabled) {
       if (currentLetter.id === 'bet_dagesh') {
         playPhraseAudio('explain_bet', gender);
@@ -62,7 +74,8 @@ export default function AlphabetCards({ lang, soundEnabled, gender = 'boy', onEa
     if (soundEnabled) {
       playPhraseAudio('pupik_touch', gender);
     }
-    setTimeout(() => setPupikPopped(false), 2000);
+    if (pupikTimerRef.current) clearTimeout(pupikTimerRef.current);
+    pupikTimerRef.current = setTimeout(() => setPupikPopped(false), 2000);
   };
 
   const handleExampleClick = (idx, example) => {
@@ -83,8 +96,10 @@ export default function AlphabetCards({ lang, soundEnabled, gender = 'boy', onEa
       <div 
         onClick={() => {
           playSound('pop');
-          const instKey = isTouch ? 'inst_letters_touch' : 'inst_letters_mouse';
-          playPhraseAudio(instKey, gender);
+          if (soundEnabled) {
+            const instKey = isTouch ? 'inst_letters_touch' : 'inst_letters_mouse';
+            playPhraseAudio(instKey, gender);
+          }
         }}
         className="bg-amber-100 hover:bg-amber-200 cursor-pointer border-2 border-amber-300 rounded-2xl p-3 text-center shadow-sm flex items-center justify-center gap-2 transition btn-press-3d"
         title={tr(lang, gender === 'girl' ? 'לַחְצִי לִשְׁמִיעַת הַהוֹרָאוֹת בְּקוֹל' : 'לְחַץ לִשְׁמִיעַת הַהוֹרָאוֹת בְּקוֹל', 'Tap to hear instructions', 'Toca para escuchar las instrucciones')}
@@ -137,11 +152,28 @@ export default function AlphabetCards({ lang, soundEnabled, gender = 'boy', onEa
         {/* Letter & Pupik Visual Centerpiece */}
         <div 
           className="mt-4 relative group cursor-pointer" 
-          onClick={playLetterName} 
-          onMouseEnter={() => {
-            if (!isTouch && soundEnabled) playLetterName();
+          onClick={() => {
+            if (hoverTimerRef.current) {
+              clearTimeout(hoverTimerRef.current);
+              hoverTimerRef.current = null;
+            }
+            playLetterName();
           }}
-          title={tr(lang, 'לחצו לשמיעת שם האות', 'Click to hear the letter name', 'Haz clic para escuchar el nombre de la letra')}
+          onMouseEnter={() => {
+            if (!isTouch && soundEnabled) {
+              if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+              hoverTimerRef.current = setTimeout(() => {
+                playLetterName();
+              }, 500);
+            }
+          }}
+          onMouseLeave={() => {
+            if (hoverTimerRef.current) {
+              clearTimeout(hoverTimerRef.current);
+              hoverTimerRef.current = null;
+            }
+          }}
+          title={tr(lang, 'לַחֲצוּ לִשְׁמִיעַת שֵׁם הָאוֹת', 'Click to hear the letter name', 'Haz clic para escuchar el nombre de la letra')}
         >
           <div className={`w-36 h-36 md:w-44 md:h-44 rounded-3xl bg-gradient-to-tr ${currentLetter.color} flex items-center justify-center shadow-2xl border-4 border-white transform transition-all duration-200 ${isLetterBouncing ? 'animate-jelly scale-110' : 'group-hover:scale-105 active:scale-95 animate-float'}`}>
             <span className={`text-8xl md:text-9xl font-black text-white drop-shadow-md select-none ${isLetterBouncing ? 'animate-wiggle' : ''}`}>
@@ -161,6 +193,7 @@ export default function AlphabetCards({ lang, soundEnabled, gender = 'boy', onEa
                 e.stopPropagation();
                 handlePupikTouch();
               }}
+              onMouseEnter={(e) => e.stopPropagation()}
               className="absolute -top-3 -left-3 bg-red-500 hover:bg-red-600 active:scale-125 cursor-pointer text-white px-3 py-1.5 rounded-full font-black text-xs md:text-sm flex items-center gap-1 shadow-lg animate-pupik border-2 border-white"
               title={tr(lang, gender === 'girl' ? 'גְּעִי בַּפּוּפִּיק!' : 'גַּע בַּפּוּפִּיק!', 'Touch Pupik!', '¡Toca el Pupik!')}
             >
@@ -214,7 +247,7 @@ export default function AlphabetCards({ lang, soundEnabled, gender = 'boy', onEa
             >
               <span>⭐</span>
               <span>{tr(lang, 'בֵּית מוֹפִיעָה בִּתְחִלַּת מִלָּה (בַּלּוֹן, בַּיִת, בַּנָנָה)!', 'Bet appears at the start of words (Balloon, House, Banana)!', '¡Bet aparece al principio de las palabras (Globo, Casa, Plátano)!')}</span>
-              <span className="text-xs bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full font-bold">{tr(lang, '🔊 שְׁמַע', '🔊 Hear', '🔊 Escuchar')}</span>
+              <span className="text-xs bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full font-bold">{tr(lang, gender === 'girl' ? '🔊 שִׁמְעִי' : '🔊 שְׁמַע', '🔊 Hear', '🔊 Escuchar')}</span>
             </div>
           )}
 
@@ -227,7 +260,7 @@ export default function AlphabetCards({ lang, soundEnabled, gender = 'boy', onEa
             >
               <span>⭐</span>
               <span>{tr(lang, 'וֵית מוֹפִיעָה בְּאֶמְצַע אוֹ בְּסוֹף מִלָּה (כּוֹכָב, לֵב, עֲנָבִים)!', 'Vet appears in the middle or end of words (Star, Heart, Grapes)!', '¡Vet aparece en medio o al final de las palabras (Estrella, Corazón, Uvas)!')}</span>
-              <span className="text-xs bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full font-bold">{tr(lang, '🔊 שְׁמַע', '🔊 Hear', '🔊 Escuchar')}</span>
+              <span className="text-xs bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full font-bold">{tr(lang, gender === 'girl' ? '🔊 שִׁמְעִי' : '🔊 שְׁמַע', '🔊 Hear', '🔊 Escuchar')}</span>
             </div>
           )}
         </div>

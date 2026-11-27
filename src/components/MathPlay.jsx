@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, RefreshCw, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Trophy, RefreshCw, Sparkles, Volume2 } from 'lucide-react';
 import { playSound, playNumberAudio, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { tr } from '../utils/i18n';
@@ -19,8 +19,15 @@ export default function MathPlay({ lang, soundEnabled, gender = 'boy', onEarnSta
   const [wrongOps, setWrongOps] = useState([]);
   const [solved, setSolved] = useState(false);
   const [score, setScore] = useState(0);
+  const timeoutsRef = useRef([]);
+
+  const clearTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach((id) => clearTimeout(id));
+    timeoutsRef.current = [];
+  }, []);
 
   const nextPuzzle = useCallback(() => {
+    clearTimeouts();
     const a = 1 + Math.floor(Math.random() * 5); // 1..5
     const b = 1 + Math.floor(Math.random() * (10 - a)); // sum <= 10
     const sum = a + b;
@@ -34,14 +41,15 @@ export default function MathPlay({ lang, soundEnabled, gender = 'boy', onEarnSta
     setTappedItems({});
     setWrongOps([]);
     setSolved(false);
-  }, []);
+  }, [clearTimeouts]);
 
   useEffect(() => {
     nextPuzzle();
-  }, [nextPuzzle]);
+    return () => clearTimeouts();
+  }, [nextPuzzle, clearTimeouts]);
 
   const tapFruit = (key) => {
-    if (tappedItems[key]) return;
+    if (solved || tappedItems[key]) return;
     const nextNum = Object.keys(tappedItems).length + 1;
     setTappedItems((p) => ({ ...p, [key]: nextNum }));
     playSound('pop');
@@ -59,10 +67,10 @@ export default function MathPlay({ lang, soundEnabled, gender = 'boy', onEarnSta
       onEarnStar(2);
       if (soundEnabled) {
         playNumberAudio(val, () => {
-          setTimeout(() => playPhraseAudio('great_job', gender), 200);
+          timeoutsRef.current.push(setTimeout(() => playPhraseAudio('great_job', gender), 200));
         });
       }
-      setTimeout(() => nextPuzzle(), 2300);
+      timeoutsRef.current.push(setTimeout(() => nextPuzzle(), 2300));
     } else {
       playSound('whoosh');
       if (!wrongOps.includes(val)) setWrongOps((p) => [...p, val]);
@@ -85,9 +93,23 @@ export default function MathPlay({ lang, soundEnabled, gender = 'boy', onEarnSta
             '¡Cuenta todos los objetos juntos y elige el número correcto!'
           )}
         </p>
-        <div className="mt-3 inline-flex items-center gap-2 bg-white/20 px-4 py-1 rounded-full font-black text-sm">
-          <Trophy className="w-4 h-4 text-amber-300" />
-          <bdi>{score}</bdi>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              playSound('pop');
+              if (soundEnabled) playPhraseAudio('inst_math_play', gender);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full font-bold text-xs text-white shadow-sm cursor-pointer"
+            title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
+          >
+            <Volume2 className="w-4 h-4 text-emerald-200" />
+            <span>{tr(lang, gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת', '🔊 Hear Instructions', '🔊 Escuchar instrucciones')}</span>
+          </button>
+          <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-1 rounded-full font-black text-sm">
+            <Trophy className="w-4 h-4 text-amber-300" />
+            <bdi>{score}</bdi>
+          </div>
         </div>
       </div>
 

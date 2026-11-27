@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Accessibility, X, RotateCcw, Eye, Type, PauseCircle, MousePointer2, Sparkles, ExternalLink } from 'lucide-react';
 import { playSound } from '../utils/audio';
 import { tr } from '../utils/i18n';
+import { useDeviceType } from '../utils/useDeviceType';
 
 const DEFAULT_PREFS = {
   fontSize: 100, // 100 | 115 | 130
@@ -22,6 +23,7 @@ export default function AccessibilityMenu({
   setKidCursorEnabled
 }) {
   const isHe = lang === 'he';
+  const { isTouch } = useDeviceType();
   const [open, setOpen] = useState(false);
   const [prefs, setPrefs] = useState(() => {
     try {
@@ -79,7 +81,7 @@ export default function AccessibilityMenu({
         aria-label={tr(lang, 'תַּפְרִיט נְגִישׁוּת', 'Accessibility Menu', 'Menú de Accesibilidad')}
         aria-expanded={open}
         title={tr(lang, 'נְגִישׁוּת (ת״י 5568)', 'Accessibility (SI 5568)', 'Accesibilidad (Norma SI 5568)')}
-        className="fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full bg-indigo-700 hover:bg-indigo-800 text-white border-2 border-white shadow-lg flex items-center justify-center btn-press-3d cursor-pointer"
+        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-50 w-12 h-12 rounded-full bg-indigo-700 hover:bg-indigo-800 text-white border-2 border-white shadow-lg flex items-center justify-center btn-press-3d cursor-pointer"
       >
         <Accessibility className="w-6 h-6" aria-hidden="true" />
       </button>
@@ -130,6 +132,7 @@ export default function AccessibilityMenu({
                     <button
                       key={opt.val}
                       type="button"
+                      aria-pressed={prefs.fontSize === opt.val}
                       onClick={() => {
                         playSound('pop');
                         setPrefs((p) => ({ ...p, fontSize: opt.val }));
@@ -208,20 +211,22 @@ export default function AccessibilityMenu({
                   <span>{tr(lang, 'גּוֹפָן קָרִיא', 'Readable Font', 'Fuente Legible')}</span>
                 </button>
 
-                <button
-                  type="button"
-                  aria-pressed={!kidCursorEnabled}
-                  onClick={() => {
-                    playSound('pop');
-                    setKidCursorEnabled(!kidCursorEnabled);
-                  }}
-                  className={`p-3 rounded-2xl border-2 font-bold text-xs flex items-center gap-2 cursor-pointer text-start ${
-                    !kidCursorEnabled ? 'bg-indigo-700 text-white border-indigo-800' : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <MousePointer2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span>{tr(lang, 'סַמָּן מַעֲרֶכֶת רָגִיל', 'Standard Cursor', 'Cursor Estándar')}</span>
-                </button>
+                {!isTouch && (
+                  <button
+                    type="button"
+                    aria-pressed={!kidCursorEnabled}
+                    onClick={() => {
+                      playSound('pop');
+                      setKidCursorEnabled(!kidCursorEnabled);
+                    }}
+                    className={`p-3 rounded-2xl border-2 font-bold text-xs flex items-center gap-2 cursor-pointer text-start ${
+                      !kidCursorEnabled ? 'bg-indigo-700 text-white border-indigo-800' : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <MousePointer2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                    <span>{tr(lang, 'סַמָּן מַעֲרֶכֶת רָגִיל', 'Standard Cursor', 'Cursor Estándar')}</span>
+                  </button>
+                )}
               </div>
 
               {/* Accessibility Statement Link & Reset */}

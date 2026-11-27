@@ -25,6 +25,8 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
   const { isTouch, withDeviceHe, withDeviceEn } = useDeviceType();
 
   const canvasRef = useRef(null);
+  const isDrawingRef = useRef(false);
+  const hitPointsRef = useRef(new Set());
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushColor, setBrushColor] = useState('#3B82F6');
   const [brushSize, setBrushSize] = useState(22);
@@ -67,6 +69,7 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
       }
     }
 
+    hitPointsRef.current = new Set();
     setTargetPoints(pts);
     setCoveredCount(0);
     setInsideStrokes(0);
@@ -112,7 +115,7 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Reset tracking
-    setTargetPoints((prev) => prev.map((p) => ({ ...p, hit: false })));
+    hitPointsRef.current = new Set();
     setCoveredCount(0);
     setInsideStrokes(0);
     setOutsideStrokes(0);
@@ -123,7 +126,6 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
   const checkPointAccuracy = useCallback((x, y) => {
     if (targetPoints.length === 0) return;
 
-    let hitAny = false;
     let newlyHit = 0;
 
     // Tolerance radius: 36px (comfortably forgiving for 4-year-olds)
@@ -141,12 +143,9 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
         isNearLetter = true;
       }
 
-      if (distSq <= toleranceSq) {
-        hitAny = true;
-        if (!p.hit) {
-          p.hit = true;
-          newlyHit++;
-        }
+      if (distSq <= toleranceSq && !hitPointsRef.current.has(i)) {
+        hitPointsRef.current.add(i);
+        newlyHit++;
       }
     }
 
@@ -162,11 +161,13 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
   }, [targetPoints]);
 
   const startDrawing = (e) => {
+    isDrawingRef.current = true;
     setIsDrawing(true);
-    draw(e);
+    draw(e, true);
   };
 
   const stopDrawing = () => {
+    isDrawingRef.current = false;
     setIsDrawing(false);
     const canvas = canvasRef.current;
     if (canvas) {
@@ -175,15 +176,16 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
     }
   };
 
-  const draw = (e) => {
-    if (!isDrawing) return;
+  const draw = (e, force = false) => {
+    if (!isDrawingRef.current && !force) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+    const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+    if (clientX == null || clientY == null) return;
 
     const x = (clientX - rect.left) * (canvas.width / rect.width);
     const y = (clientY - rect.top) * (canvas.height / rect.height);
@@ -199,7 +201,13 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
       ctx.strokeStyle = brushColor;
     }
 
-    ctx.lineTo(x, y);
+    if (force) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 0.01, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -210,6 +218,7 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
 
   // Check that the child colored within the letter bounds or close to it
   const handleFinish = () => {
+    if (isSuccess) return;
     const totalPoints = targetPoints.length || 1;
     const coverage = (coveredCount / totalPoints) * 100;
     const totalStrokes = insideStrokes + outsideStrokes;
@@ -402,7 +411,7 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
           <h3 className="text-3xl md:text-4xl font-black text-slate-800">
             {mode === 'letters'
               ? currentItem.displayWithNikud
-              : tr(lang, currentItem.nameHe, currentItem.nameHe, NUMBERS_ES[currentItem.number] || currentItem.nameEn)}
+              : tr(lang, currentItem.nameHe, currentItem.nameEn, NUMBERS_ES[currentItem.number] || currentItem.nameEn)}
           </h3>
           <button
             className="p-2 bg-teal-100 hover:bg-teal-200 rounded-full shadow-sm"
@@ -504,7 +513,8 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
 
           <button
             onClick={handleFinish}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-2xl text-base shadow-md btn-press-3d animate-pulse"
+            disabled={isSuccess}
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-2xl text-base shadow-md btn-press-3d animate-pulse disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none"
           >
             <CheckCircle2 className="w-5 h-5" />
             <span>{tr(lang, 'סִיַּמְתִּי! ✨', 'Done! ✨', '¡Listo! ✨')}</span>

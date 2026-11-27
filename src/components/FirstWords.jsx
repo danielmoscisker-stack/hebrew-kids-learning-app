@@ -33,9 +33,11 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
 
   const handleBlendWord = () => {
     playSound('win');
+    if (!blendedWords[currentWord.id]) {
+      onEarnStar();
+    }
     setBlendedWords((prev) => ({ ...prev, [currentWord.id]: true }));
     triggerStarBurst();
-    onEarnStar();
 
     if (soundEnabled) {
       const audioKey = WORD_AUDIO_MAP[currentWord.id];
@@ -48,12 +50,6 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
   const handleNextWord = () => {
     playSound('whoosh');
     setActiveWordIdx((prev) => (prev + 1) % FIRST_WORDS_DATA.length);
-    setActiveSyllable(null);
-  };
-
-  const handlePrevWord = () => {
-    playSound('whoosh');
-    setActiveWordIdx((prev) => (prev - 1 + FIRST_WORDS_DATA.length) % FIRST_WORDS_DATA.length);
     setActiveSyllable(null);
   };
 
@@ -81,8 +77,10 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
           type="button"
           onClick={() => {
             playSound('pop');
-            const instKey = isTouch ? 'inst_first_words_touch' : 'inst_first_words_mouse';
-            playPhraseAudio(instKey, gender);
+            if (soundEnabled) {
+              const instKey = isTouch ? 'inst_first_words_touch' : 'inst_first_words_mouse';
+              playPhraseAudio(instKey, gender);
+            }
           }}
           className="mx-auto mt-3 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-2xl font-black text-xs md:text-sm transition-all btn-press-3d border border-white/40 flex items-center gap-1.5"
         >
@@ -100,10 +98,10 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
               : tr(
                   lang,
                   gender === 'girl'
-                    ? 'הַעֲבִירִי עַכְבָּר עַל הַמִּלִּים (🔊 שִׁמְעִי הוֹרָאוֹת)'
-                    : 'הַעֲבֵר עַכְבָּר עַל הַמִּלִּים (🔊 שְׁמַע הוֹרָאוֹת)',
-                  'Move mouse over words! (🔊 Hear Instructions)',
-                  '¡Pasa el ratón sobre las palabras! (🔊 Escuchar instrucciones)'
+                    ? 'לַחֲצִי עַל כָּל חֵלֶק! (🔊 שִׁמְעִי הוֹרָאוֹת)'
+                    : 'לְחַץ עַל כָּל חֵלֶק! (🔊 שְׁמַע הוֹרָאוֹת)',
+                  'Click each syllable! (🔊 Hear Instructions)',
+                  '¡Haz clic en cada sílaba! (🔊 Escuchar instrucciones)'
                 )}
           </span>
         </button>
@@ -182,18 +180,35 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
         ) : (
           /* Blended Result Card */
           <div className="flex flex-col items-center gap-4 my-4 animate-pop-in">
-            <span className="text-8xl md:text-9xl transform hover:scale-110 transition-transform">
-              {currentWord.emoji}
-            </span>
-            <div className="text-6xl md:text-7xl font-black text-emerald-800 tracking-wide">
-              {currentWord.wordHe}!
-            </div>
-            <div className="text-xl font-bold text-slate-500">
-              {lang === 'es' ? (currentWord.wordEs || currentWord.wordEn) : currentWord.wordEn}
-            </div>
-            <div className="px-5 py-2 bg-emerald-100 border border-emerald-300 text-emerald-900 font-extrabold rounded-full text-base">
-              {tr(lang, currentWord.descriptionHe, currentWord.descriptionEn, currentWord.descriptionEs || currentWord.descriptionEn)}
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                playSound('pop');
+                const audioKey = WORD_AUDIO_MAP[currentWord.id];
+                if (soundEnabled && audioKey) {
+                  playWordAudio(audioKey);
+                }
+              }}
+              className="flex flex-col items-center gap-3 p-5 rounded-3xl bg-emerald-50/70 hover:bg-emerald-100 border-2 border-emerald-200 hover:border-emerald-400 transition-all cursor-pointer btn-press-3d group"
+              title={tr(lang, 'לַחֲצוּ כְּדֵי לִשְׁמוֹעַ שׁוּב', 'Click to hear word again', 'Haz clic para escuchar la palabra de nuevo')}
+            >
+              <span className="text-8xl md:text-9xl transform group-hover:scale-110 transition-transform">
+                {currentWord.emoji}
+              </span>
+              <div className="text-6xl md:text-7xl font-black text-emerald-800 tracking-wide">
+                {currentWord.wordHe}!
+              </div>
+              <div className="text-xl font-bold text-slate-500">
+                {lang === 'es' ? (currentWord.wordEs || currentWord.wordEn) : currentWord.wordEn}
+              </div>
+              <div className="px-5 py-2 bg-emerald-100 border border-emerald-300 text-emerald-900 font-extrabold rounded-full text-base">
+                {tr(lang, currentWord.descriptionHe, currentWord.descriptionEn, currentWord.descriptionEs || currentWord.descriptionEn)}
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-white px-3 py-1 rounded-full border border-emerald-300 shadow-sm">
+                <span>🔊</span>
+                <span>{tr(lang, gender === 'girl' ? 'שִׁמְעִי שׁוּב' : 'שְׁמַע שׁוּב', 'Hear Again', 'Escuchar otra vez')}</span>
+              </span>
+            </button>
 
             <div className="flex gap-3 mt-4">
               <button

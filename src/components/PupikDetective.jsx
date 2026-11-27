@@ -11,6 +11,14 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
   const { isTouch } = useDeviceType();
   const lastWordAudioTime = useRef(0);
   const lastHouseAudioTime = useRef({ pupik: 0, no_pupik: 0 });
+  const justSwitchedToSortingRef = useRef(false);
+  const switchTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+    };
+  }, []);
 
   const explainHouse = (houseType, e = null) => {
     if (e && e.stopPropagation) e.stopPropagation();
@@ -24,9 +32,15 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
 
   const switchToGame = (gameMode) => {
     playSound('pop');
+    if (gameMode === 'sorting') {
+      justSwitchedToSortingRef.current = true;
+    } else {
+      justSwitchedToSortingRef.current = false;
+    }
     setActiveGame(gameMode);
+    if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
     if (soundEnabled) {
-      setTimeout(() => {
+      switchTimerRef.current = setTimeout(() => {
         if (gameMode === 'sorting') {
           const phraseId = isTouch ? 'inst_sorting_touch' : 'inst_sorting_mouse';
           playPhraseAudio(phraseId, gender);
@@ -111,9 +125,11 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
   // Automatically announce the card's word when it appears
   useEffect(() => {
     if (activeGame === 'sorting' && currentItem && !allSorted && soundEnabled) {
+      const delay = justSwitchedToSortingRef.current ? 2200 : 350;
+      justSwitchedToSortingRef.current = false;
       const timer = setTimeout(() => {
         speakCurrentWord(true);
-      }, 350);
+      }, delay);
       return () => clearTimeout(timer);
     }
   }, [activeGame, currentSortingIdx, allSorted, soundEnabled]);
@@ -192,7 +208,12 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
       {activeGame === 'detective' && (
         <div className="bg-white rounded-3xl p-6 border-4 border-red-300 shadow-xl flex flex-col items-center text-center">
           <div 
-            onClick={() => playPhraseAudio('inst_detective', gender)}
+            onClick={() => {
+              playSound('pop');
+              if (soundEnabled) {
+                playPhraseAudio('inst_detective', gender);
+              }
+            }}
             className="inline-flex items-center gap-2 px-4 py-1.5 bg-red-100 hover:bg-red-200 cursor-pointer text-red-800 rounded-full font-extrabold text-sm mb-3 transition shadow-sm"
             title={tr(lang, gender === 'girl' ? 'לַחְצִי לִשְׁמִיעַת הַהוֹרָאוֹת' : 'לְחַץ לִשְׁמִיעַת הַהוֹרָאוֹת', 'Tap to hear instructions', 'Toca para escuchar las instrucciones')}
           >
@@ -244,12 +265,12 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
           {allFoundDetective ? (
             <div className="p-4 bg-emerald-100 border-2 border-emerald-400 rounded-2xl text-emerald-900 font-black text-lg flex items-center gap-2 animate-bounce">
               <Trophy className="w-7 h-7 text-emerald-600" />
-              <span>{tr(lang, 'מְצָאתֶם אֶת כֻּלָּם? כָּל הַכָּבוֹד! 🏆', 'You found all of them! Awesome! 🏆', '¡Los encontraste todos! ¡Genial! 🏆')}</span>
+              <span>{tr(lang, 'מְצָאתֶם אֶת כֻּלָּם! כָּל הַכָּבוֹד! 🏆', 'You found all of them! Awesome! 🏆', '¡Los encontraste todos! ¡Genial! 🏆')}</span>
               <button
                 onClick={resetDetective}
                 className="mr-3 px-3 py-1 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow"
               >
-                {tr(lang, 'שַׂחֵק שׁוּב', 'Play Again', 'Jugar otra vez')}
+                {tr(lang, gender === 'girl' ? 'שַׂחֲקִי שׁוּב' : 'שַׂחֵק שׁוּב', 'Play Again', 'Jugar otra vez')}
               </button>
             </div>
           ) : (
@@ -258,7 +279,7 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
               className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>{tr(lang, 'הַתְחֵל מֵחָדָשׁ', 'Restart', 'Reiniciar')}</span>
+              <span>{tr(lang, gender === 'girl' ? 'הַתְחִילִי מֵחָדָשׁ' : 'הַתְחֵל מֵחָדָשׁ', 'Restart', 'Reiniciar')}</span>
             </button>
           )}
         </div>
@@ -271,8 +292,10 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
             type="button"
             onClick={() => {
               playSound('pop');
-              const phraseId = isTouch ? 'inst_sorting_touch' : 'inst_sorting_mouse';
-              playPhraseAudio(phraseId, gender);
+              if (soundEnabled) {
+                const phraseId = isTouch ? 'inst_sorting_touch' : 'inst_sorting_mouse';
+                playPhraseAudio(phraseId, gender);
+              }
             }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 cursor-pointer text-blue-900 rounded-full font-black text-xs md:text-sm mb-3 transition shadow-sm btn-press-3d border border-blue-200"
             title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
@@ -292,20 +315,18 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
                     lang,
                     gender === 'girl'
                       ? 'לוּחַ מִיּוּן: הַעֲבִירִי עִם הָעַכְבָּר וְהַנִּיחִי כָּל כַּרְטִיס בַּבַּיִת הַמַּתְאִים! (🔊 שִׁמְעִי הוֹרָאוֹת)'
-                      : 'לוּחַ מִיּוּן: הַעֲבֵר עַם הָעַכְבָּר וְהַנַּח כָּל כַּרְטִיס בַּבַּיִת הַמַּתְאִים! (🔊 שְׁמַע הוֹרָאוֹת)',
+                      : 'לוּחַ מִיּוּן: הַעֲבֵר עִם הָעַכְבָּר וְהַנַּח כָּל כַּרְטִיס בַּבַּיִת הַמַּתְאִים! (🔊 שְׁמַע הוֹרָאוֹת)',
                     'Sorting Board: Put each card into the right house with the mouse! (🔊 Hear Instructions)',
                     'Tablero de clasificación: ¡Pon cada tarjeta en la casita correcta con el ratón! (🔊 Escuchar instrucciones)'
                   )}
             </span>
           </button>
 
-          {/* Current Card to Sort: Spoken out loud & re-spoken on mouse hover or finger tap */}
+          {/* Current Card to Sort: Spoken out loud & re-spoken on mouse hover or click */}
           {!allSorted && currentItem && (
-            <div
-              role="button"
-              tabIndex={0}
-              onMouseEnter={() => speakCurrentWord()}
-              onTouchStart={() => speakCurrentWord()}
+            <button
+              type="button"
+              onMouseEnter={!isTouch ? () => speakCurrentWord() : undefined}
               onClick={() => speakCurrentWord()}
               className="my-4 p-5 md:p-6 bg-gradient-to-tr from-amber-100 via-amber-50 to-yellow-100 border-4 border-amber-400 rounded-3xl shadow-xl flex flex-col items-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 hover:border-amber-500 hover:shadow-2xl relative group btn-press-3d select-none w-full max-w-xs"
               title={tr(lang, 'לַחֲצוּ כְּדֵי לִשְׁמוֹעַ שׁוּב', 'Tap to hear word again', 'Toca para escuchar la palabra de nuevo')}
@@ -359,7 +380,7 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
               <span className="mt-2 text-xs md:text-sm font-extrabold text-indigo-700">
                 {tr(lang, 'לְאֵיזֶה בַּיִת זֶה מַתְאִים?', 'Which house does it belong to?', '¿A qué casita pertenece?')}
               </span>
-            </div>
+            </button>
           )}
 
           {allSorted && (
@@ -378,86 +399,90 @@ export default function PupikDetective({ lang, soundEnabled, gender = 'boy', onE
           {/* The Two Houses (Page 11 Layout) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-4">
             {/* House with Pupik (בּ) */}
-            <button
-              onClick={() => handleSortItem('pupik')}
-              onMouseEnter={() => explainHouse('pupik')}
-              disabled={allSorted}
-              className="bg-blue-50 border-4 border-blue-500 hover:bg-blue-100 rounded-3xl p-5 flex flex-col items-center transition-all duration-150 btn-press-3d text-center relative group cursor-pointer shadow-md hover:shadow-xl"
-            >
-              <div
-                onClick={(e) => explainHouse('pupik', e)}
-                className="w-16 h-16 rounded-2xl bg-blue-500 text-white font-black text-4xl flex items-center justify-center shadow mb-2 group-hover:scale-110 transition-transform cursor-pointer"
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => explainHouse('pupik')}
+                className="absolute top-3 left-3 z-10 px-2.5 py-1.5 bg-blue-200 hover:bg-blue-300 text-blue-900 rounded-full font-bold text-xs shadow-sm transition btn-press-3d cursor-pointer flex items-center gap-1"
                 title={tr(lang, 'לַחֲצוּ לִשְׁמוֹעַ: בֵּית בִּתְחִלַּת מִלָּה!', 'Tap to hear: Bet is at the start!', 'Toca para escuchar: ¡Bet va al principio!')}
               >
-                בּ
-              </div>
-              <h4 className="text-xl font-black text-blue-900 flex items-center gap-1.5">
-                <span>{tr(lang, 'בַּיִת עִם פּוּפִּיק! (בּוֹם!)', 'House of Pupik (Boom!)', '¡Casita con Pupik! (¡Bum!)')}</span>
-                <span className="text-xs bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full font-bold">🔊</span>
-              </h4>
-              <p className="text-xs text-blue-700 font-bold mt-1">
-                {tr(lang, 'יֵשׁ נְקֻדָּה בָּאֶמְצַע • קוֹל בּוּם!', 'Dot in the middle • Boom sound!', 'Puntito en el medio • ¡Sonido bum!')}
-              </p>
-
-              {/* Pedagogical stress: Bet is at the start of the word */}
-              <div 
-                onClick={(e) => explainHouse('pupik', e)}
-                className="mt-2.5 px-3 py-1.5 bg-blue-100 border border-blue-300 rounded-xl text-blue-950 font-black text-xs shadow-sm hover:bg-blue-200 transition-all flex items-center gap-1.5"
+                <span>🔊</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortItem('pupik')}
+                disabled={allSorted}
+                className="w-full h-full bg-blue-50 border-4 border-blue-500 hover:bg-blue-100 rounded-3xl p-5 flex flex-col items-center transition-all duration-150 btn-press-3d text-center relative group cursor-pointer shadow-md hover:shadow-xl"
               >
-                <span>⭐</span>
-                <span>{tr(lang, 'בִּתְחִלַּת מִלָּה: בַּלּוֹן, בַּיִת, בַּנָנָה!', 'At word beginning: Balloon, House, Banana!', 'Al principio: ¡Globo, Casa, Plátano!')}</span>
-              </div>
+                <div className="w-16 h-16 rounded-2xl bg-blue-500 text-white font-black text-4xl flex items-center justify-center shadow mb-2 group-hover:scale-110 transition-transform">
+                  בּ
+                </div>
+                <h4 className="text-xl font-black text-blue-900 flex items-center gap-1.5">
+                  <span>{tr(lang, 'בַּיִת עִם פּוּפִּיק! (בּוֹם!)', 'House of Pupik (Boom!)', '¡Casita con Pupik! (¡Bum!)')}</span>
+                </h4>
+                <p className="text-xs text-blue-700 font-bold mt-1">
+                  {tr(lang, 'יֵשׁ נְקֻדָּה בָּאֶמְצַע • קוֹל בּוּם!', 'Dot in the middle • Boom sound!', 'Puntito en el medio • ¡Sonido bum!')}
+                </p>
 
-              {/* Sorted items inside this house */}
-              <div className="flex flex-wrap justify-center gap-2 mt-4 min-h-12 w-full">
-                {sortedItems.pupik.map((it, idx) => (
-                  <span key={idx} className="text-3xl animate-wiggle" title={it.wordHe}>
-                    {it.emoji}
-                  </span>
-                ))}
-              </div>
-            </button>
+                {/* Pedagogical stress: Bet is at the start of the word */}
+                <div className="mt-2.5 px-3 py-1.5 bg-blue-100 border border-blue-300 rounded-xl text-blue-950 font-black text-xs shadow-sm flex items-center gap-1.5">
+                  <span>⭐</span>
+                  <span>{tr(lang, 'בִּתְחִלַּת מִלָּה: בַּלּוֹן, בַּיִת, בַּנָנָה!', 'At word beginning: Balloon, House, Banana!', 'Al principio: ¡Globo, Casa, Plátano!')}</span>
+                </div>
+
+                {/* Sorted items inside this house */}
+                <div className="flex flex-wrap justify-center gap-2 mt-4 min-h-12 w-full">
+                  {sortedItems.pupik.map((it, idx) => (
+                    <span key={idx} className="text-3xl animate-wiggle" title={it.wordHe}>
+                      {it.emoji}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            </div>
 
             {/* House without Pupik (ב) */}
-            <button
-              onClick={() => handleSortItem('no_pupik')}
-              onMouseEnter={() => explainHouse('no_pupik')}
-              disabled={allSorted}
-              className="bg-purple-50 border-4 border-purple-500 hover:bg-purple-100 rounded-3xl p-5 flex flex-col items-center transition-all duration-150 btn-press-3d text-center relative group cursor-pointer shadow-md hover:shadow-xl"
-            >
-              <div
-                onClick={(e) => explainHouse('no_pupik', e)}
-                className="w-16 h-16 rounded-2xl bg-purple-500 text-white font-black text-4xl flex items-center justify-center shadow mb-2 group-hover:scale-110 transition-transform cursor-pointer"
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => explainHouse('no_pupik')}
+                className="absolute top-3 left-3 z-10 px-2.5 py-1.5 bg-purple-200 hover:bg-purple-300 text-purple-900 rounded-full font-bold text-xs shadow-sm transition btn-press-3d cursor-pointer flex items-center gap-1"
                 title={tr(lang, 'לַחֲצוּ לִשְׁמוֹעַ: וֵית בְּאֶמְצַע אוֹ בְּסוֹף מִלָּה!', 'Tap to hear: Vet is in middle or end!', 'Toca para escuchar: ¡Vet va en medio o al final!')}
               >
-                ב
-              </div>
-              <h4 className="text-xl font-black text-purple-900 flex items-center gap-1.5">
-                <span>{tr(lang, 'בַּיִת בְּלִי פּוּפִּיק! (וְוְו...)', 'House without Pupik (Vvv...)', '¡Casita sin Pupik! (Vvv...)')}</span>
-                <span className="text-xs bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full font-bold">🔊</span>
-              </h4>
-              <p className="text-xs text-purple-700 font-bold mt-1">
-                {tr(lang, 'בֶּטֶן רֵיקָה לְגַמְרֵי • רוּחַ נְעִימָה!', 'Empty belly • Gentle wind!', 'Barriguita vacía • ¡Viento suave!')}
-              </p>
-
-              {/* Pedagogical stress: Vet is in the middle or end of the word */}
-              <div 
-                onClick={(e) => explainHouse('no_pupik', e)}
-                className="mt-2.5 px-3 py-1.5 bg-purple-100 border border-purple-300 rounded-xl text-purple-950 font-black text-xs shadow-sm hover:bg-purple-200 transition-all flex items-center gap-1.5"
+                <span>🔊</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortItem('no_pupik')}
+                disabled={allSorted}
+                className="w-full h-full bg-purple-50 border-4 border-purple-500 hover:bg-purple-100 rounded-3xl p-5 flex flex-col items-center transition-all duration-150 btn-press-3d text-center relative group cursor-pointer shadow-md hover:shadow-xl"
               >
-                <span>⭐</span>
-                <span>{tr(lang, 'בְּאֶמְצַע אוֹ בְּסוֹף מִלָּה: כּוֹכָב, לֵב, עֲנָבִים!', 'In middle or at end: Star, Heart, Grapes!', 'En medio o al final: ¡Estrella, Corazón, Uvas!')}</span>
-              </div>
+                <div className="w-16 h-16 rounded-2xl bg-purple-500 text-white font-black text-4xl flex items-center justify-center shadow mb-2 group-hover:scale-110 transition-transform">
+                  ב
+                </div>
+                <h4 className="text-xl font-black text-purple-900 flex items-center gap-1.5">
+                  <span>{tr(lang, 'בַּיִת בְּלִי פּוּפִּיק! (וְוְו...)', 'House without Pupik (Vvv...)', '¡Casita sin Pupik! (Vvv...)')}</span>
+                </h4>
+                <p className="text-xs text-purple-700 font-bold mt-1">
+                  {tr(lang, 'בֶּטֶן רֵיקָה לְגַמְרֵי • רוּחַ נְעִימָה!', 'Empty belly • Gentle wind!', 'Barriguita vacía • ¡Viento suave!')}
+                </p>
 
-              {/* Sorted items inside this house */}
-              <div className="flex flex-wrap justify-center gap-2 mt-4 min-h-12 w-full">
-                {sortedItems.no_pupik.map((it, idx) => (
-                  <span key={idx} className="text-3xl animate-wiggle" title={it.wordHe}>
-                    {it.emoji}
-                  </span>
-                ))}
-              </div>
-            </button>
+                {/* Pedagogical stress: Vet is in the middle or end of the word */}
+                <div className="mt-2.5 px-3 py-1.5 bg-purple-100 border border-purple-300 rounded-xl text-purple-950 font-black text-xs shadow-sm flex items-center gap-1.5">
+                  <span>⭐</span>
+                  <span>{tr(lang, 'בְּאֶמְצַע אוֹ בְּסוֹף מִלָּה: כּוֹכָב, לֵב, עֲנָבִים!', 'In middle or at end: Star, Heart, Grapes!', 'En medio o al final: ¡Estrella, Corazón, Uvas!')}</span>
+                </div>
+
+                {/* Sorted items inside this house */}
+                <div className="flex flex-wrap justify-center gap-2 mt-4 min-h-12 w-full">
+                  {sortedItems.no_pupik.map((it, idx) => (
+                    <span key={idx} className="text-3xl animate-wiggle" title={it.wordHe}>
+                      {it.emoji}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       )}

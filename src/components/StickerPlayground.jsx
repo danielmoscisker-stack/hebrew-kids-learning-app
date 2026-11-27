@@ -5,15 +5,15 @@ import { triggerConfetti } from '../utils/confetti';
 import { tr } from '../utils/i18n';
 
 const ALL_STICKERS = [
-  { id: 'st_balloon', emoji: '🎈', nameHe: 'בַּלּוֹן', nameEs: 'Globo', starsNeeded: 0 },
-  { id: 'st_teddy', emoji: '🧸', nameHe: 'בֻּבָּה / דֹּב', nameEs: 'Osito', starsNeeded: 2 },
-  { id: 'st_watermelon', emoji: '🍉', nameHe: 'אַבַטִּיחַ', nameEs: 'Sandía', starsNeeded: 5 },
-  { id: 'st_lion', emoji: '🦁', nameHe: 'אַרְיֵה', nameEs: 'León', starsNeeded: 8 },
-  { id: 'st_plane', emoji: '✈️', nameHe: 'אֲוִירוֹן', nameEs: 'Avión', starsNeeded: 12 },
-  { id: 'st_icecream', emoji: '🍦', nameHe: 'גְּלִידָה', nameEs: 'Helado', starsNeeded: 15 },
-  { id: 'st_tractor', emoji: '🚜', nameHe: 'טְרַקְטוֹר', nameEs: 'Tractor', starsNeeded: 20 },
-  { id: 'st_rainbow', emoji: '🌈', nameHe: 'קֶשֶׁת', nameEs: 'Arcoíris', starsNeeded: 25 },
-  { id: 'st_crown', emoji: '👑', nameHe: 'כֶּתֶר מְלָכִים', nameEs: 'Corona', starsNeeded: 30 },
+  { id: 'st_balloon', emoji: '🎈', nameHe: 'בַּלּוֹן', nameEn: 'Balloon', nameEs: 'Globo', starsNeeded: 0 },
+  { id: 'st_teddy', emoji: '🧸', nameHe: 'בֻּבָּה / דֹּב', nameEn: 'Teddy Bear', nameEs: 'Osito', starsNeeded: 2 },
+  { id: 'st_watermelon', emoji: '🍉', nameHe: 'אַבַטִּיחַ', nameEn: 'Watermelon', nameEs: 'Sandía', starsNeeded: 5 },
+  { id: 'st_lion', emoji: '🦁', nameHe: 'אַרְיֵה', nameEn: 'Lion', nameEs: 'León', starsNeeded: 8 },
+  { id: 'st_plane', emoji: '✈️', nameHe: 'אֲוִירוֹן', nameEn: 'Airplane', nameEs: 'Avión', starsNeeded: 12 },
+  { id: 'st_icecream', emoji: '🍦', nameHe: 'גְּלִידָה', nameEn: 'Ice Cream', nameEs: 'Helado', starsNeeded: 15 },
+  { id: 'st_tractor', emoji: '🚜', nameHe: 'טְרַקְטוֹר', nameEn: 'Tractor', nameEs: 'Tractor', starsNeeded: 20 },
+  { id: 'st_rainbow', emoji: '🌈', nameHe: 'קֶשֶׁת', nameEn: 'Rainbow', nameEs: 'Arcoíris', starsNeeded: 25 },
+  { id: 'st_crown', emoji: '👑', nameHe: 'כֶּתֶר מְלָכִים', nameEn: 'Crown', nameEs: 'Corona', starsNeeded: 30 },
 ];
 
 export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', stars }) {
@@ -126,7 +126,7 @@ export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', 
               >
                 <span className="text-4xl">{st.emoji}</span>
                 <span className="text-xs font-bold text-slate-700 mt-1">
-                  {tr(lang, st.nameHe, st.nameHe, st.nameEs)}
+                  {tr(lang, st.nameHe, st.nameEn, st.nameEs)}
                 </span>
                 {!isUnlocked && (
                   <span className="text-[10px] text-amber-700 font-extrabold flex items-center gap-0.5 mt-0.5">
@@ -148,7 +148,7 @@ export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', 
         <div className="absolute bottom-2 right-4 text-3xl pointer-events-none">🌳 🌾 🍄</div>
 
         {/* Clear Playground button */}
-        <div className="absolute top-4 left-4 z-20">
+        <div className="absolute top-3 right-3 z-20">
           <button
             onClick={clearStickers}
             className="p-2 bg-white/80 hover:bg-white text-slate-600 rounded-full shadow border border-slate-200"

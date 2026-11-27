@@ -37,6 +37,7 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showParentModal, setShowParentModal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
+  const [proSkipGate, setProSkipGate] = useState(false);
   const [serverConfig, setServerConfig] = useState(null);
   const [user, setUser] = useState(null);
 
@@ -280,7 +281,7 @@ export default function App() {
 
   // Automatically read out instructions for a 4-year-old child whenever they enter any activity
   useEffect(() => {
-    if (!soundEnabled || currentTab === 'home') return;
+    if (!soundEnabled || currentTab === 'home' || lang !== 'he') return;
     const tabInstructions = {
       letters: isTouch ? 'inst_letters_touch' : 'inst_letters_mouse',
       quiz: isTouch ? 'inst_quiz_cards_touch' : 'inst_quiz_cards_mouse',
@@ -303,7 +304,7 @@ export default function App() {
       }, 400);
       return () => clearTimeout(timer);
     }
-  }, [currentTab, soundEnabled, gender, isTouch]);
+  }, [currentTab, soundEnabled, gender, isTouch, lang]);
 
   const handleEarnStar = (amount = 1) => {
     setStars((prev) => prev + amount);
@@ -353,7 +354,7 @@ export default function App() {
       {/* Skip to Main Content link (IS 5568 / WCAG 2.1 AA) */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-indigo-700 focus:text-white focus:font-black focus:rounded-xl focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-indigo-700 focus:text-white focus:font-black focus:rounded-xl focus:shadow-lg"
       >
         {lang === 'he' ? 'דַּלֵּג לַתֹּכֶן הָרָאשִׁי' : lang === 'es' ? 'Saltar al contenido principal' : 'Skip to main content'}
       </a>
@@ -384,6 +385,7 @@ export default function App() {
             onSelectActivity={(id) => setCurrentTab(id)}
             onOpenPro={() => {
               trackEvent('pro_modal', { isTouch, lang });
+              setProSkipGate(false);
               setShowProModal(true);
             }}
             onOpenParentGate={() => setShowParentModal(true)}
@@ -447,8 +449,9 @@ export default function App() {
         onAuthSuccess={handleAuthSuccess}
         onSignOut={() => setUser(null)}
         isPro={isPro}
-        onOpenPro={() => {
+        onOpenPro={(skipGate = false) => {
           trackEvent('pro_modal', { isTouch, lang });
+          setProSkipGate(Boolean(skipGate));
           setShowProModal(true);
         }}
         serverConfig={serverConfig}
@@ -459,6 +462,11 @@ export default function App() {
         onClose={() => setShowProModal(false)}
         lang={lang}
         isPro={isPro}
+        skipGate={proSkipGate}
+        onOpenParentZone={() => {
+          setShowProModal(false);
+          setShowParentModal(true);
+        }}
         onUnlockPro={() => {
           trackEvent('pro_unlock', { isTouch, lang });
           setIsPro(true);
@@ -471,8 +479,6 @@ export default function App() {
         lang={lang}
         kidCursorEnabled={kidCursorEnabled}
         setKidCursorEnabled={setKidCursorEnabled}
-        kidCursorSize={kidCursorSize}
-        setKidCursorSize={setKidCursorSize}
       />
     </div>
   );

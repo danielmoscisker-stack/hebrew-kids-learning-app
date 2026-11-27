@@ -78,7 +78,11 @@ export default function Navbar({
               setGender(nextGender);
               playSound('pop');
               if (soundEnabled) {
-                setTimeout(() => playPhraseAudio('great_job', nextGender), 150);
+                if (isHe) {
+                  setTimeout(() => playPhraseAudio('great_job', nextGender), 150);
+                } else {
+                  playSound('star');
+                }
               }
             }}
             className={`flex items-center gap-1.5 px-3 min-h-[48px] rounded-2xl font-black text-xs md:text-sm border-2 btn-press-3d cursor-pointer ${
@@ -89,7 +93,7 @@ export default function Navbar({
             title={tr(lang, 'הַחֲלֵף יֶלֶד / יַלְדָּה', 'Switch Boy / Girl', 'Cambiar Niño / Niña')}
           >
             <span className="text-xl">{gender === 'boy' ? '👦' : '👧'}</span>
-            <span className="hidden xs:inline font-black">
+            <span className="hidden sm:inline font-black">
               {gender === 'boy' ? tr(lang, 'יֶלֶד', 'Boy', 'Niño') : tr(lang, 'יַלְדָּה', 'Girl', 'Niña')}
             </span>
           </button>

@@ -821,9 +821,9 @@ export const VOWELS_DATA = [
 
 // Page 14 contrast practice (בּוּם מול רוּחַ עם נקודות)
 export const VOWEL_CONTRASTS = [
-  { left: 'בַּ', leftSound: 'בָּה!', right: 'בַ', rightSound: 'וָה!', desc: 'פתח/קמץ: בּוּם מול רוח' },
-  { left: 'בִּ', leftSound: 'בִּי!', right: 'בִ', rightSound: 'וִי!', desc: 'חיריק: בּוּם מול רוח' },
-  { left: 'בּוּ', leftSound: 'בּוּ!', right: 'בוּ', rightSound: 'ווּ!', desc: 'שורוק: בּוּם מול רוח' }
+  { left: 'בַּ', leftSound: 'בָּה!', right: 'בַ', rightSound: 'וָה!', desc: 'פתח/קמץ: בּוּם מול רוח', descEn: 'Patach/Kamatz: Boom vs Wind', descEs: 'Patach/Kamatz: Bum vs Viento' },
+  { left: 'בִּ', leftSound: 'בִּי!', right: 'בִ', rightSound: 'וִי!', desc: 'חיריק: בּוּם מול רוח', descEn: 'Chirik: Boom vs Wind', descEs: 'Chirik: Bum vs Viento' },
+  { left: 'בּוּ', leftSound: 'בּוּ!', right: 'בוּ', rightSound: 'ווּ!', desc: 'שורוק: בּוּם מול רוח', descEn: 'Shuruk: Boom vs Wind', descEs: 'Shuruk: Bum vs Viento' }
 ];
 
 // Page 14: Vowel reading train rows (read right-to-left)

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { Volume2, Sparkles, Star, Crown, Flame, Cloud } from 'lucide-react';
-import { playSound, playAudioFile, playPhraseAudio } from '../utils/audio';
+import { Volume2, Sparkles, Star, Crown, Flame, Cloud, Lock } from 'lucide-react';
+import { playSound, playAudioFile, playPhraseAudio, speakText } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
 
@@ -207,6 +207,11 @@ export default function HomeHub({
       return;
     }
     lastSpokenTileRef.current = { id: tileId, time: now };
+    if (lang === 'es') {
+      const tile = ACTIVITY_TILES.find((t) => t.id === tileId);
+      if (tile) speakText(tile.titleEs, 'es');
+      return;
+    }
     const prefix = isHe ? '' : 'en_';
     playAudioFile(`/audio/tiles/${prefix}${tileId}.mp3`);
   };
@@ -222,7 +227,7 @@ export default function HomeHub({
           <div className="flex items-center justify-center gap-2 mb-3">
             <button
               type="button"
-              onClick={() => soundEnabled && playAudioFile('/audio/phrases/who_plays.mp3')}
+              onClick={() => soundEnabled && isHe && playAudioFile('/audio/phrases/who_plays.mp3')}
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-full font-black text-sm btn-press-3d"
             >
               <Volume2 className="w-4 h-4 text-amber-700 animate-pulse" />
@@ -300,7 +305,7 @@ export default function HomeHub({
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
-              onClick={() => soundEnabled && playPhraseAudio('welcome_home', gender)}
+              onClick={() => soundEnabled && isHe && playPhraseAudio('welcome_home', gender)}
               className="flex items-center gap-2 px-4 py-2.5 bg-white/25 hover:bg-white/35 rounded-2xl font-black text-sm border-2 border-white/50 btn-press-3d cursor-pointer"
             >
               <Volume2 className="w-5 h-5 text-amber-200 animate-pulse" />
@@ -341,67 +346,76 @@ export default function HomeHub({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {ACTIVITY_TILES.map((tile) => {
           const locked = Boolean(tile.isProFeature && !isPro);
+          const titleText = tr(lang, tile.titleHe, tile.titleEn, tile.titleEs);
+          const descText = tr(lang, tile.descHe, tile.descEn, tile.descEs);
+          const lockedStatus = locked
+            ? tr(lang, 'נָעוּל — דּוֹרֵשׁ מַנּוּי PRO', 'Locked — Pro subscription required', 'Bloqueado — requiere suscripción Pro')
+            : '';
+          const primaryAriaLabel = locked
+            ? `${titleText} — ${descText} (${lockedStatus})`
+            : `${titleText} — ${descText}`;
+
           return (
             <div
               key={tile.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => {
-                playSound('pop');
-                if (locked) {
-                  onOpenPro();
-                } else {
-                  onSelectActivity(tile.id);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  playSound('pop');
-                  if (locked) onOpenPro();
-                  else onSelectActivity(tile.id);
-                }
-              }}
               onMouseEnter={() => {
                 if (!isTouch) speakTile(tile.id);
               }}
-              className={`relative rounded-3xl bg-gradient-to-b ${tile.gradient} border-4 ${tile.border} p-4 md:p-5 flex flex-col items-center justify-between text-center min-h-[168px] cursor-pointer btn-press-3d group select-none shadow-md hover:shadow-xl`}
+              className={`relative rounded-3xl bg-gradient-to-b ${tile.gradient} border-4 ${tile.border} min-h-[168px] btn-press-3d group select-none shadow-md hover:shadow-xl flex flex-col`}
             >
-              {/* Top row: badge / PRO crown + speaker button */}
-              <div className="w-full flex items-center justify-between">
-                {locked ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-black bg-amber-400 text-amber-950 px-2.5 py-0.5 rounded-full shadow-sm border border-white">
-                    <Crown className="w-3 h-3" /> PRO
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-black bg-white/85 text-slate-800 px-2.5 py-0.5 rounded-full shadow-sm">
-                    {tile.badge}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => speakTile(tile.id, e)}
-                  aria-label={tr(lang, tile.titleHe, tile.titleEn, tile.titleEs)}
-                  className="w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm border border-white transition-transform group-hover:scale-110 cursor-pointer"
-                >
-                  <Volume2 className="w-4 h-4 text-indigo-600" />
-                </button>
-              </div>
-
-              {/* Big joyful icon */}
-              <div className="text-5xl md:text-6xl my-2 transition-transform duration-200 group-hover:scale-115 group-hover:animate-wiggle drop-shadow-sm">
-                {tile.icon}
-              </div>
-
-              {/* Title & short subtitle */}
-              <div>
-                <div className={`text-lg md:text-xl font-black leading-tight ${tile.text}`}>
-                  {tr(lang, tile.titleHe, tile.titleEn, tile.titleEs)}
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('pop');
+                  if (locked) {
+                    onOpenPro();
+                  } else {
+                    onSelectActivity(tile.id);
+                  }
+                }}
+                aria-label={primaryAriaLabel}
+                className="w-full flex-1 p-4 md:p-5 flex flex-col items-center justify-between text-center cursor-pointer rounded-3xl"
+              >
+                {/* Top row: badge / PRO crown (leaves space for sibling speaker button) */}
+                <div className="w-full flex items-center justify-start min-h-[44px] pe-12">
+                  {locked ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-black bg-amber-400 text-amber-950 px-2.5 py-0.5 rounded-full shadow-sm border border-white">
+                      <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                      <Crown className="w-3 h-3" aria-hidden="true" />
+                      <span>PRO</span>
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-black bg-white/85 text-slate-800 px-2.5 py-0.5 rounded-full shadow-sm">
+                      {tile.badge}
+                    </span>
+                  )}
                 </div>
-                <div className={`text-xs font-bold opacity-85 mt-0.5 ${tile.text}`}>
-                  {tr(lang, tile.descHe, tile.descEn, tile.descEs)}
+
+                {/* Big joyful icon */}
+                <div className="text-5xl md:text-6xl my-2 transition-transform duration-200 group-hover:scale-115 group-hover:animate-wiggle drop-shadow-sm">
+                  {tile.icon}
                 </div>
-              </div>
+
+                {/* Title & short subtitle */}
+                <div>
+                  <div className={`text-lg md:text-xl font-black leading-tight ${tile.text}`}>
+                    {titleText}
+                  </div>
+                  <div className={`text-xs font-bold opacity-85 mt-0.5 ${tile.text}`}>
+                    {descText}
+                  </div>
+                </div>
+              </button>
+
+              {/* Sibling speaker button (44x44px touch target) */}
+              <button
+                type="button"
+                onClick={(e) => speakTile(tile.id, e)}
+                aria-label={tr(lang, `הַשְׁמַע: ${tile.titleHe}`, `Listen: ${tile.titleEn}`, `Escuchar: ${tile.titleEs}`)}
+                className="absolute top-3.5 end-3.5 z-10 w-11 h-11 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm border border-white transition-transform group-hover:scale-110 cursor-pointer"
+              >
+                <Volume2 className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+              </button>
             </div>
           );
         })}

@@ -1,7 +1,7 @@
 // High-Quality Studio Audio Engine for Hebrew Learning App
 // Uses real Israeli female voice recordings with instant audio playback
 
-import { ttsFileName, normalizeTtsText } from './ttsKey';
+import { ttsFileName, normalizeTtsText, ttsLang } from './ttsKey';
 
 let currentAudio = null;
 let muted = false;

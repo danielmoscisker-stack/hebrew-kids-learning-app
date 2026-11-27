@@ -129,7 +129,7 @@ export default function ParentModal({
             type="button"
             onClick={onClose}
             aria-label={tr(lang, 'סְגוֹר', 'Close', 'Cerrar')}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
+            className="p-2.5 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
           >
             <X className="w-6 h-6" />
           </button>
@@ -221,9 +221,9 @@ export default function ParentModal({
                 <p className="text-xs text-sky-900">
                   {tr(
                     lang,
-                    'הִתְחַבְּרוּת Google מוּכָנָה בַּשָּׁרָת — הוֹסִיפוּ GOOGLE_CLIENT_ID בְּהַגְדָּרוֹת Cloudflare Pages כְּדֵי לְהַפְעִיל אֶת הַכַּפְתּוֹר.',
-                    'Google Sign-In backend is ready — set GOOGLE_CLIENT_ID in Cloudflare Pages environment variables to enable the button.',
-                    'El inicio de sesión con Google está listo en el servidor — configura GOOGLE_CLIENT_ID en las variables de entorno de Cloudflare Pages para activar el botón.'
+                    'סִנְכְּרוּן הֶעָנָן אֵינוֹ זָמִין כָּרֶגַע — הַהִתְקַדְּמוּת שֶׁלָּכֶם שְׁמוּרָה בַּמַּכְשִׁיר הַזֶּה.',
+                    'Cloud sync is currently offline — your progress is saved on this device.',
+                    'La sincronización en la nube no está disponible en este momento — tu progreso está guardado en este dispositivo.'
                   )}
                 </p>
               )}
@@ -267,7 +267,7 @@ export default function ParentModal({
                 type="button"
                 onClick={() => {
                   onClose();
-                  onOpenPro();
+                  onOpenPro(true);
                 }}
                 className={`sm:col-span-2 flex items-center justify-center gap-2 px-4 py-3 font-black rounded-2xl border-2 btn-press-3d cursor-pointer ${
                   isPro

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Volume2, Trophy, Sparkles, RefreshCw } from 'lucide-react';
 import { LETTERS_DATA } from '../data/curriculumData';
 import { playSound, playWordAudio, speakLetterName, playPhraseAudio } from '../utils/audio';
@@ -30,8 +30,15 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
   const [wrongIds, setWrongIds] = useState([]);
   const [solved, setSolved] = useState(false);
   const [score, setScore] = useState(0);
+  const timeoutsRef = useRef([]);
+
+  const clearTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach((id) => clearTimeout(id));
+    timeoutsRef.current = [];
+  }, []);
 
   const nextRound = useCallback(() => {
+    clearTimeouts();
     const q = SOUND_QUESTIONS[Math.floor(Math.random() * SOUND_QUESTIONS.length)];
     const targetLetter = LETTERS_DATA.find((l) => l.id === q.letterId) || LETTERS_DATA[0];
     const distractors = LETTERS_DATA.filter((l) => l.id !== targetLetter.id)
@@ -43,13 +50,14 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
     setSolved(false);
 
     if (soundEnabled) {
-      setTimeout(() => playWordAudio(q.wordEn), 300);
+      timeoutsRef.current.push(setTimeout(() => playWordAudio(q.wordEn), 300));
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, clearTimeouts]);
 
   useEffect(() => {
     nextRound();
-  }, [nextRound]);
+    return () => clearTimeouts();
+  }, [nextRound, clearTimeouts]);
 
   const handlePick = (opt) => {
     if (!question || solved) return;
@@ -62,9 +70,9 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
       onEarnStar(2);
       if (soundEnabled) {
         speakLetterName(opt.id);
-        setTimeout(() => playPhraseAudio('great_job', gender), 650);
+        timeoutsRef.current.push(setTimeout(() => playPhraseAudio('great_job', gender), 650));
       }
-      setTimeout(() => nextRound(), 2100);
+      timeoutsRef.current.push(setTimeout(() => nextRound(), 2100));
     } else {
       playSound('whoosh');
       if (!wrongIds.includes(opt.id)) setWrongIds((p) => [...p, opt.id]);
@@ -91,9 +99,23 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
             '¡Escucha la palabra y elige la letra con la que empieza!'
           )}
         </p>
-        <div className="mt-3 inline-flex items-center gap-2 bg-white/20 px-4 py-1 rounded-full font-black text-sm">
-          <Trophy className="w-4 h-4 text-amber-300" />
-          <bdi>{score}</bdi>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              playSound('pop');
+              if (soundEnabled) playPhraseAudio('inst_opening_sound', gender);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full font-bold text-xs text-white shadow-sm cursor-pointer"
+            title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
+          >
+            <Volume2 className="w-4 h-4 text-purple-200" />
+            <span>{tr(lang, gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת', '🔊 Hear Instructions', '🔊 Escuchar instrucciones')}</span>
+          </button>
+          <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-1 rounded-full font-black text-sm">
+            <Trophy className="w-4 h-4 text-amber-300" />
+            <bdi>{score}</bdi>
+          </div>
         </div>
       </div>
 
@@ -121,8 +143,8 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
             {tr(
               lang,
               `בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה "${question.wordHe}"?`,
-              `Which letter starts "${question.wordEn}"?`,
-              `¿Con qué letra empieza "${question.wordEs}"?`
+              `Which Hebrew letter starts "${question.wordHe}" (${question.wordEn})?`,
+              `¿Con qué letra hebrea empieza "${question.wordHe}" (${question.wordEs})?`
             )}
           </span>
         </div>
@@ -137,9 +159,6 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
                 key={opt.id}
                 type="button"
                 onClick={() => handlePick(opt)}
-                onMouseEnter={() => {
-                  if (!isTouch && soundEnabled && !solved) speakLetterName(opt.id);
-                }}
                 disabled={isWrong || solved}
                 className={`h-28 md:h-36 rounded-3xl border-4 font-black text-6xl md:text-7xl flex items-center justify-center btn-press-3d cursor-pointer transition-all ${
                   isTarget
