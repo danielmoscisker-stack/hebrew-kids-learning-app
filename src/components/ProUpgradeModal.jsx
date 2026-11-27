@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, Crown, CheckCircle2, Sparkles, KeyRound, ExternalLink } from 'lucide-react';
+import { X, Lock, Crown, CheckCircle2, Sparkles, ExternalLink, RefreshCw, Smartphone } from 'lucide-react';
 import { playSound, playAudioFile } from '../utils/audio';
 import { tr } from '../utils/i18n';
-import { redeemActivationCode } from '../utils/cloudSync';
+import { fetchCurrentSession } from '../utils/cloudSync';
+import { purchasePlaySubscription, restorePlaySubscription } from '../utils/playBilling';
 
 /**
  * Parental-Gated Pro Upgrade Modal (Designed for Families compliant).
- * Keeps 4-year-olds safely away from purchase/checkout controls until a parent solves the gate.
+ * Google Play Store monthly subscription (₪20/month) is the sole payment method;
+ * subscribers sign in with Google to sync Pro access to Desktop/Web as well.
  */
 export default function ProUpgradeModal({
   open,
@@ -21,18 +23,21 @@ export default function ProUpgradeModal({
   const [unlockedGate, setUnlockedGate] = useState(false);
   const [challenge, setChallenge] = useState({ a: 4, b: 3, ans: 7, options: [5, 6, 7, 8] });
   const [wrong, setWrong] = useState(false);
-  const [code, setCode] = useState('');
-  const [codeMsg, setCodeMsg] = useState(null);
+  const [statusMsg, setStatusMsg] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const isNativeAndroid = Boolean(window.Capacitor?.isNativePlatform?.());
+  const priceLabel = serverConfig?.proPriceLabel || '₪20';
+  const productId = serverConfig?.playProductId || 'pro_monthly_20ils';
+  const playStoreUrl =
+    serverConfig?.playStoreUrl ||
+    'https://play.google.com/store/apps/details?id=com.learningapp.hebrewkids';
 
   useEffect(() => {
     if (open) {
       setUnlockedGate(false);
       setWrong(false);
-      setCode('');
-      setCodeMsg(null);
+      setStatusMsg(null);
       const a = 3 + Math.floor(Math.random() * 5);
       const b = 2 + Math.floor(Math.random() * 4);
       const ans = a + b;
@@ -56,22 +61,76 @@ export default function ProUpgradeModal({
 
   if (!open) return null;
 
-  const handleRedeem = async (e) => {
-    e.preventDefault();
-    if (!code.trim() || busy) return;
+  const handleSubscribeAndroid = async () => {
+    if (busy) return;
     setBusy(true);
-    setCodeMsg(null);
+    setStatusMsg(null);
     try {
-      await redeemActivationCode(code.trim());
+      await purchasePlaySubscription(productId);
       playSound('win');
       onUnlockPro();
-      setCodeMsg({
+      setStatusMsg({
         ok: true,
-        text: tr(lang, '🎉 גִּישַׁת PRO נִפְתְּחָה בְּהַצְלָחָה!', '🎉 Pro Access Unlocked!', '🎉 ¡Acceso Pro Desbloqueado!')
+        text: tr(
+          lang,
+          '🎉 המנוי הופעל! התחברו עם Google כדי לפתוח גם במחשב.',
+          '🎉 Subscription active! Sign in with Google to unlock on desktop too.',
+          '🎉 ¡Suscripción activa! Inicia sesión con Google para desbloquear también en PC.'
+        )
       });
     } catch (err) {
       playSound('whoosh');
-      setCodeMsg({ ok: false, text: err.message || tr(lang, 'קוֹד לֹא תָּקֵף', 'Invalid code', 'Código inválido') });
+      setStatusMsg({ ok: false, text: err.message || 'Purchase failed' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRestoreAndroid = async () => {
+    if (busy) return;
+    setBusy(true);
+    setStatusMsg(null);
+    try {
+      await restorePlaySubscription(productId);
+      playSound('win');
+      onUnlockPro();
+      setStatusMsg({
+        ok: true,
+        text: tr(lang, '✅ המנוי שוחזר בהצלחה!', '✅ Subscription restored!', '✅ ¡Suscripción restaurada!')
+      });
+    } catch (err) {
+      playSound('whoosh');
+      setStatusMsg({ ok: false, text: err.message || 'No active subscription found' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRefreshWebSync = async () => {
+    if (busy) return;
+    setBusy(true);
+    setStatusMsg(null);
+    try {
+      const sess = await fetchCurrentSession();
+      if (sess?.isPro) {
+        playSound('win');
+        onUnlockPro();
+        setStatusMsg({
+          ok: true,
+          text: tr(lang, '✅ המנוי סונכרן בהצלחה!', '✅ Subscription synced!', '✅ ¡Suscripción sincronizada!')
+        });
+      } else {
+        playSound('whoosh');
+        setStatusMsg({
+          ok: false,
+          text: tr(
+            lang,
+            'לא נמצא מנוי פעיל בחשבון זה. הירשמו דרך אפליקציית Google Play והתחברו כאן עם אותו חשבון Google.',
+            'No active subscription found on this account. Subscribe via the Google Play app and sign in here with the same Google account.',
+            'No se encontró ninguna suscripción activa en esta cuenta. Suscríbete desde la app de Google Play e inicia sesión aquí con la misma cuenta de Google.'
+          )
+        });
+      }
     } finally {
       setBusy(false);
     }
@@ -88,7 +147,7 @@ export default function ProUpgradeModal({
             {unlockedGate ? <Crown className="w-6 h-6 text-amber-500" /> : <Lock className="w-6 h-6 text-indigo-600" />}
             <h3 className="text-xl font-black text-slate-800">
               {unlockedGate
-                ? tr(lang, 'מַסְלוּל מִשְׁפָּחָה PRO', 'Family Pro Pass', 'Pase Familiar Pro')
+                ? tr(lang, 'מַנּוּי מִשְׁפָּחָה PRO', 'Family Pro Subscription', 'Suscripción Familiar Pro')
                 : tr(lang, 'אֵזוֹר הוֹרִים בִּלְבַד', 'Parents Only', 'Solo para Padres')}
             </h3>
           </div>
@@ -107,9 +166,9 @@ export default function ProUpgradeModal({
             <p className="text-slate-600 font-bold text-base">
               {tr(
                 lang,
-                'מִשְׂחָק זֶה שַׁיָּךְ לְמַסְלוּל הַמָּלֵא. הוֹרִים — פִּתְרוּ כְּדֵי לְהַמְשִׁיךְ:',
-                'This learning world is part of the full Family Pass. Parents — solve to continue:',
-                'Este mundo de aprendizaje forma parte del Pase Familiar completo. Padres — resolved para continuar:'
+                'מִשְׂחָק זֶה שַׁיָּךְ לְמַנּוּי הַמָּלֵא. הוֹרִים — פִּתְרוּ כְּדֵי לְהַמְשִׁיךְ:',
+                'This learning world is part of the Family Pro subscription. Parents — solve to continue:',
+                'Este mundo forma parte de la suscripción Familiar Pro. Padres — resolved para continuar:'
               )}
             </p>
             <div className="text-4xl font-black text-indigo-700 bg-indigo-50 border-2 border-indigo-200 px-8 py-4 rounded-2xl" dir="ltr">
@@ -140,9 +199,14 @@ export default function ProUpgradeModal({
         ) : (
           <div className="space-y-4 text-sm text-slate-700">
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2">
-              <div className="font-black text-amber-950 text-base flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
-                <span>{tr(lang, 'מָה כָּלוּל בְּגִרְסַת הַ-PRO הַמְּלֵאָה?', 'What’s unlocked in Family Pro:', '¿Qué incluye el Pase Familiar Pro?')}</span>
+              <div className="font-black text-amber-950 text-base flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  {tr(lang, 'מָה כָּלוּל בְּמַנּוּי PRO?', 'What’s included in Pro:', '¿Qué incluye Pro?')}
+                </span>
+                <span className="px-2.5 py-0.5 bg-amber-400 text-slate-950 rounded-full text-xs font-black">
+                  {tr(lang, `${priceLabel} / חוֹדֶשׁ`, `${priceLabel} / month`, `${priceLabel} / mes`)}
+                </span>
               </div>
               <ul className="space-y-1.5 text-xs md:text-sm font-bold text-slate-700">
                 <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {tr(lang, 'עוֹלַם הַנִּקּוּד (פַּתַח, חִירִיק, חוֹלָם, שׁוּרוּק, סֶגוֹל)', 'World of Vowels (Nikud & Mouth Cues)', 'Mundo de Vocales (Nikud y gestos)')}</li>
@@ -154,86 +218,108 @@ export default function ProUpgradeModal({
                 {user
                   ? tr(
                       lang,
-                      `מְחֻבָּר כְּ-${user.email} — הַפְּתִיחָה תִּשָּׁמֵר בֶּעָנָן.`,
-                      `Signed in as ${user.email} — Pro syncs to your account.`,
-                      `Conectado como ${user.email} — Pro se sincroniza con tu cuenta.`
+                      `מְחֻבָּר כְּ-${user.email} — הַמָּנוּי מְסֻנְכְּרָן לְמַחְשֵׁב וּלְנַיָּד.`,
+                      `Signed in as ${user.email} — subscription syncs across Android & Desktop.`,
+                      `Conectado como ${user.email} — la suscripción se sincroniza entre Android y PC.`
                     )
                   : tr(
                       lang,
-                      'מוּמְלָץ לְהִתְחַבֵּר עִם Google בְּאֵזוֹר הַהוֹרִים כְּדֵי לִשְׁמֹר גִּישָׁה בְּכָל הַמַּכְשִׁירִים.',
-                      'Sign in with Google in Parent Zone to keep Pro synced across devices.',
-                      'Inicia sesión con Google en la Zona de Padres para sincronizar Pro entre dispositivos.'
+                      'הִתְחַבְּרוּ עִם Google בְּאֵזוֹר הַהוֹרִים כְּדֵי לְסַנְכְּרֵן אֶת הַמָּנוּי מֵהַנַּיָּד לַמַּחְשֵׁב.',
+                      'Sign in with Google in Parent Zone to sync your Play Store subscription to Desktop.',
+                      'Inicia sesión con Google en la Zona de Padres para sincronizar tu suscripción con PC.'
                     )}
               </p>
             </div>
 
             {isPro ? (
               <div className="p-4 bg-emerald-100 border-2 border-emerald-400 rounded-2xl text-emerald-950 font-black text-center">
-                {tr(lang, '✅ גִּישַׁת PRO פְּעִילָה בַּחֶשְׁבּוֹן זֶה!', '✅ Pro Access is Active!', '✅ ¡El acceso Pro está activo!')}
+                {tr(lang, '✅ מַנּוּי PRO פָּעִיל בַּחֶשְׁבּוֹן זֶה!', '✅ Pro Subscription is Active!', '✅ ¡La suscripción Pro está activa!')}
               </div>
-            ) : (
-              <>
-                {!isNativeAndroid && serverConfig?.stripePaymentLink && (
-                  <a
-                    href={serverConfig.stripePaymentLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full py-3.5 px-5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black text-base rounded-2xl shadow-lg flex items-center justify-center gap-2 btn-press-3d"
-                  >
-                    <Crown className="w-5 h-5" />
-                    <span>
-                      {tr(
-                        lang,
-                        `שִׁדְרוּג מָלֵא בְּ-${serverConfig.proPriceLabel || '$4.99'}`,
-                        `Unlock Full Access (${serverConfig.proPriceLabel || '$4.99'})`,
-                        `Desbloquear Todo (${serverConfig.proPriceLabel || '$4.99'})`
-                      )}
-                    </span>
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                )}
-
-                {isNativeAndroid && (
-                  <div className="p-3.5 bg-indigo-50 border border-indigo-200 rounded-2xl text-xs text-indigo-950 font-bold text-center">
+            ) : isNativeAndroid ? (
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleSubscribeAndroid}
+                  className="w-full py-3.5 px-5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black text-base rounded-2xl shadow-lg flex items-center justify-center gap-2 btn-press-3d cursor-pointer disabled:opacity-50"
+                >
+                  <Crown className="w-5 h-5" />
+                  <span>
                     {tr(
                       lang,
-                      'בְּאַפְּלִיקַצְיַת Google Play, הַשִּׁדְרוּג מִתְבַּצֵּעַ דֶּרֶךְ Google Play Billing אוֹ עִם קוֹד מִשְׁפָּחָה.',
-                      'On Android, Pro unlocks via Google Play In-App Purchase or a Family Activation Code below.',
-                      'En Android, Pro se desbloquea mediante Google Play Billing o con un código familiar abajo.'
+                      `הַרְשָׁמָה בְּ-Google Play (${priceLabel} / חוֹדֶשׁ)`,
+                      `Subscribe on Google Play (${priceLabel} / mo)`,
+                      `Suscribirse en Google Play (${priceLabel} / mes)`
                     )}
-                  </div>
-                )}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleRestoreAndroid}
+                  className="w-full py-2.5 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold text-xs rounded-2xl border border-indigo-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>{tr(lang, 'שַׁחְזֵר רְכִישָׁה קַיֶּמֶת', 'Restore Existing Purchase', 'Restaurar compra existente')}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3.5 bg-indigo-50 border border-indigo-200 rounded-2xl text-xs text-indigo-950 font-bold leading-relaxed flex items-start gap-2.5">
+                  <Smartphone className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                  <span>
+                    {tr(
+                      lang,
+                      `הַתַּשְׁלוּם מִתְבַּצֵּעַ אַךְ וְרַק דֶּרֶךְ חֲנוּת Google Play (${priceLabel} לְחוֹדֶשׁ). כְּדֵי לִפְתֹּחַ גַּם בַּמַּחְשֵׁב: הֵירָשְׁמוּ בָּאַפְּלִיקַצְיָה בְּ-Android וְהִתְחַבְּרוּ כָּאן עִם אוֹתוֹ חֶשְׁבּוֹן Google.`,
+                      `Subscriptions are available exclusively through Google Play (${priceLabel}/month). To unlock on desktop: subscribe in the Android app and sign in here with the same Google account.`,
+                      `Las suscripciones se realizan únicamente a través de Google Play (${priceLabel}/mes). Para desbloquear en PC: suscríbete en la app de Android e inicia sesión aquí con la misma cuenta de Google.`
+                    )}
+                  </span>
+                </div>
 
-                {/* Family / Teacher Activation Code Redemption */}
-                <form onSubmit={handleRedeem} className="flex flex-col gap-2 pt-1">
-                  <label className="text-xs font-extrabold text-slate-600 flex items-center gap-1.5">
-                    <KeyRound className="w-4 h-4 text-indigo-600" />
-                    <span>{tr(lang, 'יֵשׁ לָכֶם קוֹד מִשְׁפָּחָה / מַתָּנָה?', 'Have a Family / Gift Activation Code?', '¿Tienes un código familiar o de regalo?')}</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      placeholder={tr(lang, 'הַקְלִידוּ קוֹד...', 'Enter code...', 'Introduce el código...')}
-                      className="flex-1 px-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-400 outline-none font-bold uppercase text-sm"
-                      dir="ltr"
-                    />
-                    <button
-                      type="submit"
-                      disabled={busy}
-                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl btn-press-3d cursor-pointer disabled:opacity-50"
-                    >
-                      {tr(lang, 'הַפְעֵל', 'Activate', 'Activar')}
-                    </button>
-                  </div>
-                  {codeMsg && (
-                    <p className={`text-xs font-bold ${codeMsg.ok ? 'text-emerald-700' : 'text-rose-600'}`}>
-                      {codeMsg.text}
-                    </p>
-                  )}
-                </form>
-              </>
+                <a
+                  href={playStoreUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3.5 px-5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-base rounded-2xl shadow-lg flex items-center justify-center gap-2 btn-press-3d"
+                >
+                  <Crown className="w-5 h-5" />
+                  <span>
+                    {tr(
+                      lang,
+                      `לַחֲנוּת Google Play (${priceLabel} / חוֹדֶשׁ)`,
+                      `Subscribe via Google Play (${priceLabel} / mo)`,
+                      `Suscribirse en Google Play (${priceLabel} / mes)`
+                    )}
+                  </span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleRefreshWebSync}
+                  className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-2xl border border-slate-300 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>{tr(lang, 'כְּבָר נִרְשַׁמְתִּי בְּ-Android — רַעֲנֵן גִּישָׁה', 'Already Subscribed on Android — Refresh Access', 'Ya estoy suscrito en Android — Actualizar acceso')}</span>
+                </button>
+              </div>
+            )}
+
+            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+              {tr(
+                lang,
+                'מנוי חודשי מתחדש דרך Google Play. ניתן לבטל בכל עת בהגדרות Google Play. המחיר עשוי להתעדכן בעתיד בהודעה מראש.',
+                'Monthly auto-renewing subscription via Google Play. Cancel anytime in Google Play settings. Price may change in the future with prior notice.',
+                'Suscripción mensual renovable vía Google Play. Cancela cuando quieras en Google Play. El precio puede actualizarse en el futuro con aviso previo.'
+              )}
+            </p>
+
+            {statusMsg && (
+              <p className={`text-xs font-bold text-center ${statusMsg.ok ? 'text-emerald-700' : 'text-rose-600'}`}>
+                {statusMsg.text}
+              </p>
             )}
           </div>
         )}

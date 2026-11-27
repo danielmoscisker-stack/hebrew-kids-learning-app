@@ -74,14 +74,14 @@ export async function pushCloudProgress(payload) {
   }
 }
 
-export async function redeemActivationCode(code) {
-  const res = await fetch('/api/pro/redeem', {
+export async function verifyPlayPurchase(purchaseToken, productId) {
+  const res = await fetch('/api/pro/verify-play', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ code })
+    body: JSON.stringify({ purchaseToken, productId })
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Invalid code');
+  if (!res.ok) throw new Error(data.error || 'Play verification failed');
   return data;
 }
