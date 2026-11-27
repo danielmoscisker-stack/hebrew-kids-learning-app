@@ -17,6 +17,7 @@ import StickerPlayground from './components/StickerPlayground';
 import OpeningSoundGame from './components/OpeningSoundGame';
 import MathPlay from './components/MathPlay';
 import StatsDashboard from './components/StatsDashboard';
+import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
 import { fetchServerConfig, fetchCurrentSession, pushCloudProgress } from './utils/cloudSync';
@@ -287,6 +288,14 @@ export default function App() {
     >
       <KidCursor enabled={kidCursorEnabled} />
 
+      {/* Skip to Main Content link (IS 5568 / WCAG 2.1 AA) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-indigo-700 focus:text-white focus:font-black focus:rounded-xl focus:shadow-lg"
+      >
+        {isHe ? 'דַּלֵּג לַתֹּכֶן הָרָאשִׁי' : 'Skip to main content'}
+      </a>
+
       <Navbar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -299,7 +308,7 @@ export default function App() {
         onOpenParentGate={() => setShowParentModal(true)}
       />
 
-      <main className="flex-1 pb-12">
+      <main id="main-content" tabIndex={-1} className="flex-1 pb-12 outline-none">
         {currentTab === 'home' && (
           <HomeHub
             lang={lang}
@@ -396,6 +405,12 @@ export default function App() {
         }}
         serverConfig={serverConfig}
         user={user}
+      />
+
+      <AccessibilityMenu
+        lang={lang}
+        kidCursorEnabled={kidCursorEnabled}
+        setKidCursorEnabled={setKidCursorEnabled}
       />
     </div>
   );

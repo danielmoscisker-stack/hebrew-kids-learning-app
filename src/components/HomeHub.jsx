@@ -386,9 +386,15 @@ export default function HomeHub({
               ? 'לִמּוּד אוֹתִיּוֹת א-ב, נִקּוּד וּמִסְפָּרִים לְגִיל 4 — בָּאֲתָר וּבְאַפְּלִיקַצְיָה'
               : 'Hebrew Alphabet, Vowels & Early Math for Ages 3–5 — Free Online & Android'}
           </h3>
-          <a href="/privacy.html" className="text-indigo-600 hover:underline font-bold">
-            {isHe ? 'מְדִינִיּוּת פְּרָטִיּוּת' : 'Privacy Policy'}
-          </a>
+          <div className="flex items-center gap-3">
+            <a href="/accessibility.html" className="text-indigo-700 hover:underline font-bold">
+              {isHe ? 'הַצְהָרַת נְגִישׁוּת' : 'Accessibility'}
+            </a>
+            <span aria-hidden="true">•</span>
+            <a href="/privacy.html" className="text-indigo-700 hover:underline font-bold">
+              {isHe ? 'מְדִינִיּוּת פְּרָטִיּוּת' : 'Privacy Policy'}
+            </a>
+          </div>
         </div>
         <p>
           {isHe

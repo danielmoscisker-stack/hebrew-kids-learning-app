@@ -82,6 +82,15 @@ export default function ParentModal({
     };
   }, [open, unlocked, user, serverConfig, isHe, onAuthSuccess]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const toggleLanguage = () => {
@@ -96,12 +105,19 @@ export default function ParentModal({
     <div
       className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
       dir={isHe ? 'rtl' : 'ltr'}
+      onClick={onClose}
     >
-      <div className="bg-white rounded-3xl max-w-xl w-full p-6 md:p-7 shadow-2xl border-4 border-amber-300 max-h-[90vh] overflow-y-auto animate-pop-in">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="parent-modal-title"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-3xl max-w-xl w-full p-6 md:p-7 shadow-2xl border-4 border-amber-300 max-h-[90vh] overflow-y-auto animate-pop-in"
+      >
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
           <div className="flex items-center gap-2">
-            {unlocked ? <Sparkles className="w-6 h-6 text-pink-500" /> : <Lock className="w-6 h-6 text-indigo-600" />}
-            <h3 className="text-xl font-black text-slate-800">
+            {unlocked ? <Sparkles className="w-6 h-6 text-pink-500" aria-hidden="true" /> : <Lock className="w-6 h-6 text-indigo-600" aria-hidden="true" />}
+            <h3 id="parent-modal-title" className="text-xl font-black text-slate-800">
               {unlocked
                 ? isHe ? 'אֵזוֹר הוֹרִים וְגַנָּנוֹת' : 'Parents & Educators'
                 : isHe ? 'אֵזוֹר הוֹרִים בִּלְבַד' : 'For Parents Only'}
