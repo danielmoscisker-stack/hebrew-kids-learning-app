@@ -442,7 +442,8 @@ export const LETTERS_DATA = [
     examples: [
       { he: 'פִּיל', en: 'Elephant', emoji: '🐘', phonetic: 'Pil' },
       { he: 'פַּרְפַּר', en: 'Butterfly', emoji: '🦋', phonetic: 'Parpar' },
-      { he: 'פִּיצָה', en: 'Pizza', emoji: '🍕', phonetic: 'Pizza' }
+      { he: 'פִּיצָה', en: 'Pizza', emoji: '🍕', phonetic: 'Pizza' },
+      { he: 'צִפּוֹר', en: 'Bird', emoji: '🐦', phonetic: 'Tzipor' }
     ]
   },
   {
@@ -451,8 +452,8 @@ export const LETTERS_DATA = [
     displayWithNikud: 'פֵיי',
     nameHe: 'פֵיי (בלי פופיק - רוח)',
     nameEn: 'Fay (No Pupik - Wind)',
-    soundHe: 'פְּפְפ...',
-    soundQuoteHe: 'נוֹשֶׁבֶת: "פְּפְפ..."',
+    soundHe: 'פְפְפ...',
+    soundQuoteHe: 'נוֹשֶׁבֶת: "פְפְפ..."',
     soundQuoteEn: 'Blowing: "Fff..."',
     shapeDescriptionHe: 'בֶּטֶן רֵיקָה – שׁוּם נְקֻדָּה!',
     shapeDescriptionEn: 'Empty belly – no dot at all!',
@@ -462,7 +463,7 @@ export const LETTERS_DATA = [
     badgeColor: 'bg-purple-100 text-purple-800',
     examples: [
       { he: 'עֲפִיפוֹן', en: 'Kite', emoji: '🪁', phonetic: 'Afifon' },
-      { he: 'צִפּוֹר', en: 'Bird', emoji: '🐦', phonetic: 'Tzipor' },
+      { he: 'מְלָפְפוֹן', en: 'Cucumber', emoji: '🥒', phonetic: 'Melafefon' },
       { he: 'אַף', en: 'Nose', emoji: '👃', phonetic: 'Af' }
     ]
   },
