@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "אלף-בית ומספרים לילדים | Kids Hebrew & Numbers",
-  "short_name": "אותיות ומספרים",
-  "description": "אפליקציה חינוכית מהנה ללימוד אותיות, צלילים, נקודות ומספרים לגיל 4",
+  "name": "אלף-בית, חשבון ואנגלית לילדים | Kids Hebrew, Math & English",
+  "short_name": "עברית וחשבון",
+  "description": "משחקי למידה לילדים בגילאי 4, 7 ו-9: אותיות, ניקוד, חשבון כיתות א׳–ד׳, אנגלית A–Z ודקדוק בעברית, אנגלית וספרדית",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFBEB",

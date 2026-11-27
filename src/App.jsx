@@ -99,6 +99,8 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState('home');
   const [lang, setLang] = useState(() => {
     try {
+      const urlLang = new URLSearchParams(window.location.search).get('lang');
+      if (urlLang === 'he' || urlLang === 'en' || urlLang === 'es') return urlLang;
       const saved = localStorage.getItem('hk_lang');
       return saved === 'en' || saved === 'es' ? saved : 'he';
     } catch {
@@ -1048,6 +1050,24 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = isHe ? 'rtl' : 'ltr';
+    document.title =
+      lang === 'en'
+        ? 'Kids Hebrew, Math & English (Ages 4–9) | Educational Learning Games'
+        : lang === 'es'
+          ? 'Hebreo, Mates e Inglés para Niños (Edades 4–9) | Juegos Educativos'
+          : 'אלף-בית, חשבון ואנגלית לילדים (גילאי 4–9) | משחקי למידה חינוכיים';
+
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute(
+        'content',
+        lang === 'en'
+          ? 'Interactive educational learning app for ages 4, 7 & 9: Hebrew alphabet & nikud, Israeli curriculum math (Grades 1–4), English A–Z & grammar, Star Shop, and parent controls.'
+          : lang === 'es'
+            ? 'Aplicación educativa interactiva para edades 4, 7 y 9: alfabeto hebreo, matemáticas escolares, inglés A–Z y gramática, tienda de estrellas y control parental.'
+            : 'אפליקציית למידה חינוכית לילדים בגילאי 4, 7 ו-9 (גן וכיתות א׳–ד׳): לימוד אותיות, ניקוד וקריאה, חשבון לפי תוכנית משרד החינוך (לוח הכפל, שברים ושקלים), אנגלית A–Z ודקדוק — בעברית, אנגלית וספרדית.'
+      );
+    }
   }, [lang, isHe]);
 
   return (
