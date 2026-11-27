@@ -28,7 +28,7 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
   const [isCrazyCelebrating, setIsCrazyCelebrating] = useState(false);
   const [helpHintActive, setHelpHintActive] = useState(false);
   const [wrongOptionIds, setWrongOptionIds] = useState([]);
-  const [hoveredOptionId, setHoveredOptionId] = useState(null);
+  const [previewedOptionId, setPreviewedOptionId] = useState(null);
   const [streak, setStreak] = useState(0);
   const [score, setScore] = useState(0);
 
@@ -82,7 +82,7 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
     setOptions(roundOptions);
 
     setSelectedOptionId(null);
-    setHoveredOptionId(null);
+    setPreviewedOptionId(null);
     setIsCorrect(null);
     setIsCrazyCelebrating(false);
     setHelpHintActive(false);
@@ -140,9 +140,8 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
     }, 2500);
   };
 
-  const handleOptionClick = (option) => {
+  const submitAnswer = (option) => {
     if (isCorrect === true) return; // already solved
-
     setSelectedOptionId(option.id);
 
     if (option.id === targetLetter.id) {
@@ -158,6 +157,7 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
       playSound('whoosh');
       setStreak(0);
       setWrongOptionIds((prev) => [...prev, option.id]);
+      setPreviewedOptionId(null);
       setHelpHintActive(true);
 
       // Speak the letter they clicked so they learn, then offer guidance
@@ -170,40 +170,23 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
     }
   };
 
-  const handleCardHover = (option) => {
-    if (hoveredOptionId === option.id) return;
-    setHoveredOptionId(option.id);
-    if (soundEnabled) {
-      speakLetterName(option.id);
-    }
-  };
-
-  const handleCardLeave = (option) => {
-    if (hoveredOptionId === option.id) {
-      setHoveredOptionId(null);
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    if (!e.touches || e.touches.length === 0) return;
-    const touch = e.touches[0];
-    const targetElem = document.elementFromPoint(touch.clientX, touch.clientY);
-    const cardElem = targetElem?.closest('[data-option-id]');
-    if (cardElem) {
-      const optId = cardElem.getAttribute('data-option-id');
-      const option = options.find((o) => o.id === optId);
-      if (option && hoveredOptionId !== optId) {
-        handleCardHover(option);
+  const handleSeeModeCardClick = (option) => {
+    if (isCorrect === true || wrongOptionIds.includes(option.id)) return;
+    // First click on a card: hear it & show the big green "Choose!" button
+    if (previewedOptionId !== option.id) {
+      setPreviewedOptionId(option.id);
+      playSound('pop');
+      if (soundEnabled) {
+        speakLetterName(option.id);
       }
+      return;
     }
+    // Second click on the same highlighted card (or clicking its green button): confirm answer
+    submitAnswer(option);
   };
 
-  const speakOptionPreview = (e, option) => {
-    e.stopPropagation();
-    playSound('pop');
-    if (soundEnabled) {
-      speakLetterName(option.id);
-    }
+  const handleOptionClick = (option) => {
+    submitAnswer(option);
   };
 
   const playCardsInstruction = () => {
@@ -424,7 +407,7 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
               </button>
             </div>
 
-            {/* Friendly guidance for 4-year-olds who cannot read - fully spoken and interactive */}
+            {/* Friendly 2-step guidance for 4-year-olds */}
             <button
               type="button"
               onClick={playCardsInstruction}
@@ -433,96 +416,92 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
             >
               <Volume2 className="w-5 h-5 text-amber-700 animate-pulse flex-shrink-0" />
               <span>
-                {isTouch
-                  ? tr(
-                      lang,
-                      gender === 'girl'
-                        ? 'הַעֲבִירִי אֶצְבַּע עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבַחֲרִי אֶת הָאוֹת הַנְּכוֹנָה!'
-                        : 'הַעֲבֵר אֶצְבַּע עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבְחַר אֶת הָאוֹת הַנְּכוֹנָה!',
-                      'Move your finger over the cards to hear their names, then choose the correct one!',
-                      '¡Desliza tu dedo sobre las tarjetas para escuchar sus nombres y elige la correcta!'
-                    )
-                  : tr(
-                      lang,
-                      gender === 'girl'
-                        ? 'הַעֲבִירִי עַכְבָּר עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבַחֲרִי אֶת הָאוֹת הַנְּכוֹנָה!'
-                        : 'הַעֲבֵר עַכְבָּר עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבְחַר אֶת הָאוֹת הַנְּכוֹנָה!',
-                      'Move your mouse over the cards to hear their names, then click the correct one!',
-                      '¡Pasa el ratón sobre las tarjetas para escuchar sus nombres y haz clic en la correcta!'
-                    )}
+                {tr(
+                  lang,
+                  '1. לַחֲצוּ עַל כַּרְטִיס כְּדֵי לִשְׁמֹעַ 🔊  •  2. לַחֲצוּ עַל הַכַּפְתּוֹר הַיָּרֹק ✓ כְּדֵי לִבְחֹר!',
+                  '1. Tap a card to hear it 🔊  •  2. Tap the green ✓ button to choose!',
+                  '1. Toca una tarjeta para escucharla 🔊  •  2. ¡Toca el botón verde ✓ para elegir!'
+                )}
               </span>
-              <span className="text-base mr-auto ml-1">🔊</span>
             </button>
 
-            {/* Answer Options (Spoken Name Cards) */}
-            <div
-              onTouchMove={handleTouchMove}
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 w-full max-w-lg mb-4"
-            >
+            {/* Answer Options (Step 1: Tap card to hear, Step 2: Tap green Choose button or tap card again) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 w-full max-w-xl mb-4">
               {options.map((opt) => {
                 const isSelected = selectedOptionId === opt.id;
                 const isTarget = opt.id === targetLetter.id;
                 const wasWrong = wrongOptionIds.includes(opt.id);
-                const isHovered = hoveredOptionId === opt.id;
+                const isPreviewed = previewedOptionId === opt.id && isCorrect !== true;
 
                 let cardStyle = 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-amber-50 hover:border-amber-400';
 
                 // Golden Glowing Aura if helping the child!
                 if (helpHintActive && isTarget) {
-                  cardStyle = 'bg-amber-300 border-amber-500 text-slate-900 scale-105 shadow-xl ring-4 ring-amber-400 animate-bounce-gentle';
+                  cardStyle = 'bg-amber-200 border-amber-500 text-slate-900 scale-105 shadow-xl ring-4 ring-amber-400 animate-bounce-gentle';
                 }
 
                 if (isSelected && isCorrect === true) {
-                  cardStyle = 'bg-emerald-300 border-emerald-500 text-emerald-950 scale-110 shadow-2xl ring-4 ring-emerald-300';
+                  cardStyle = 'bg-emerald-300 border-emerald-500 text-emerald-950 scale-105 shadow-2xl ring-4 ring-emerald-300';
                 } else if (wasWrong) {
                   cardStyle = 'bg-red-50 border-red-200 text-slate-400 opacity-50';
-                } else if (isHovered) {
-                  cardStyle = 'bg-amber-100 border-amber-400 text-amber-950 scale-105 shadow-xl ring-4 ring-amber-300';
+                } else if (isPreviewed) {
+                  cardStyle = 'bg-sky-50 border-sky-500 text-slate-900 scale-105 shadow-xl ring-4 ring-sky-300';
                 }
 
                 return (
-                  <button
+                  <div
                     key={opt.id}
                     data-option-id={opt.id}
-                    onClick={() => handleOptionClick(opt)}
-                    onMouseEnter={() => handleCardHover(opt)}
-                    onMouseLeave={() => handleCardLeave(opt)}
-                    onTouchStart={() => handleCardHover(opt)}
-                    onFocus={() => handleCardHover(opt)}
-                    className={`p-4 rounded-3xl border-4 flex flex-col items-center justify-center transition-all duration-200 btn-press-3d relative cursor-pointer ${cardStyle}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleSeeModeCardClick(opt)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSeeModeCardClick(opt);
+                      }
+                    }}
+                    className={`p-4 rounded-3xl border-4 flex flex-col items-center justify-between gap-2 transition-all duration-200 btn-press-3d relative cursor-pointer ${cardStyle}`}
                   >
-                    {/* Big Prominent Speaker Preview Button */}
-                    <div
-                      onClick={(e) => speakOptionPreview(e, opt)}
-                      className={`absolute top-2 left-2 p-2 rounded-full shadow transition-all ${
-                        isHovered
-                          ? 'bg-amber-500 text-white scale-125 animate-bounce'
-                          : 'bg-white text-indigo-600 hover:bg-indigo-50 hover:scale-110'
-                      }`}
-                      title={tr(lang, 'שמע שם', 'Hear name', 'Escuchar nombre')}
-                    >
-                      <Volume2 className="w-5 h-5" />
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-indigo-600 bg-white/90 px-3 py-1 rounded-full border border-indigo-200 shadow-sm">
+                      <Volume2 className={`w-4 h-4 ${isPreviewed ? 'animate-bounce text-sky-600' : ''}`} />
+                      <span>{tr(lang, 'לַחֲצוּ לִשְׁמֹעַ', 'Tap to hear', 'Toca para oír')}</span>
                     </div>
 
-                    <span className="text-3xl md:text-4xl font-black mt-2">
+                    <span className="text-3xl md:text-4xl font-black mt-1">
                       {tr(lang, opt.displayWithNikud, opt.nameEn, opt.nameEs || opt.nameEn)}
                     </span>
-                    <span className="text-xs text-slate-500 font-bold mt-1">
+                    <span className="text-xs text-slate-500 font-bold">
                       {tr(lang, opt.soundQuoteHe, opt.soundQuoteHe, opt.soundQuoteEs || opt.soundQuoteHe)}
                     </span>
 
-                    {/* Hint badge */}
-                    {helpHintActive && isTarget && (
-                      <span className="mt-2 px-2 py-0.5 bg-amber-600 text-white rounded-full text-[10px] font-black animate-pulse">
-                        {tr(
-                          lang,
-                          gender === 'girl' ? '👈 לַחְצִי כָּאן!' : '👈 לְחַץ כָּאן!',
-                          '👈 Tap here!',
-                          '👈 ¡Toca aquí!'
-                        )}
-                      </span>
+                    {/* Big obvious Green Confirm button once card has been heard */}
+                    {isPreviewed ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          submitAnswer(opt);
+                        }}
+                        className="mt-1 w-full py-2.5 px-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black text-sm md:text-base rounded-2xl shadow-md flex items-center justify-center gap-1.5 animate-pop-in cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span>{tr(lang, 'בְּחַר זֹאת!', 'Choose this!', '¡Elegir esta!')}</span>
+                      </button>
+                    ) : (
+                      helpHintActive &&
+                      isTarget && (
+                        <span className="mt-1 px-2.5 py-1 bg-amber-600 text-white rounded-full text-xs font-black animate-pulse">
+                          {tr(
+                            lang,
+                            gender === 'girl' ? '👈 לַחְצִי כָּאן!' : '👈 לְחַץ כָּאן!',
+                            '👈 Tap here!',
+                            '👈 ¡Toca aquí!'
+                          )}
+                        </span>
+                      )
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
