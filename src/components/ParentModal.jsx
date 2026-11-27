@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud } from 'lucide-react';
+import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud, BarChart3 } from 'lucide-react';
 import { playSound, playAudioFile } from '../utils/audio';
 import { useDeviceType } from '../utils/useDeviceType';
 import { loadGoogleIdentityScript, signInWithGoogleCredential, signOutSession } from '../utils/cloudSync';
@@ -20,6 +20,7 @@ export default function ParentModal({
   onSignOut,
   isPro,
   onOpenPro,
+  onOpenStats,
   serverConfig
 }) {
   const isHe = lang === 'he';
@@ -225,6 +226,19 @@ export default function ParentModal({
               >
                 <Crown className="w-5 h-5" />
                 <span>{isPro ? (isHe ? 'גִּרְסַת PRO פְּעִילָה ✓' : 'Pro Active ✓') : isHe ? 'שִׁדְרוּג לְגִרְסָה מְלֵאָה' : 'Upgrade to Pro'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('pop');
+                  onClose();
+                  onOpenStats();
+                }}
+                className="sm:col-span-2 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-2xl btn-press-3d cursor-pointer"
+              >
+                <BarChart3 className="w-5 h-5 text-amber-300" />
+                <span>{isHe ? '📊 סְטָטִיסְטִיקוֹת שִׁמּוּשׁ בָּאֲתָר' : '📊 View Usage & Site Stats'}</span>
               </button>
 
               {!isTouch && (

@@ -16,9 +16,11 @@ import MemoryGame from './components/MemoryGame';
 import StickerPlayground from './components/StickerPlayground';
 import OpeningSoundGame from './components/OpeningSoundGame';
 import MathPlay from './components/MathPlay';
+import StatsDashboard from './components/StatsDashboard';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
 import { fetchServerConfig, fetchCurrentSession, pushCloudProgress } from './utils/cloudSync';
+import { trackEvent } from './utils/analytics';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -174,6 +176,20 @@ export default function App() {
 
   const { isTouch } = useDeviceType();
 
+  // Track initial page_view & activity_start events (privacy-safe, zero cookies)
+  useEffect(() => {
+    trackEvent('page_view', { isTouch, lang });
+    if (window.location.hash === '#stats') {
+      setShowParentModal(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentTab !== 'home' && currentTab !== 'stats') {
+      trackEvent('activity_start', { activityId: currentTab, isTouch, lang });
+    }
+  }, [currentTab, isTouch, lang]);
+
   // Android native integration: back button returns to Home Hub, StatusBar & SplashScreen setup
   useEffect(() => {
     let removeBackListener = null;
@@ -234,6 +250,7 @@ export default function App() {
   const handleEarnStar = (amount = 1) => {
     setStars((prev) => prev + amount);
     setDailyStars((prev) => prev + amount);
+    trackEvent('star_earned', { activityId: currentTab, isTouch, lang });
   };
 
   const handlePickGender = (picked) => {
@@ -246,6 +263,7 @@ export default function App() {
   };
 
   const handleAuthSuccess = useCallback((result) => {
+    trackEvent('google_signin', { isTouch, lang });
     if (result?.user) {
       setUser(result.user);
       if (result.user.isPro) setIsPro(true);
@@ -293,7 +311,10 @@ export default function App() {
             isPro={isPro}
             user={user}
             onSelectActivity={(id) => setCurrentTab(id)}
-            onOpenPro={() => setShowProModal(true)}
+            onOpenPro={() => {
+              trackEvent('pro_modal', { isTouch, lang });
+              setShowProModal(true);
+            }}
             onOpenParentGate={() => setShowParentModal(true)}
             needsGenderPick={needsGenderPick}
             onPickGender={handlePickGender}
@@ -336,6 +357,9 @@ export default function App() {
         {currentTab === 'math_play' && (
           <MathPlay lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
+        {currentTab === 'stats' && (
+          <StatsDashboard lang={lang} onBack={() => setCurrentTab('home')} />
+        )}
       </main>
 
       <ParentModal
@@ -353,7 +377,11 @@ export default function App() {
         onAuthSuccess={handleAuthSuccess}
         onSignOut={() => setUser(null)}
         isPro={isPro}
-        onOpenPro={() => setShowProModal(true)}
+        onOpenPro={() => {
+          trackEvent('pro_modal', { isTouch, lang });
+          setShowProModal(true);
+        }}
+        onOpenStats={() => setCurrentTab('stats')}
         serverConfig={serverConfig}
       />
 
@@ -362,7 +390,10 @@ export default function App() {
         onClose={() => setShowProModal(false)}
         lang={lang}
         isPro={isPro}
-        onUnlockPro={() => setIsPro(true)}
+        onUnlockPro={() => {
+          trackEvent('pro_unlock', { isTouch, lang });
+          setIsPro(true);
+        }}
         serverConfig={serverConfig}
         user={user}
       />

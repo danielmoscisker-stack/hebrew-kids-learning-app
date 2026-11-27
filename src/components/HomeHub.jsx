@@ -377,6 +377,25 @@ export default function HomeHub({
           );
         })}
       </div>
+
+      {/* Crawl-friendly Semantic Summary for Web Search & Parents (below the fold) */}
+      <footer className="mt-4 bg-white/75 border-2 border-amber-200 rounded-3xl p-5 text-slate-600 text-xs leading-relaxed flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-black text-slate-800 text-sm">
+            {isHe
+              ? 'לִמּוּד אוֹתִיּוֹת א-ב, נִקּוּד וּמִסְפָּרִים לְגִיל 4 — בָּאֲתָר וּבְאַפְּלִיקַצְיָה'
+              : 'Hebrew Alphabet, Vowels & Early Math for Ages 3–5 — Free Online & Android'}
+          </h3>
+          <a href="/privacy.html" className="text-indigo-600 hover:underline font-bold">
+            {isHe ? 'מְדִינִיּוּת פְּרָטִיּוּת' : 'Privacy Policy'}
+          </a>
+        </div>
+        <p>
+          {isHe
+            ? 'משחקי אלף-בית מדובבים בעברית לגיל הרך: הכרת כל האותיות, זיהוי אותיות, רכבת קריאה מימין לשמאל, בלש הפופיק להבחנה בין דגש קל לרפה (בּ/ב, כּ/כ, פּ/פ), עולם הניקוד, קריאת מילים ראשונות, ספירה 1–10, צביעה וכתיבה במחשב (עכבר) ובטאבלט/טלפון (אצבע).'
+            : 'Interactive voice-guided Hebrew preschool learning games: Alef-Bet cards, letter quiz, right-to-left reading train, dagesh pupik detective, vowels (nikud), first word blending, numbers 1–10, guided tracing, phonological awareness, and fruit math.'}
+        </p>
+      </footer>
     </div>
   );
 }

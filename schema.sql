@@ -26,3 +26,16 @@ CREATE TABLE IF NOT EXISTS promo_codes (
   uses_left INTEGER NOT NULL DEFAULT 1,
   note TEXT
 );
+
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_type TEXT NOT NULL,
+  activity_id TEXT,
+  device_type TEXT,
+  lang TEXT,
+  session_id TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type, activity_id);
