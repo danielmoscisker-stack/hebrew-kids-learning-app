@@ -37,19 +37,21 @@ export const SKILL_ARENA_CONFIG = {
     icon: '🇬🇧',
     gradient: 'from-blue-500 via-sky-500 to-indigo-600',
     border: 'border-sky-300',
-    titleHe: 'אַנְגְּלִית רִאשׁוֹנָה • גִּיל 7',
-    titleEn: 'First English • Age 7',
-    titleEs: 'Primer Inglés • Edad 7',
-    subHe: 'כִּתָּה א׳–ב׳ • מִלִּים יוֹמְיוֹמִיּוֹת, צְבָעִים וְחַיּוֹת עִם הַקְרָאָה!',
-    subEn: 'Grades 1–2 • Everyday Words, Colors & Animals with Audio!',
-    subEs: 'Grados 1–2 • Palabras diarias, colores y animales con audio.',
+    titleHe: 'חִידוֹן אַנְגְּלִית • גִּיל 7',
+    titleEn: 'English Quiz • Age 7',
+    titleEs: 'Quiz de Inglés • Edad 7',
+    subHe: 'כִּתָּה א׳–ב׳ • אוֹתִיּוֹת A–Z, חַיּוֹת, צְבָעִים, מִלִּים וּבִטּוּיִים עִם הַקְרָאָה!',
+    subEn: 'Grades 1–2 • ABC Phonics, Animals, Colors, Words & Greetings with Audio!',
+    subEs: 'Grados 1–2 • Fonética ABC, animales, colores y saludos con audio.',
     speechLang: 'en-US',
-    easierTab: 'math_age7',
+    easierTab: 'english_abc_age7',
     topics: [
       { id: 'mix', icon: '🎲', he: 'מִיקְס מָהִיר', en: 'Quick Mix', es: 'Mezcla rápida' },
+      { id: 'phonics', icon: '🔤', he: 'אוֹת פּוֹתַחַת (ABC)', en: 'ABC Phonics', es: 'Letras ABC' },
       { id: 'animals', icon: '🐾', he: 'חַיּוֹת', en: 'Animals', es: 'Animales' },
       { id: 'colors_nums', icon: '🎨', he: 'צְבָעִים וּמִסְפָּרִים', en: 'Colors & Numbers', es: 'Colores y Números' },
-      { id: 'everyday', icon: '🏠', he: 'מִלִּים בַּבַּיִת', en: 'Everyday Words', es: 'Palabras diarias' }
+      { id: 'everyday', icon: '🏠', he: 'מִלִּים בַּבַּיִת', en: 'Everyday Words', es: 'Palabras diarias' },
+      { id: 'phrases', icon: '💬', he: 'בְּרָכוֹת וּמִשְׁפָּטִים', en: 'Simple Phrases', es: 'Frases simples' }
     ]
   },
   hebrew_age9: {
@@ -78,17 +80,18 @@ export const SKILL_ARENA_CONFIG = {
     icon: '🌍',
     gradient: 'from-rose-500 via-pink-600 to-indigo-600',
     border: 'border-rose-300',
-    titleHe: 'אַנְגְּלִית כִּתָּה ג׳–ד׳ • גִּיל 9',
-    titleEn: 'English Builder • Age 9',
-    titleEs: 'Inglés Avanzado • Edad 9',
-    subHe: 'כִּתָּה ג׳–ד׳ • דִּקְדּוּק (am/is/are, have/has), אוֹצַר מִלִּים וַהֲפָכִים!',
-    subEn: 'Grades 3–4 • Grammar (am/is/are, have/has), Vocabulary & Opposites!',
-    subEs: 'Grados 3–4 • Gramática, vocabulario y opuestos en inglés.',
+    titleHe: 'חִידוֹן אַנְגְּלִית כִּתָּה ג׳–ד׳ • גִּיל 9',
+    titleEn: 'English Arena • Age 9',
+    titleEs: 'Arena de Inglés • Edad 9',
+    subHe: 'כִּתָּה ג׳–ד׳ • דִּקְדּוּק (is/are/has/do), הֲבָנַת הַנִּקְרָא, אוֹצַר מִלִּים וְרַבִּים!',
+    subEn: 'Grades 3–4 • Grammar, Reading Comprehension, Vocabulary & Irregular Plurals!',
+    subEs: 'Grados 3–4 • Gramática, comprensión lectora, vocabulario y plurales.',
     speechLang: 'en-US',
-    easierTab: 'english_age7',
+    easierTab: 'english_studio_age9',
     topics: [
       { id: 'mix', icon: '🚀', he: 'מִיקְס מָהִיר', en: 'Quick Mix', es: 'Mezcla rápida' },
       { id: 'grammar', icon: '🧩', he: 'דִּקְדּוּק (is/are/has)', en: 'Grammar', es: 'Gramática' },
+      { id: 'reading', icon: '📖', he: 'הֲבָנַת הַנִּקְרָא ו-WH', en: 'Reading & WH', es: 'Lectura y WH' },
       { id: 'vocab', icon: '💬', he: 'אוֹצַר מִלִּים', en: 'Vocabulary', es: 'Vocabulario' },
       { id: 'opposites_plurals', icon: '⚡', he: 'הֲפָכִים וְרַבִּים', en: 'Opposites & Plurals', es: 'Opuestos y Plurales' }
     ]
@@ -314,17 +317,27 @@ const BANKS = {
   },
 
   english_age7: {
+    phonics: [
+      { emoji: '🍎', display: '_PPLE', promptHe: 'בְּאֵיזוֹ אוֹת בְּאַנְגְּלִית מַתְחִילָה הַמִּלָּה APPLE?', promptEn: 'Which letter starts the word APPLE?', promptEs: '¿Con qué letra empieza APPLE?', answer: 'A', choices: ['A', 'E', 'B', 'O'], hintHe: 'הַקְשִׁיבוּ לַצְּלִיל הָרִאשׁוֹן: A-pple 🍎!', hintEn: 'Listen to the opening sound: A for Apple 🍎!', hintEs: 'A de Apple 🍎.', speak: 'Apple' },
+      { emoji: '⚽', display: '_ALL', promptHe: 'בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה BALL (כַּדּוּר)?', promptEn: 'Which letter starts BALL?', promptEs: '¿Con qué letra empieza BALL?', answer: 'B', choices: ['B', 'D', 'P', 'R'], hintHe: 'צְלִיל בּ (B) כְּמוֹ בְּ-Ball ⚽!', hintEn: 'B makes the /b/ sound: Ball ⚽!', hintEs: 'B de Ball ⚽.', speak: 'Ball' },
+      { emoji: '☀️', display: '_UN', promptHe: 'בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה SUN (שֶׁמֶשׁ)?', promptEn: 'Which letter starts SUN?', promptEs: '¿Con qué letra empieza SUN?', answer: 'S', choices: ['S', 'C', 'Z', 'T'], hintHe: 'ססס... Sun ☀️ מַתְחִיל בְּ-S!', hintEn: 'Sss... Sun starts with S ☀️!', hintEs: 'S de Sun ☀️.', speak: 'Sun' },
+      { emoji: '🌙', display: '_OON', promptHe: 'בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה MOON (יָרֵחַ)?', promptEn: 'Which letter starts MOON?', promptEs: '¿Con qué letra empieza MOON?', answer: 'M', choices: ['M', 'N', 'W', 'H'], hintHe: 'מממ... Moon 🌙 מַתְחִיל בְּ-M!', hintEn: 'Mmm... Moon starts with M 🌙!', hintEs: 'M de Moon 🌙.', speak: 'Moon' },
+      { emoji: '🐯', display: '_IGER', promptHe: 'בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה TIGER (נָמֵר)?', promptEn: 'Which letter starts TIGER?', promptEs: '¿Con qué letra empieza TIGER?', answer: 'T', choices: ['T', 'D', 'F', 'L'], hintHe: 'ט... Tiger 🐯 מַתְחִיל בְּ-T!', hintEn: 'T for Tiger 🐯!', hintEs: 'T de Tiger 🐯.', speak: 'Tiger' },
+      { emoji: '🐸', display: '_ROG', promptHe: 'בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה FROG (צְפַרְדֵּעַ)?', promptEn: 'Which letter starts FROG?', promptEs: '¿Con qué letra empieza FROG?', answer: 'F', choices: ['F', 'V', 'P', 'B'], hintHe: 'פ רָפָה... Frog 🐸 מַתְחִיל בְּ-F!', hintEn: 'F for Frog 🐸!', hintEs: 'F de Frog 🐸.', speak: 'Frog' }
+    ],
     animals: [
       { emoji: '🐶', display: 'DOG', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל הַמִּלָּה בְּאַנְגְּלִית?', promptEn: 'What does DOG mean in Hebrew?', promptEs: '¿Qué significa DOG?', answer: 'כֶּלֶב', choices: ['כֶּלֶב', 'חָתוּל', 'דָּג', 'צִפּוֹר'], hintHe: 'הִסְתַּכְּלוּ עַל הַתְּמוּנָה 🐶 — הוּא נוֹבֵחַ הַאוּ-הַאוּ!', hintEn: 'Look at the picture 🐶 — it barks woof!', hintEs: 'Mira el dibujo 🐶: ¡ladra!', speak: 'Dog' },
       { emoji: '🐱', display: 'CAT', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל CAT?', promptEn: 'What does CAT mean?', promptEs: '¿Qué significa CAT?', answer: 'חָתוּל', choices: ['חָתוּל', 'כֶּלֶב', 'אַרְיֵה', 'פִּיל'], hintHe: 'הִיא אוֹמֶרֶת מְיָאוּ 🐱!', hintEn: 'It says meow 🐱!', hintEs: 'Dice miau 🐱.', speak: 'Cat' },
       { emoji: '🐟', display: 'FISH', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל FISH?', promptEn: 'What does FISH mean?', promptEs: '¿Qué significa FISH?', answer: 'דָּג', choices: ['דָּג', 'צָב', 'כֶּלֶב', 'סוּס'], hintHe: 'הוּא שׁוֹחֶה בַּמַּיִם 🐟!', hintEn: 'It swims in water 🐟!', hintEs: 'Nada en el agua 🐟.', speak: 'Fish' },
       { emoji: '🦁', display: 'LION', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל LION?', promptEn: 'What does LION mean?', promptEs: '¿Qué significa LION?', answer: 'אַרְיֵה', choices: ['אַרְיֵה', 'דֹּב', 'קוֹף', 'חָתוּל'], hintHe: 'מֶלֶךְ הַחַיּוֹת 🦁!', hintEn: 'The king of the jungle 🦁!', hintEs: 'El rey de la selva 🦁.', speak: 'Lion' },
-      { emoji: '🐦', display: 'BIRD', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל BIRD?', promptEn: 'What does BIRD mean?', promptEs: '¿Qué significa BIRD?', answer: 'צִפּוֹר', choices: ['צִפּוֹר', 'דָּג', 'פָּרָה', 'כֶּלֶב'], hintHe: 'הִיא עָפָה בַּשָּׁמַיִם 🐦!', hintEn: 'It flies in the sky 🐦!', hintEs: 'Vuela en el cielo 🐦.', speak: 'Bird' }
+      { emoji: '🐦', display: 'BIRD', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל BIRD?', promptEn: 'What does BIRD mean?', promptEs: '¿Qué significa BIRD?', answer: 'צִפּוֹר', choices: ['צִפּוֹר', 'דָּג', 'פָּרָה', 'כֶּלֶב'], hintHe: 'הִיא עָפָה בַּשָּׁמַיִם 🐦!', hintEn: 'It flies in the sky 🐦!', hintEs: 'Vuela en el cielo 🐦.', speak: 'Bird' },
+      { emoji: '🐘', display: 'ELEPHANT', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל ELEPHANT?', promptEn: 'What does ELEPHANT mean?', promptEs: '¿Qué significa ELEPHANT?', answer: 'פִּיל', choices: ['פִּיל', 'גִּ׳ירָפָה', 'סוּס', 'דֹּב'], hintHe: 'חַיָּה עֲנָקִית עִם חֵדֶק אָרֹךְ 🐘!', hintEn: 'Huge animal with a long trunk 🐘!', hintEs: 'Animal enorme con trompa 🐘.', speak: 'Elephant' }
     ],
     colors_nums: [
       { emoji: '🔵', display: 'BLUE', promptHe: 'אֵיזֶה צֶבַע זֶה BLUE?', promptEn: 'Which color is BLUE?', promptEs: '¿Qué color es BLUE?', answer: 'כָּחֹל', choices: ['כָּחֹל', 'אָדֹם', 'יָרֹק', 'צָהֹב'], hintHe: 'כְּמוֹ צֶבַע הַשָּׁמַיִם וְהַיָּם 🔵!', hintEn: 'Like the sky and sea 🔵!', hintEs: 'Como el cielo y el mar 🔵.', speak: 'Blue' },
       { emoji: '🔴', display: 'RED', promptHe: 'אֵיזֶה צֶבַע זֶה RED?', promptEn: 'Which color is RED?', promptEs: '¿Qué color es RED?', answer: 'אָדֹם', choices: ['אָדֹם', 'כָּחֹל', 'סָגֹל', 'לָבָן'], hintHe: 'כְּמוֹ תּוּת וְתַפּוּחַ 🔴!', hintEn: 'Like a strawberry 🔴!', hintEs: 'Como una fresa 🔴.', speak: 'Red' },
       { emoji: '🟢', display: 'GREEN', promptHe: 'אֵיזֶה צֶבַע זֶה GREEN?', promptEn: 'Which color is GREEN?', promptEs: '¿Qué color es GREEN?', answer: 'יָרֹק', choices: ['יָרֹק', 'צָהֹב', 'כָּתֹם', 'שָׁחֹר'], hintHe: 'כְּמוֹ דֶּשֶׁא וְעָלִים 🟢!', hintEn: 'Like grass and leaves 🟢!', hintEs: 'Como el pasto y las hojas 🟢.', speak: 'Green' },
+      { emoji: '💛', display: 'YELLOW', promptHe: 'אֵיזֶה צֶבַע זֶה YELLOW?', promptEn: 'Which color is YELLOW?', promptEs: '¿Qué color es YELLOW?', answer: 'צָהֹב', choices: ['צָהֹב', 'כָּתֹם', 'אָדֹם', 'יָרֹק'], hintHe: 'כְּמוֹ בָּנָנָה וְשֶׁמֶשׁ 💛!', hintEn: 'Like a banana and the sun 💛!', hintEs: 'Como un plátano y el sol 💛.', speak: 'Yellow' },
       { emoji: '7️⃣', display: 'SEVEN', promptHe: 'אֵיזֶה מִסְפָּר זֶה SEVEN?', promptEn: 'Which number is SEVEN?', promptEs: '¿Qué número es SEVEN?', answer: '7', choices: ['7', '6', '8', '9'], hintHe: 'סוֹפְרִים בְּאַנְגְּלִית: One, Two, Three, Four, Five, Six, SEVEN!', hintEn: 'Count up: 5 (five), 6 (six), 7 (SEVEN)!', hintEs: 'Cuenta: 5 (five), 6 (six), 7 (SEVEN).', speak: 'Seven' },
       { emoji: '🔟', display: 'TEN', promptHe: 'אֵיזֶה מִסְפָּר זֶה TEN?', promptEn: 'Which number is TEN?', promptEs: '¿Qué número es TEN?', answer: '10', choices: ['10', '2', '8', '5'], hintHe: 'כַּמָּה אֶצְבָּעוֹת יֵשׁ בִּשְׁתֵּי הַיָּדַיִם יַחַד? TEN!', hintEn: 'How many fingers on both hands? TEN!', hintEs: '¿Cuántos dedos en ambas manos? ¡10!', speak: 'Ten' }
     ],
@@ -333,7 +346,15 @@ const BANKS = {
       { emoji: '📖', display: 'BOOK', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל BOOK?', promptEn: 'What does BOOK mean?', promptEs: '¿Qué significa BOOK?', answer: 'סֵפֶר', choices: ['סֵפֶר', 'שֻׁלְחָן', 'בַּיִת', 'כַּדּוּר'], hintHe: 'קוֹרְאִים בּוֹ סִפּוּרִים 📖!', hintEn: 'We read stories in it 📖!', hintEs: 'Leemos cuentos en él 📖.', speak: 'Book' },
       { emoji: '🏠', display: 'HOUSE', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל HOUSE?', promptEn: 'What does HOUSE mean?', promptEs: '¿Qué significa HOUSE?', answer: 'בַּיִת', choices: ['בַּיִת', 'מְכוֹנִית', 'עֵץ', 'שֶׁמֶשׁ'], hintHe: 'הַמָּקוֹם שֶׁבּוֹ אֲנַחְנוּ גָּרִים 🏠!', hintEn: 'The place where we live 🏠!', hintEs: 'El lugar donde vivimos 🏠.', speak: 'House' },
       { emoji: '💧', display: 'WATER', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל WATER?', promptEn: 'What does WATER mean?', promptEs: '¿Qué significa WATER?', answer: 'מַיִם', choices: ['מַיִם', 'חָלָב', 'אֵשׁ', 'שֶׁלֶג'], hintHe: 'שׁוֹתִים כְּשֶׁצְּמֵאִים 💧!', hintEn: 'We drink it when thirsty 💧!', hintEs: 'Lo bebemos cuando tenemos sed 💧.', speak: 'Water' },
-      { emoji: '😊', display: 'HAPPY', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל HAPPY?', promptEn: 'What does HAPPY mean?', promptEs: '¿Qué significa HAPPY?', answer: 'שָׂמֵחַ', choices: ['שָׂמֵחַ', 'עָצוּב', 'עָיֵף', 'גָּדוֹל'], hintHe: 'חִיּוּךְ עֲנָק 😊 — כְּמוֹ בְּ-"Happy Birthday"!', hintEn: 'Big smile 😊 — like in "Happy Birthday"!', hintEs: 'Gran sonrisa 😊 — como en "Happy Birthday".', speak: 'Happy' }
+      { emoji: '😊', display: 'HAPPY', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל HAPPY?', promptEn: 'What does HAPPY mean?', promptEs: '¿Qué significa HAPPY?', answer: 'שָׂמֵחַ', choices: ['שָׂמֵחַ', 'עָצוּב', 'עָיֵף', 'גָּדוֹל'], hintHe: 'חִיּוּךְ עֲנָק 😊 — כְּמוֹ בְּ-"Happy Birthday"!', hintEn: 'Big smile 😊 — like in "Happy Birthday"!', hintEs: 'Gran sonrisa 😊 — como en "Happy Birthday".', speak: 'Happy' },
+      { emoji: '🏫', display: 'SCHOOL', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל SCHOOL?', promptEn: 'What does SCHOOL mean?', promptEs: '¿Qué significa SCHOOL?', answer: 'בֵּית סֵפֶר', choices: ['בֵּית סֵפֶר', 'פַּארְק', 'יָם', 'חֲנוּת'], hintHe: 'הַמָּקוֹם שֶׁבּוֹ לוֹמְדִים עִם חֲבֵרִים 🏫!', hintEn: 'The place where we learn with friends 🏫!', hintEs: 'Donde aprendemos con amigos 🏫.', speak: 'School' }
+    ],
+    phrases: [
+      { emoji: '🌅', display: 'GOOD MORNING', promptHe: 'מָה אוֹמְרִים בְּ-"GOOD MORNING"?', promptEn: 'What does "GOOD MORNING" mean?', promptEs: '¿Qué significa "GOOD MORNING"?', answer: 'בֹּקֶר טוֹב', choices: ['בֹּקֶר טוֹב', 'לַיְלָה טוֹב', 'תּוֹדָה רַבָּה', 'שָׁלוֹם'], hintHe: 'Morning = בֹּקֶר, Good = טוֹב 🌅!', hintEn: 'Morning = בֹּקֶר, Good = טוֹב 🌅!', hintEs: 'Buenos días = בֹּקֶר טוֹב 🌅.', speak: 'Good morning' },
+      { emoji: '🙏', display: 'THANK YOU', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל "THANK YOU"?', promptEn: 'What does "THANK YOU" mean?', promptEs: '¿Qué significa "THANK YOU"?', answer: 'תּוֹדָה', choices: ['תּוֹדָה', 'בְּבַקָּשָׁה', 'סְלִיחָה', 'לְהִתְרָאוֹת'], hintHe: 'אוֹמְרִים כְּשֶׁמְּקַבְּלִים מַתָּנָה אוֹ עֶזְרָה 🙏!', hintEn: 'What we say when someone helps us 🙏!', hintEs: 'Lo decimos cuando nos ayudan 🙏.', speak: 'Thank you' },
+      { emoji: '👋', display: 'HOW ARE YOU?', promptHe: 'מָה שׁוֹאֲלִים בְּ-"HOW ARE YOU?"', promptEn: 'What does "HOW ARE YOU?" mean?', promptEs: '¿Qué significa "HOW ARE YOU?"', answer: 'מָה שְׁלוֹמְךָ?', choices: ['מָה שְׁלוֹמְךָ?', 'אֵיפֹה אַתָּה?', 'בֶּן כַּמָּה אַתָּה?', 'מָה שִׁמְךָ?'], hintHe: 'שׁוֹאֲלִים חָבֵר כְּשֶׁנִּפְגָּשִׁים: "מָה שְׁלוֹמְךָ?" 👋', hintEn: 'A friendly greeting asking how someone feels 👋!', hintEs: 'Un saludo amistoso: ¿cómo estás? 👋', speak: 'How are you?' },
+      { emoji: '🌙', display: 'GOOD NIGHT', promptHe: 'מָה אוֹמְרִים בְּ-"GOOD NIGHT"?', promptEn: 'What does "GOOD NIGHT" mean?', promptEs: '¿Qué significa "GOOD NIGHT"?', answer: 'לַיְלָה טוֹב', choices: ['לַיְלָה טוֹב', 'בֹּקֶר טוֹב', 'שָׁלוֹם', 'סְלִיחָה'], hintHe: 'אוֹמְרִים לִפְנֵי שֶׁהוֹלְכִים לִישֹׁן 🌙!', hintEn: 'What we say before bedtime 🌙!', hintEs: 'Lo decimos antes de dormir 🌙.', speak: 'Good night' },
+      { emoji: '🍦', display: 'I LIKE ICE CREAM', promptHe: 'מָה הַמַּשְׁמָעוּת שֶׁל "I LIKE ICE CREAM"?', promptEn: 'What does "I LIKE ICE CREAM" mean?', promptEs: '¿Qué significa "I LIKE ICE CREAM"?', answer: 'אֲנִי אוֹהֵב גְּלִידָה', choices: ['אֲנִי אוֹהֵב גְּלִידָה', 'אֲנִי רוֹצֶה מַיִם', 'יֵשׁ לִי כֶּלֶב', 'זֶה תַּפּוּחַ'], hintHe: 'I like = אֲנִי אוֹהֵב, Ice cream = גְּלִידָה 🍦!', hintEn: 'I like = אֲנִי אוֹהֵב, Ice cream = גְּלִידָה 🍦!', hintEs: 'Me gusta el helado 🍦.', speak: 'I like ice cream' }
     ]
   },
 
@@ -583,19 +604,130 @@ const BANKS = {
         hintEn: 'One cat = singular ("it"), so use "is"!',
         hintEs: 'Un gato = singular, así que usa "is".',
         speak: 'The cat is sleeping on the bed'
+      },
+      {
+        emoji: '🍎',
+        display: 'I want ___ orange, please.',
+        promptHe: 'מָה שָׂמִים לִפְנֵי מִלָּה שֶׁמַּתְחִילָה בְּאוֹת תְּנוּעָה (a / an)?',
+        promptEn: 'Choose "a" or "an" before "orange":',
+        promptEs: 'Elige "a" o "an" antes de "orange":',
+        answer: 'an',
+        choices: ['an', 'a', 'are', 'is'],
+        hintHe: 'לִפְנֵי אוֹתִיּוֹת הַתְּנוּעָה A, E, I, O, U תָּמִיד כּוֹתְבִים an (an orange)!',
+        hintEn: 'Before vowels (A, E, I, O, U) always use "an"!',
+        hintEs: 'Antes de vocales usa "an": an orange.',
+        speak: 'I want an orange, please'
+      },
+      {
+        emoji: '🎸',
+        display: '___ he play the guitar?',
+        promptHe: 'בַּחֲרוּ בֵּין Do / Does לְמִשְׁפַּט הַשְּׁאֵלָה:',
+        promptEn: 'Choose Do or Does for this question:',
+        promptEs: 'Elige Do o Does para esta pregunta:',
+        answer: 'Does',
+        choices: ['Does', 'Do', 'Are', 'Have'],
+        hintHe: 'עִם He / She / It שׁוֹאֲלִים בְּ-Does (וְעִם I / You / We / They בְּ-Do)!',
+        hintEn: 'Use "Does" with He / She / It!',
+        hintEs: 'Usa "Does" con He / She / It.',
+        speak: 'Does he play the guitar?'
+      },
+      {
+        emoji: '🪑',
+        display: 'The ball is ___ the table.',
+        promptHe: 'הַכַּדּוּר נִמְצָא מִתַּחַת לַשֻּׁלְחָן — אֵיזוֹ מִלַּת יַחַס מַתְאִימָה?',
+        promptEn: 'Which preposition means "under"?',
+        promptEs: '¿Qué preposición significa "debajo"?',
+        answer: 'under',
+        choices: ['under', 'on', 'in', 'behind'],
+        hintHe: 'on = עַל, in = בְּתוֹךְ, under = מִתַּחַת!',
+        hintEn: 'on = above touching, in = inside, under = below!',
+        hintEs: 'under = debajo.',
+        speak: 'The ball is under the table'
+      }
+    ],
+    reading: [
+      {
+        emoji: '🏫',
+        display: 'Noa goes to school at 8:00. Her favorite subject is Science.',
+        promptHe: 'מָה הַמִּקְצוֹעַ הָאָהוּב עַל נֹעָה? (What is Noa’s favorite subject?)',
+        promptEn: 'What is Noa’s favorite subject?',
+        promptEs: '¿Cuál es la materia favorita de Noa?',
+        answer: 'Science',
+        choices: ['Science', 'Music', 'Art', 'Sports'],
+        hintHe: 'קִרְאוּ אֶת הַמִּשְׁפָּט הַשֵּׁנִי: "Her favorite subject is Science"!',
+        hintEn: 'Look at the second sentence: "Her favorite subject is Science."',
+        hintEs: 'Lee la segunda frase: Science.',
+        speak: 'Noa goes to school at eight o clock. Her favorite subject is Science.'
+      },
+      {
+        emoji: '🐶',
+        display: 'Tom has a small brown dog named Max. Max loves to run in the park.',
+        promptHe: 'אֵיפֹה מַקְס אוֹהֵב לָרוּץ? (Where does Max love to run?)',
+        promptEn: 'Where does Max love to run?',
+        promptEs: '¿Dónde le gusta correr a Max?',
+        answer: 'In the park',
+        choices: ['In the park', 'In the sea', 'At school', 'In the kitchen'],
+        hintHe: 'חַפְּשׂוּ בַּטֶּקְסְט אֶת הַמִּלָּה "run" — מָה כָּתוּב אַחֲרֶיהָ?',
+        hintEn: 'Find the word "run" in the story — it says "run in the park"!',
+        hintEs: 'Busca "run" en el texto: in the park.',
+        speak: 'Tom has a small brown dog named Max. Max loves to run in the park.'
+      },
+      {
+        emoji: '❓',
+        display: '___ do you live? — I live in Tel Aviv.',
+        promptHe: 'אֵיזוֹ מִלַּת שְׁאֵלָה (WH) מַתְאִימָה לְמָקוֹם ("אֵיפֹה")?',
+        promptEn: 'Which WH-word asks about a place?',
+        promptEs: '¿Qué palabra pregunta por un lugar?',
+        answer: 'Where',
+        choices: ['Where', 'When', 'Who', 'Why'],
+        hintHe: 'Where = אֵיפֹה (מָקוֹם), When = מָתַי (זְמַן), Who = מִי (אָדָם)!',
+        hintEn: 'Where = place, When = time, Who = person!',
+        hintEs: 'Where = dónde (lugar).',
+        speak: 'Where do you live? I live in Tel Aviv.'
+      },
+      {
+        emoji: '🎂',
+        display: '___ is your birthday? — It is in May!',
+        promptHe: 'אֵיזוֹ מִלַּת שְׁאֵלָה מַתְאִימָה לִזְמַן ("מָתַי")?',
+        promptEn: 'Which WH-word asks about time?',
+        promptEs: '¿Qué palabra pregunta por tiempo?',
+        answer: 'When',
+        choices: ['When', 'Where', 'Who', 'What'],
+        hintHe: 'כְּשֶׁשּׁוֹאֲלִים עַל תַּאֲרִיךְ אוֹ זְמַן שׁוֹאֲלִים When (מָתַי)!',
+        hintEn: 'Use "When" to ask about dates and times!',
+        hintEs: 'Usa "When" para fechas y horas.',
+        speak: 'When is your birthday? It is in May!'
+      },
+      {
+        emoji: '🌧️',
+        display: 'It is cold and rainy today, so Maya takes her yellow umbrella.',
+        promptHe: 'מָה מָאיָה לוֹקַחַת אִתָּהּ? (What does Maya take?)',
+        promptEn: 'What does Maya take with her?',
+        promptEs: '¿Qué lleva Maya consigo?',
+        answer: 'An umbrella',
+        choices: ['An umbrella', 'A swimsuit', 'Sunglasses', 'A skateboard'],
+        hintHe: 'יּוֹרֵד גֶּשֶׁם (rainy), לָכֵן הִיא לוֹקַחַת yellow umbrella!',
+        hintEn: 'Because it is rainy, she takes her yellow umbrella!',
+        hintEs: 'Lleva su paraguas amarillo (umbrella).',
+        speak: 'It is cold and rainy today, so Maya takes her yellow umbrella.'
       }
     ],
     vocab: [
       { emoji: '🌤️', display: 'WEATHER', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל WEATHER?', promptEn: 'What does WEATHER mean in Hebrew?', promptEs: '¿Qué significa WEATHER?', answer: 'מֶזֶג אֲוִיר', choices: ['מֶזֶג אֲוִיר', 'מַיִם', 'שָׁבוּעַ', 'חוֹרֶף'], hintHe: 'אִם שֶׁמֶשׁ אוֹ גֶּשֶׁם בַּחוּץ 🌤️ — מֶזֶג אֲוִיר!', hintEn: 'Sun, rain, or clouds outside 🌤️ = מֶזֶג אֲוִיר!', hintEs: 'Sol, lluvia o nubes afuera 🌤️.', speak: 'Weather' },
       { emoji: '🥞', display: 'BREAKFAST', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל BREAKFAST?', promptEn: 'What does BREAKFAST mean in Hebrew?', promptEs: '¿Qué significa BREAKFAST?', answer: 'אֲרוּחַת בֹּקֶר', choices: ['אֲרוּחַת בֹּקֶר', 'אֲרוּחַת עֶרֶב', 'הַפְסָקָה', 'מִטְבָּח'], hintHe: 'הָאֲרוּחָה הָרִאשׁוֹנָה שֶׁל הַיּוֹם בַּבֹּקֶר 🥞!', hintEn: 'The first meal of the morning 🥞!', hintEs: 'La primera comida de la mañana 🥞.', speak: 'Breakfast' },
       { emoji: '❓', display: 'QUESTION', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל QUESTION?', promptEn: 'What does QUESTION mean in Hebrew?', promptEs: '¿Qué significa QUESTION?', answer: 'שְׁאֵלָה', choices: ['שְׁאֵלָה', 'תְּשׁוּבָה', 'מִשְׁפָּט', 'סִפּוּר'], hintHe: 'כְּשֶׁמְּרִימִים יָד בַּכִּתָּה כְּדֵי לִשְׁאֹל ❓!', hintEn: 'What you ask when raising your hand ❓!', hintEs: 'Lo que haces al levantar la mano ❓.', speak: 'Question' },
-      { emoji: '📅', display: 'YESTERDAY', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל YESTERDAY?', promptEn: 'What does YESTERDAY mean in Hebrew?', promptEs: '¿Qué significa YESTERDAY?', answer: 'אֶתְמוֹל', choices: ['אֶתְמוֹל', 'מָחָר', 'הַיּוֹם', 'תָּמִיד'], hintHe: 'הַיּוֹם שֶׁהָיָה לִפְנֵי הַיּוֹם — אֶתְמוֹל!', hintEn: 'The day before today = אֶתְמוֹל!', hintEs: 'El día antes de hoy = ayer.', speak: 'Yesterday' }
+      { emoji: '📅', display: 'YESTERDAY', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל YESTERDAY?', promptEn: 'What does YESTERDAY mean in Hebrew?', promptEs: '¿Qué significa YESTERDAY?', answer: 'אֶתְמוֹל', choices: ['אֶתְמוֹל', 'מָחָר', 'הַיּוֹם', 'תָּמִיד'], hintHe: 'הַיּוֹם שֶׁהָיָה לִפְנֵי הַיּוֹם — אֶתְמוֹל!', hintEn: 'The day before today = אֶתְמוֹל!', hintEs: 'El día antes de hoy = ayer.', speak: 'Yesterday' },
+      { emoji: '📚', display: 'LIBRARY', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל LIBRARY?', promptEn: 'What does LIBRARY mean in Hebrew?', promptEs: '¿Qué significa LIBRARY?', answer: 'סִפְרִיָּה', choices: ['סִפְרִיָּה', 'כִּתָּה', 'חֲנוּת', 'מִטְבָּח'], hintHe: 'מָקוֹם שָׁקֵט עִם הֲמוֹן סְפָרִים 📚!', hintEn: 'A quiet room full of books 📚!', hintEs: 'Un lugar lleno de libros 📚.', speak: 'Library' },
+      { emoji: '🧠', display: 'UNDERSTAND', promptHe: 'מָה הַפֵּרוּשׁ שֶׁל UNDERSTAND?', promptEn: 'What does UNDERSTAND mean in Hebrew?', promptEs: '¿Qué significa UNDERSTAND?', answer: 'לְהָבִין', choices: ['לְהָבִין', 'לִשְׁכֹּחַ', 'לִקְפֹּץ', 'לְצַיֵּר'], hintHe: 'כְּשֶׁהַהֶסְבֵּר בָּרוּר לְךָ — אַתָּה מֵבִין 🧠!', hintEn: 'When an explanation makes sense 🧠!', hintEs: 'Cuando algo tiene sentido 🧠.', speak: 'Understand' }
     ],
     opposites_plurals: [
       { emoji: '⚡', display: 'FAST ⇄ ?', promptHe: 'מָה הַהֵפֶךְ שֶׁל FAST בְּאַנְגְּלִית?', promptEn: 'What is the opposite of FAST?', promptEs: '¿Cuál es el opuesto de FAST?', answer: 'SLOW', choices: ['SLOW', 'BIG', 'HIGH', 'OLD'], hintHe: 'FAST = מָהִיר. הַהֵפֶךְ שֶׁל מָהִיר הוּא אִטִּי (SLOW)!', hintEn: 'Fast ↔ Slow (like a turtle)!', hintEs: 'Rápido ↔ lento (SLOW).', speak: 'Fast and slow' },
       { emoji: '🌅', display: 'EARLY ⇄ ?', promptHe: 'מָה הַהֵפֶךְ שֶׁל EARLY (מֻקְדָּם)?', promptEn: 'What is the opposite of EARLY?', promptEs: '¿Cuál es el opuesto de EARLY?', answer: 'LATE', choices: ['LATE', 'SOON', 'DARK', 'COLD'], hintHe: 'EARLY = מֻקְדָּם. הַהֵפֶךְ הוּא מְאֻחָר (LATE)!', hintEn: 'Early ↔ Late!', hintEs: 'Temprano ↔ tarde (LATE).', speak: 'Early and late' },
+      { emoji: '🔊', display: 'NOISY ⇄ ?', promptHe: 'מָה הַהֵפֶךְ שֶׁל NOISY (רוֹעֵשׁ)?', promptEn: 'What is the opposite of NOISY?', promptEs: '¿Cuál es el opuesto de NOISY?', answer: 'QUIET', choices: ['QUIET', 'LOUD', 'LONG', 'WIDE'], hintHe: 'הַהֵפֶךְ מֵרוֹעֵשׁ הוּא שָׁקֵט — QUIET 🤫!', hintEn: 'Noisy ↔ Quiet 🤫!', hintEs: 'Ruidoso ↔ silencioso (QUIET).', speak: 'Noisy and quiet' },
       { emoji: '📦', display: 'one box → two ___', promptHe: 'אֵיךְ כּוֹתְבִים box בְּרַבִּים בְּאַנְגְּלִית?', promptEn: 'What is the plural of "box"?', promptEs: '¿Cuál es el plural de "box"?', answer: 'boxes', choices: ['boxes', 'boxs', 'boxies', 'box'], hintHe: 'מִלָּה שֶׁנִּגְמֶרֶת בְּ-x מְקַבֶּלֶת es בְּרַבִּים: boxes!', hintEn: 'Words ending in -x add -es for plural: boxes!', hintEs: 'Las palabras terminadas en -x añaden -es: boxes.', speak: 'Two boxes' },
-      { emoji: '🧒', display: 'one child → three ___', promptHe: 'אֵיךְ כּוֹתְבִים child (יֶלֶד) בְּרַבִּים?', promptEn: 'What is the plural of "child"?', promptEs: '¿Cuál es el plural de "child"?', answer: 'children', choices: ['children', 'childs', 'childes', 'childrens'], hintHe: 'יוֹצֵא דֹּפֶן חָשׁוּב בְּאַנְגְּלִית: child → children!', hintEn: 'Irregular plural: one child → three children!', hintEs: 'Plural irregular: child → children.', speak: 'Three children' }
+      { emoji: '🧒', display: 'one child → three ___', promptHe: 'אֵיךְ כּוֹתְבִים child (יֶלֶד) בְּרַבִּים?', promptEn: 'What is the plural of "child"?', promptEs: '¿Cuál es el plural de "child"?', answer: 'children', choices: ['children', 'childs', 'childes', 'childrens'], hintHe: 'יוֹצֵא דֹּפֶן חָשׁוּב בְּאַנְגְּלִית: child → children!', hintEn: 'Irregular plural: one child → three children!', hintEs: 'Plural irregular: child → children.', speak: 'Three children' },
+      { emoji: '🦷', display: 'one tooth → many ___', promptHe: 'אֵיךְ כּוֹתְבִים tooth (שֵׁן) בְּרַבִּים?', promptEn: 'What is the plural of "tooth"?', promptEs: '¿Cuál es el plural de "tooth"?', answer: 'teeth', choices: ['teeth', 'tooths', 'toothes', 'teethes'], hintHe: 'יוֹצֵא דֹּפֶן: oo הוֹפֵךְ לְ-ee: tooth → teeth 🦷!', hintEn: 'Irregular plural: oo changes to ee: tooth → teeth 🦷!', hintEs: 'Plural irregular: tooth → teeth 🦷.', speak: 'Brush your teeth' },
+      { emoji: '🐭', display: 'one mouse → two ___', promptHe: 'אֵיךְ כּוֹתְבִים mouse (עַכְבָּר) בְּרַבִּים?', promptEn: 'What is the plural of "mouse"?', promptEs: '¿Cuál es el plural de "mouse"?', answer: 'mice', choices: ['mice', 'mouses', 'mices', 'mouse'], hintHe: 'יוֹצֵא דֹּפֶן מֻכָּר: one mouse → two mice 🐭!', hintEn: 'Irregular plural: one mouse → two mice 🐭!', hintEs: 'Plural irregular: mouse → mice 🐭.', speak: 'Two mice' }
     ]
   }
 };

@@ -19,6 +19,7 @@ import OpeningSoundGame from './components/OpeningSoundGame';
 import MathPlay from './components/MathPlay';
 import IsraelMathArena from './components/IsraelMathArena';
 import SchoolSkillArena from './components/SchoolSkillArena';
+import EnglishLearnStudio from './components/EnglishLearnStudio';
 import PlayTimeLockOverlay from './components/PlayTimeLockOverlay';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
@@ -927,6 +928,16 @@ export default function App() {
             onSwitchActivity={setCurrentTab}
           />
         )}
+        {currentTab === 'english_abc_age7' && (
+          <EnglishLearnStudio
+            key={`english-abc-7-${activeProfileId || 'guest'}`}
+            ageMode={7}
+            lang={lang}
+            soundEnabled={soundEnabled}
+            onEarnStar={handleEarnStar}
+            onSwitchActivity={setCurrentTab}
+          />
+        )}
         {currentTab === 'english_age7' && (
           <SchoolSkillArena
             key={`english-7-${activeProfileId || 'guest'}`}
@@ -945,6 +956,16 @@ export default function App() {
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
+            onEarnStar={handleEarnStar}
+            onSwitchActivity={setCurrentTab}
+          />
+        )}
+        {currentTab === 'english_studio_age9' && (
+          <EnglishLearnStudio
+            key={`english-studio-9-${activeProfileId || 'guest'}`}
+            ageMode={9}
+            lang={lang}
+            soundEnabled={soundEnabled}
             onEarnStar={handleEarnStar}
             onSwitchActivity={setCurrentTab}
           />
