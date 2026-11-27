@@ -4,6 +4,12 @@ import { LETTERS_DATA, NUMBERS_DATA } from '../data/curriculumData';
 import { playSound, speakLetterName, playNumberAudio, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { useDeviceType } from '../utils/useDeviceType';
+import { tr } from '../utils/i18n';
+
+const NUMBERS_ES = {
+  1: 'Uno', 2: 'Dos', 3: 'Tres', 4: 'Cuatro', 5: 'Cinco',
+  6: 'Seis', 7: 'Siete', 8: 'Ocho', 9: 'Nueve', 10: 'Diez',
+};
 
 const BRUSH_COLORS = [
   { id: 'rainbow', label: '🌈', color: 'rainbow' },
@@ -214,11 +220,14 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
       playSound('whoosh');
       setFeedbackMessage({
         type: 'warning',
-        text: isHe
-          ? gender === 'girl'
+        text: tr(
+          lang,
+          gender === 'girl'
             ? 'עוֹד קְצָת! צַבְּעִי עַל הַקַּוִּים שֶׁל הָאוֹת!'
-            : 'עוֹד קְצָת! צַבַּע עַל הַקַּוִּים שֶׁל הָאוֹת!'
-          : 'Almost there! Color over the lines of the letter!'
+            : 'עוֹד קְצָת! צַבַּע עַל הַקַּוִּים שֶׁל הָאוֹת!',
+          'Almost there! Color over the lines of the letter!',
+          '¡Casi listo! ¡Colorea sobre las líneas!'
+        )
       });
       if (soundEnabled) {
         playPhraseAudio('tracing_keep_going', gender);
@@ -231,11 +240,14 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
       playSound('whoosh');
       setFeedbackMessage({
         type: 'warning',
-        text: isHe
-          ? gender === 'girl'
+        text: tr(
+          lang,
+          gender === 'girl'
             ? 'נַסִּי לִצְבּוֹעַ בְּתוֹךְ קַוֵּי הָאוֹת, אַתְּ מַמָּשׁ קְרוֹבָה!'
-            : 'נַסֵּה לִצְבּוֹעַ בְּתוֹךְ קַוֵּי הָאוֹת, אַתָּה מַמָּשׁ קָרוֹב!'
-          : 'Try to color closer inside the lines of the letter!'
+            : 'נַסֵּה לִצְבּוֹעַ בְּתוֹךְ קַוֵּי הָאוֹת, אַתָּה מַמָּשׁ קָרוֹב!',
+          'Try to color closer inside the lines of the letter!',
+          '¡Intenta colorear más cerca dentro de las líneas!'
+        )
       });
       if (soundEnabled) {
         playPhraseAudio('tracing_inside', gender);
@@ -252,11 +264,14 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
 
     setFeedbackMessage({
       type: 'success',
-      text: isHe
-        ? gender === 'girl'
+      text: tr(
+        lang,
+        gender === 'girl'
           ? '🎉 וָואוּ! צִיַּרְתְּ מַדְהִים! כּוֹל הַכָּבוֹד!'
-          : '🎉 וָואוּ! צִיַּרְתָּ מַדְהִים! כּוֹל הַכָּבוֹד!'
-        : '🎉 WOW! You traced it amazingly! Kol HaKavod!'
+          : '🎉 וָואוּ! צִיַּרְתָּ מַדְהִים! כּוֹל הַכָּבוֹד!',
+        '🎉 WOW! You traced it amazingly! Kol HaKavod!',
+        '🎉 ¡GUAU! ¡Lo trazaste increíble! ¡Muy bien!'
+      )
     });
 
     if (soundEnabled) {
@@ -295,26 +310,35 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
       <div className="bg-gradient-to-r from-teal-400 via-emerald-500 to-teal-600 rounded-3xl p-6 text-white text-center shadow-lg relative overflow-hidden">
         <span className="text-4xl animate-bounce-gentle inline-block">🎨 ✍️ ⭐</span>
         <h2 className="text-2xl md:text-3xl font-black mt-2">
-          {isHe
-            ? `צִיּוּר וּכְתִיבָה ${withDeviceHe} (מוֹטוֹרִיקָה עֲדִינָה)`
-            : `Drawing & Tracing ${withDeviceEn} (Fine Motor Skills)`}
+          {tr(
+            lang,
+            `צִיּוּר וּכְתִיבָה ${withDeviceHe} (מוֹטוֹרִיקָה עֲדִינָה)`,
+            `Drawing & Tracing ${withDeviceEn} (Fine Motor Skills)`,
+            `Dibujar y Trazar ${isTouch ? 'con el dedo' : 'con el ratón'} (Motricidad Fina)`
+          )}
         </h2>
         <p className="text-teal-100 text-sm md:text-base mt-1 font-medium">
-          {isHe
-            ? `עוֹבְרִים ${withDeviceHe} עַל הַקַּוִּים הַמְקֻוְקָוִים וְלוֹמְדִים לִכְתּוֹב!`
-            : `Trace ${withDeviceEn} over the dotted lines and learn to write!`}
+          {tr(
+            lang,
+            `עוֹבְרִים ${withDeviceHe} עַל הַקַּוִּים הַמְקֻוְקָוִים וְלוֹמְדִים לִכְתּוֹב!`,
+            `Trace ${withDeviceEn} over the dotted lines and learn to write!`,
+            `¡Traza ${isTouch ? 'con el dedo' : 'con el ratón'} sobre las líneas punteadas y aprende a escribir!`
+          )}
         </p>
 
         <button
           onClick={playInstructionSound}
           className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-2xl font-bold text-xs md:text-sm text-white shadow-sm border border-white/40 btn-press-3d"
-          title={isHe ? (gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת') : 'Hear Instructions'}
+          title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
         >
           <Volume2 className="w-4 h-4 text-teal-200 animate-pulse" />
           <span>
-            {isHe
-              ? gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת'
-              : '🔊 Hear Instructions'}
+            {tr(
+              lang,
+              gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת',
+              '🔊 Hear Instructions',
+              '🔊 Escuchar instrucciones'
+            )}
           </span>
         </button>
 
@@ -333,7 +357,7 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            {isHe ? '🔤 אוֹתִיּוֹת' : '🔤 Letters'}
+            {tr(lang, '🔤 אוֹתִיּוֹת', '🔤 Letters', '🔤 Letras')}
           </button>
           <button
             onClick={() => {
@@ -348,7 +372,7 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            {isHe ? '🔢 מִסְפָּרִים' : '🔢 Numbers'}
+            {tr(lang, '🔢 מִסְפָּרִים', '🔢 Numbers', '🔢 Números')}
           </button>
         </div>
       </div>
@@ -360,14 +384,14 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
           <button
             onClick={handlePrev}
             className="pointer-events-auto p-3 bg-teal-100 hover:bg-teal-200 active:scale-95 text-slate-800 rounded-full shadow-md btn-press-3d transition"
-            title={isHe ? 'הַקּוֹדֵם' : 'Previous'}
+            title={tr(lang, 'הַקּוֹדֵם', 'Previous', 'Anterior')}
           >
             {isHe ? <ChevronRight className="w-8 h-8" /> : <ChevronLeft className="w-8 h-8" />}
           </button>
           <button
             onClick={handleNext}
             className="pointer-events-auto p-3 bg-teal-100 hover:bg-teal-200 active:scale-95 text-slate-800 rounded-full shadow-md btn-press-3d transition"
-            title={isHe ? 'הַבָּא' : 'Next'}
+            title={tr(lang, 'הַבָּא', 'Next', 'Siguiente')}
           >
             {isHe ? <ChevronLeft className="w-8 h-8" /> : <ChevronRight className="w-8 h-8" />}
           </button>
@@ -376,11 +400,13 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
         {/* Header with Letter Audio */}
         <div className="flex items-center gap-2 mb-2 cursor-pointer" onClick={playActiveSound}>
           <h3 className="text-3xl md:text-4xl font-black text-slate-800">
-            {mode === 'letters' ? currentItem.displayWithNikud : currentItem.nameHe}
+            {mode === 'letters'
+              ? currentItem.displayWithNikud
+              : tr(lang, currentItem.nameHe, currentItem.nameHe, NUMBERS_ES[currentItem.number] || currentItem.nameEn)}
           </h3>
           <button
             className="p-2 bg-teal-100 hover:bg-teal-200 rounded-full shadow-sm"
-            title="השמע / Listen"
+            title={tr(lang, 'הַשְׁמַע', 'Listen', 'Escuchar')}
           >
             <Volume2 className="w-6 h-6 text-teal-700 animate-pulse" />
           </button>
@@ -389,8 +415,12 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
         {/* Real-time Accuracy & Coverage Progress Bar */}
         <div className="w-full max-w-xs mb-3 flex flex-col items-center gap-1">
           <div className="w-full flex justify-between text-xs font-black text-teal-800 px-1">
-            <span>{isHe ? `כִּיסוּי אוֹת: ${coveragePercent}%` : `Covered: ${coveragePercent}%`}</span>
-            <span>{coveragePercent >= 35 ? '⭐ כִּמְעַט סִיַּמְתָּ!' : '✍️ צַבְּעוּ עַל הַקַּוִּים'}</span>
+            <span>{tr(lang, `כִּיסוּי אוֹת: ${coveragePercent}%`, `Covered: ${coveragePercent}%`, `Cubierto: ${coveragePercent}%`)}</span>
+            <span>
+              {coveragePercent >= 35
+                ? tr(lang, '⭐ כִּמְעַט סִיַּמְתָּ!', '⭐ Almost done!', '⭐ ¡Casi listo!')
+                : tr(lang, '✍️ צַבְּעוּ עַל הַקַּוִּים', '✍️ Trace the lines', '✍️ Traza las líneas')}
+            </span>
           </div>
           <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-teal-200 shadow-inner">
             <div
@@ -469,7 +499,7 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
             className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-sm btn-press-3d"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>{isHe ? 'נַקֵּה' : 'Clear'}</span>
+            <span>{tr(lang, 'נַקֵּה', 'Clear', 'Borrar')}</span>
           </button>
 
           <button
@@ -477,7 +507,7 @@ export default function LetterTracer({ lang, soundEnabled, gender = 'boy', onEar
             className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-2xl text-base shadow-md btn-press-3d animate-pulse"
           >
             <CheckCircle2 className="w-5 h-5" />
-            <span>{isHe ? 'סִיַּמְתִּי! ✨' : 'Done! ✨'}</span>
+            <span>{tr(lang, 'סִיַּמְתִּי! ✨', 'Done! ✨', '¡Listo! ✨')}</span>
           </button>
         </div>
       </div>

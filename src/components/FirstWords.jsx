@@ -4,6 +4,7 @@ import { FIRST_WORDS_DATA } from '../data/curriculumData';
 import { playSound, playWordAudio, playPhraseAudio, speakText } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { useDeviceType } from '../utils/useDeviceType';
+import { tr } from '../utils/i18n';
 
 export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
   const [activeWordIdx, setActiveWordIdx] = useState(0);
@@ -65,12 +66,15 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
       <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-6 text-white text-center shadow-lg">
         <span className="text-4xl">🎉 📖 🏆</span>
         <h2 className="text-2xl md:text-3xl font-black mt-2">
-          {isHe ? 'יְלָדִים כְּבָר קוֹרְאִים מִלִּים אֲמִתִּיּוֹת!' : 'Kids are Reading Real Words! (Page 15)'}
+          {tr(lang, 'יְלָדִים כְּבָר קוֹרְאִים מִלִּים אֲמִתִּיּוֹת!', 'Kids are Reading Real Words! (Page 15)', '¡Los niños ya leen palabras reales!')}
         </h2>
         <p className="text-emerald-100 text-sm md:text-base mt-1 font-medium">
-          {isHe
-            ? 'קִרְאוּ אֶת הַחֲלָקִים, חַבְּרוּ אוֹתָם יַחַד וְגַלּוּ אֶת הַמִּלָּה!'
-            : 'Read the syllables, blend them together, and discover the word!'}
+          {tr(
+            lang,
+            'קִרְאוּ אֶת הַחֲלָקִים, חַבְּרוּ אוֹתָם יַחַד וְגַלּוּ אֶת הַמִּלָּה!',
+            'Read the syllables, blend them together, and discover the word!',
+            '¡Lee las sílabas, únelas y descubre la palabra!'
+          )}
         </p>
 
         <button
@@ -84,17 +88,23 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
         >
           <Volume2 className="w-4 h-4 text-emerald-200 animate-pulse" />
           <span>
-            {isHe
-              ? isTouch
-                ? gender === 'girl'
-                  ? 'גְּעִי עִם הָאֶצְבַּע בַּמִּלִּים (🔊 שִׁמְעִי הוֹרָאוֹת)'
-                  : 'גַּע עִם הָאֶצְבַּע בַּמִּלִּים (🔊 שְׁמַע הוֹרָאוֹת)'
-                : gender === 'girl'
-                  ? 'הַעֲבִירִי עַכְבָּר עַל הַמִּלִּים (🔊 שִׁמְעִי הוֹרָאוֹת)'
-                  : 'הַעֲבֵר עַכְבָּר עַל הַמִּלִּים (🔊 שְׁמַע הוֹרָאוֹת)'
-              : isTouch
-                ? 'Tap words with finger! (🔊 Hear Instructions)'
-                : 'Move mouse over words! (🔊 Hear Instructions)'}
+            {isTouch
+              ? tr(
+                  lang,
+                  gender === 'girl'
+                    ? 'גְּעִי עִם הָאֶצְבַּע בַּמִּלִּים (🔊 שִׁמְעִי הוֹרָאוֹת)'
+                    : 'גַּע עִם הָאֶצְבַּע בַּמִּלִּים (🔊 שְׁמַע הוֹרָאוֹת)',
+                  'Tap words with finger! (🔊 Hear Instructions)',
+                  '¡Toca las palabras con el dedo! (🔊 Escuchar instrucciones)'
+                )
+              : tr(
+                  lang,
+                  gender === 'girl'
+                    ? 'הַעֲבִירִי עַכְבָּר עַל הַמִּלִּים (🔊 שִׁמְעִי הוֹרָאוֹת)'
+                    : 'הַעֲבֵר עַכְבָּר עַל הַמִּלִּים (🔊 שְׁמַע הוֹרָאוֹת)',
+                  'Move mouse over words! (🔊 Hear Instructions)',
+                  '¡Pasa el ratón sobre las palabras! (🔊 Escuchar instrucciones)'
+                )}
           </span>
         </button>
       </div>
@@ -131,7 +141,7 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
         {!isBlended ? (
           <div className="flex flex-col items-center gap-6 my-6 w-full">
             <div className="text-sm font-bold text-slate-500">
-              {isHe ? 'לִחְצוּ עַל כָּל חֵלֶק כְּדֵי לִשְׁמוֹעַ אוֹתוֹ:' : 'Tap each syllable block to hear it:'}
+              {tr(lang, 'לִחְצוּ עַל כָּל חֵלֶק כְּדֵי לִשְׁמוֹעַ אוֹתוֹ:', 'Tap each syllable block to hear it:', 'Toca cada sílaba para escucharla:')}
             </div>
 
             {/* Syllable Blocks in Hebrew Right-to-Left order */}
@@ -166,7 +176,7 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
               className="mt-4 flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-black text-xl rounded-full shadow-lg btn-press-3d animate-pulse"
             >
               <Wand2 className="w-7 h-7" />
-              <span>{isHe ? 'חַבְּרוּ אֶת הַמִּלָּה! ✨' : 'Blend Word Together! ✨'}</span>
+              <span>{tr(lang, 'חַבְּרוּ אֶת הַמִּלָּה! ✨', 'Blend Word Together! ✨', '¡Unir la palabra! ✨')}</span>
             </button>
           </div>
         ) : (
@@ -179,10 +189,10 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
               {currentWord.wordHe}!
             </div>
             <div className="text-xl font-bold text-slate-500">
-              {currentWord.wordEn}
+              {lang === 'es' ? (currentWord.wordEs || currentWord.wordEn) : currentWord.wordEn}
             </div>
             <div className="px-5 py-2 bg-emerald-100 border border-emerald-300 text-emerald-900 font-extrabold rounded-full text-base">
-              {isHe ? currentWord.descriptionHe : currentWord.descriptionEn}
+              {tr(lang, currentWord.descriptionHe, currentWord.descriptionEn, currentWord.descriptionEs || currentWord.descriptionEn)}
             </div>
 
             <div className="flex gap-3 mt-4">
@@ -194,13 +204,13 @@ export default function FirstWords({ lang, soundEnabled, gender = 'boy', onEarnS
                 className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>{isHe ? 'פָּרֵק שׁוּב' : 'Unblend'}</span>
+                <span>{tr(lang, 'פָּרֵק שׁוּב', 'Unblend', 'Separar')}</span>
               </button>
               <button
                 onClick={handleNextWord}
                 className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-base shadow btn-press-3d"
               >
-                {isHe ? 'מִלָּה הַבָּאָה! ⬅️' : 'Next Word! ➡️'}
+                {tr(lang, 'מִלָּה הַבָּאָה! ⬅️', 'Next Word! ➡️', '¡Siguiente palabra! ➡️')}
               </button>
             </div>
           </div>

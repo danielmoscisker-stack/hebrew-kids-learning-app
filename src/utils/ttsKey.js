@@ -4,7 +4,11 @@
 
 export const normalizeTtsText = (text) => text.replace(/[*#()]/g, '').trim();
 
-export const ttsLang = (lang) => (lang === 'en-US' || lang === 'en' ? 'en' : 'iw');
+export const ttsLang = (lang) => {
+  if (lang === 'en-US' || lang === 'en') return 'en';
+  if (lang === 'es-ES' || lang === 'es') return 'es';
+  return 'iw';
+};
 
 export const ttsFileName = (text, lang = 'iw') => {
   const key = `${ttsLang(lang)}|${normalizeTtsText(text)}`;

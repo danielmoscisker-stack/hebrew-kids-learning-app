@@ -340,7 +340,10 @@ export async function onRequestGet({ request, env }) {
       .join('') || '<li>No data yet</li>';
   const langHtml =
     payload.byLang
-      .map((l) => `<li>${l.lang === 'he' ? 'Hebrew (he)' : 'English (en)'}: <strong>${l.sessions}</strong> sessions</li>`)
+      .map((l) => {
+        const label = l.lang === 'he' ? 'Hebrew (he)' : l.lang === 'es' ? 'Spanish (es)' : 'English (en)';
+        return `<li>${label}: <strong>${l.sessions}</strong> sessions</li>`;
+      })
       .join('') || '<li>No data yet</li>';
   const trendHtml =
     payload.dailyTrend

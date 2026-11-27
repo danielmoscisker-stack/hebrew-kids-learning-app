@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Accessibility, X, RotateCcw, Eye, Type, PauseCircle, MousePointer2, Sparkles, ExternalLink } from 'lucide-react';
 import { playSound } from '../utils/audio';
+import { tr } from '../utils/i18n';
 
 const DEFAULT_PREFS = {
   fontSize: 100, // 100 | 115 | 130
@@ -75,9 +76,9 @@ export default function AccessibilityMenu({
           playSound('pop');
           setOpen((v) => !v);
         }}
-        aria-label={isHe ? 'תַּפְרִיט נְגִישׁוּת' : 'Accessibility Menu'}
+        aria-label={tr(lang, 'תַּפְרִיט נְגִישׁוּת', 'Accessibility Menu', 'Menú de Accesibilidad')}
         aria-expanded={open}
-        title={isHe ? 'נְגִישׁוּת (ת״י 5568)' : 'Accessibility (SI 5568)'}
+        title={tr(lang, 'נְגִישׁוּת (ת״י 5568)', 'Accessibility (SI 5568)', 'Accesibilidad (Norma SI 5568)')}
         className="fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full bg-indigo-700 hover:bg-indigo-800 text-white border-2 border-white shadow-lg flex items-center justify-center btn-press-3d cursor-pointer"
       >
         <Accessibility className="w-6 h-6" aria-hidden="true" />
@@ -100,13 +101,13 @@ export default function AccessibilityMenu({
               <div className="flex items-center gap-2">
                 <Accessibility className="w-6 h-6 text-indigo-700" aria-hidden="true" />
                 <h2 id="a11y-dialog-title" className="text-lg font-black text-slate-900">
-                  {isHe ? 'תַּפְרִיט נְגִישׁוּת (ת״י 5568)' : 'Accessibility Menu (SI 5568)'}
+                  {tr(lang, 'תַּפְרִיט נְגִישׁוּת (ת״י 5568)', 'Accessibility Menu (SI 5568)', 'Menú de Accesibilidad (SI 5568)')}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label={isHe ? 'סְגוֹר תַּפְרִיט נְגִישׁוּת' : 'Close accessibility menu'}
+                aria-label={tr(lang, 'סְגוֹר תַּפְרִיט נְגִישׁוּת', 'Close accessibility menu', 'Cerrar menú de accesibilidad')}
                 className="p-2 rounded-full hover:bg-slate-100 text-slate-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -118,7 +119,7 @@ export default function AccessibilityMenu({
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
                 <span className="font-bold text-slate-800 flex items-center gap-2">
                   <Type className="w-4 h-4 text-indigo-600" aria-hidden="true" />
-                  {isHe ? 'גֹּדֶל טֶקְסְט' : 'Text Size'}
+                  {tr(lang, 'גֹּדֶל טֶקְסְט', 'Text Size', 'Tamaño de Texto')}
                 </span>
                 <div className="flex gap-1.5">
                   {[
@@ -156,7 +157,7 @@ export default function AccessibilityMenu({
                   }`}
                 >
                   <Eye className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span>{isHe ? 'נִגּוּדִיּוּת גְּבוֹהָה' : 'High Contrast'}</span>
+                  <span>{tr(lang, 'נִגּוּדִיּוּת גְּבוֹהָה', 'High Contrast', 'Alto Contraste')}</span>
                 </button>
 
                 <button
@@ -168,7 +169,7 @@ export default function AccessibilityMenu({
                   }`}
                 >
                   <Sparkles className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span>{isHe ? 'גְּוָנֵי אָפֹר' : 'Grayscale'}</span>
+                  <span>{tr(lang, 'גְּוָנֵי אָפֹר', 'Grayscale', 'Escala de Grises')}</span>
                 </button>
 
                 <button
@@ -180,7 +181,7 @@ export default function AccessibilityMenu({
                   }`}
                 >
                   <PauseCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span>{isHe ? 'עֲצִירַת אָנִימַצְיוֹת' : 'Stop Animations'}</span>
+                  <span>{tr(lang, 'עֲצִירַת אָנִימַצְיוֹת', 'Stop Animations', 'Detener Animaciones')}</span>
                 </button>
 
                 <button
@@ -192,7 +193,7 @@ export default function AccessibilityMenu({
                   }`}
                 >
                   <Type className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span>{isHe ? 'הַדְגָּשַׁת פְּקָדִים' : 'Highlight Controls'}</span>
+                  <span>{tr(lang, 'הַדְגָּשַׁת פְּקָדִים', 'Highlight Controls', 'Resaltar Controles')}</span>
                 </button>
 
                 <button
@@ -204,7 +205,7 @@ export default function AccessibilityMenu({
                   }`}
                 >
                   <Type className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span>{isHe ? 'גּוֹפָן קָרִיא' : 'Readable Font'}</span>
+                  <span>{tr(lang, 'גּוֹפָן קָרִיא', 'Readable Font', 'Fuente Legible')}</span>
                 </button>
 
                 <button
@@ -219,7 +220,7 @@ export default function AccessibilityMenu({
                   }`}
                 >
                   <MousePointer2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span>{isHe ? 'סַמָּן מַעֲרֶכֶת רָגִיל' : 'Standard Cursor'}</span>
+                  <span>{tr(lang, 'סַמָּן מַעֲרֶכֶת רָגִיל', 'Standard Cursor', 'Cursor Estándar')}</span>
                 </button>
               </div>
 
@@ -229,7 +230,7 @@ export default function AccessibilityMenu({
                   href="/accessibility.html"
                   className="inline-flex items-center gap-1.5 text-xs font-black text-indigo-700 hover:underline"
                 >
-                  <span>{isHe ? 'הַצְהָרַת נְגִישׁוּת מְלֵאָה' : 'Accessibility Statement'}</span>
+                  <span>{tr(lang, 'הַצְהָרַת נְגִישׁוּת מְלֵאָה', 'Accessibility Statement', 'Declaración de Accesibilidad')}</span>
                   <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                 </a>
 
@@ -239,7 +240,7 @@ export default function AccessibilityMenu({
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>{isHe ? 'אִפּוּס' : 'Reset'}</span>
+                  <span>{tr(lang, 'אִפּוּס', 'Reset', 'Restablecer')}</span>
                 </button>
               </div>
             </div>

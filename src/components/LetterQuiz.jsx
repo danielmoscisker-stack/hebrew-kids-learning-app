@@ -5,6 +5,7 @@ import { playSound, speakLetterName, playPhraseAudio, playWhereIsLetterAudio } f
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import confetti from 'canvas-confetti';
 import { useDeviceType } from '../utils/useDeviceType';
+import { tr } from '../utils/i18n';
 
 export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
   const isHe = lang === 'he';
@@ -232,12 +233,15 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
       <div className="bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 rounded-3xl p-6 text-white text-center shadow-lg relative overflow-hidden">
         <span className="text-5xl animate-bounce-gentle">🎯 🔤 🌟</span>
         <h2 className="text-2xl md:text-3xl font-black mt-2">
-          {isHe ? 'מִשְׂחַק זִהוּי אוֹתִיּוֹת: אֵיזוֹ אוֹת זֹאת?' : 'What Letter is This? Letter Mastery Game'}
+          {tr(lang, 'מִשְׂחַק זִהוּי אוֹתִיּוֹת: אֵיזוֹ אוֹת זֹאת?', 'What Letter is This? Letter Mastery Game', '¿Qué letra es esta? Juego de letras')}
         </h2>
         <p className="text-amber-100 text-sm md:text-base mt-1 font-medium">
-          {isHe
-            ? 'רוֹאִים אֶת הָאוֹת, מְגַלִּים אֶת הַשֵּׁם שֶׁלָּהּ, וְחוֹגְגִים עִם הֲמוֹן קוֹנְפֶטִי!'
-            : 'See the big letter, identify its name, and celebrate with crazy confetti!'}
+          {tr(
+            lang,
+            'רוֹאִים אֶת הָאוֹת, מְגַלִּים אֶת הַשֵּׁם שֶׁלָּהּ, וְחוֹגְגִים עִם הֲמוֹן קוֹנְפֶטִי!',
+            'See the big letter, identify its name, and celebrate with crazy confetti!',
+            '¡Mira la letra grande, descubre su nombre y celebra con mucho confeti!'
+          )}
         </p>
 
         {/* Top Controls: Choose Letters & Switch Modes */}
@@ -245,13 +249,16 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
           <button
             onClick={() => playPhraseAudio('inst_quiz', gender)}
             className="flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-2xl font-bold text-xs md:text-sm transition-all btn-press-3d border border-white/40"
-            title={isHe ? (gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת') : 'Hear Instructions'}
+            title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
           >
             <Volume2 className="w-4 h-4 text-amber-200 animate-pulse" />
             <span>
-              {isHe
-                ? gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת'
-                : '🔊 Hear Instructions'}
+              {tr(
+                lang,
+                gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת',
+                '🔊 Hear Instructions',
+                '🔊 Escuchar instrucciones'
+              )}
             </span>
           </button>
 
@@ -265,12 +272,18 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
             <Zap className="w-4 h-4 text-amber-200" />
             <span>
               {gameMode === 'see_letter'
-                ? isHe
-                  ? gender === 'girl' ? 'מַצָּב: רוֹאָה אוֹת וּמְזַהָה שֵׁם' : 'מַצָּב: רוֹאֶה אוֹת וּמְזַהֶה שֵׁם'
-                  : 'Mode: See Letter & Guess Name'
-                : isHe
-                  ? gender === 'girl' ? 'מַצָּב: שׁוֹמַעַת שֵׁם וּמַצְבִּיעָה' : 'מַצָּב: שׁוֹמֵעַ שֵׁם וּמַצְבִּיעַ'
-                  : 'Mode: Hear Name & Tap Letter'}
+                ? tr(
+                    lang,
+                    gender === 'girl' ? 'מַצָּב: רוֹאָה אוֹת וּמְזַהָה שֵׁם' : 'מַצָּב: רוֹאֶה אוֹת וּמְזַהֶה שֵׁם',
+                    'Mode: See Letter & Guess Name',
+                    'Modo: Ver letra y adivinar nombre'
+                  )
+                : tr(
+                    lang,
+                    gender === 'girl' ? 'מַצָּב: שׁוֹמַעַת שֵׁם וּמַצְבִּיעָה' : 'מַצָּב: שׁוֹמֵעַ שֵׁם וּמַצְבִּיעַ',
+                    'Mode: Hear Name & Tap Letter',
+                    'Modo: Escuchar nombre y tocar letra'
+                  )}
             </span>
           </button>
 
@@ -283,7 +296,12 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
           >
             <Sliders className="w-4 h-4 text-slate-900" />
             <span>
-              {isHe ? `בְּחִירַת אוֹתִיּוֹת (${selectedLetterIds.length})` : `Choose Letters (${selectedLetterIds.length})`}
+              {tr(
+                lang,
+                `בְּחִירַת אוֹתִיּוֹת (${selectedLetterIds.length})`,
+                `Choose Letters (${selectedLetterIds.length})`,
+                `Elegir letras (${selectedLetterIds.length})`
+              )}
             </span>
           </button>
         </div>
@@ -295,13 +313,13 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
           <div className="flex items-center justify-between">
             <h3 className="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2">
               <Settings className="w-6 h-6 text-amber-500" />
-              <span>{isHe ? 'בַּחֲרוּ אֵלּוּ אוֹתִיּוֹת יִהְיוּ בַּמִּשְׂחָק:' : 'Select Which Letters to Practice:'}</span>
+              <span>{tr(lang, 'בַּחֲרוּ אֵלּוּ אוֹתִיּוֹת יִהְיוּ בַּמִּשְׂחָק:', 'Select Which Letters to Practice:', 'Elige qué letras practicar:')}</span>
             </h3>
             <button
               onClick={() => setShowSettings(false)}
               className="text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-xl"
             >
-              {isHe ? 'סְגוֹר ✕' : 'Close ✕'}
+              {tr(lang, 'סְגוֹר ✕', 'Close ✕', 'Cerrar ✕')}
             </button>
           </div>
 
@@ -311,25 +329,25 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
               onClick={() => setPreset('hay_yud')}
               className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl font-bold text-xs"
             >
-              ⭐ {isHe ? 'הֵא וְיוּד (וְאוֹתִיּוֹת רִאשׁוֹנוֹת)' : 'Practice Hay & Yud'}
+              ⭐ {tr(lang, 'הֵא וְיוּד (וְאוֹתִיּוֹת רִאשׁוֹנוֹת)', 'Practice Hay & Yud', 'Practicar He y Yod')}
             </button>
             <button
               onClick={() => setPreset('first_five')}
               className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-xl font-bold text-xs"
             >
-              {isHe ? 'א, בּ, ב, ג, ד, ה' : 'First 6 Letters'}
+              {tr(lang, 'א, בּ, ב, ג, ד, ה', 'First 6 Letters', 'Primeras 6 letras')}
             </button>
             <button
               onClick={() => setPreset('pupik_dagesh')}
               className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-xl font-bold text-xs"
             >
-              {isHe ? 'בּוּם וְרוּחַ (בּ/ב, כּ/כ, פּ/פ)' : 'Letters with Pupik'}
+              {tr(lang, 'בּוּם וְרוּחַ (בּ/ב, כּ/כ, פּ/פ)', 'Letters with Pupik', 'Letras con Pupik')}
             </button>
             <button
               onClick={() => setPreset('all')}
               className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl font-bold text-xs"
             >
-              👑 {isHe ? 'בְּחַר אֶת כָּל הָאוֹתִיּוֹת' : 'Select All 26'}
+              👑 {tr(lang, 'בְּחַר אֶת כָּל הָאוֹתִיּוֹת', 'Select All 26', 'Elegir las 26')}
             </button>
           </div>
 
@@ -362,13 +380,13 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
         <div className="w-full flex items-center justify-between mb-4 px-2" dir={isHe ? 'rtl' : 'ltr'}>
           <div className="flex items-center gap-1.5 text-amber-700 font-extrabold text-sm md:text-base">
             <Trophy className="w-5 h-5 text-amber-500" />
-            <span>{isHe ? 'נְקֻדּוֹת:' : 'Score:'}</span>
+            <span>{tr(lang, 'נְקֻדּוֹת:', 'Score:', 'Puntos:')}</span>
             <bdi className="font-black text-amber-900">{score}</bdi>
           </div>
 
           <div className="flex items-center gap-1.5 bg-pink-100 text-pink-700 px-3 py-1.5 rounded-full font-black text-xs md:text-sm">
             <span>🔥</span>
-            <span>{isHe ? 'רֶצֶף נִצְחוֹנוֹת:' : 'Streak:'}</span>
+            <span>{tr(lang, 'רֶצֶף נִצְחוֹנוֹת:', 'Streak:', 'Racha:')}</span>
             <bdi className="font-black text-pink-900">{streak}</bdi>
           </div>
         </div>
@@ -389,7 +407,7 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
                 {/* Pupik Indicator if letter has pupik */}
                 {targetLetter.hasPupik && (
                   <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-black animate-pupik border border-white">
-                    {isHe ? 'פּוּפִּיק!' : 'Pupik!'}
+                    {tr(lang, 'פּוּפִּיק!', 'Pupik!', '¡Pupik!')}
                   </div>
                 )}
               </div>
@@ -402,7 +420,7 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
                 className="flex items-center gap-2 px-5 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-full font-black text-lg md:text-xl shadow-sm transition btn-press-3d"
               >
                 <Volume2 className="w-6 h-6 text-amber-700 animate-pulse" />
-                <span>{isHe ? 'אֵיזוֹ אוֹת זֹאת?' : 'What letter is this?'}</span>
+                <span>{tr(lang, 'אֵיזוֹ אוֹת זֹאת?', 'What letter is this?', '¿Qué letra es esta?')}</span>
               </button>
             </div>
 
@@ -411,21 +429,27 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
               type="button"
               onClick={playCardsInstruction}
               className="bg-amber-100/90 hover:bg-amber-200/90 border-2 border-amber-300 text-amber-900 px-4 py-2.5 rounded-2xl mb-4 text-xs md:text-sm font-black flex items-center gap-2.5 shadow-sm btn-press-3d cursor-pointer transition-all"
-              title={isHe ? 'הַשְׁמַע הוֹרָאוֹת' : 'Hear Instructions'}
+              title={tr(lang, 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
             >
               <Volume2 className="w-5 h-5 text-amber-700 animate-pulse flex-shrink-0" />
               <span>
-                {isHe
-                  ? isTouch
-                    ? gender === 'girl'
-                      ? 'הַעֲבִירִי אֶצְבַּע עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבַחֲרִי אֶת הָאוֹת הַנְּכוֹנָה!'
-                      : 'הַעֲבֵר אֶצְבַּע עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבְחַר אֶת הָאוֹת הַנְּכוֹנָה!'
-                    : gender === 'girl'
-                      ? 'הַעֲבִירִי עַכְבָּר עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבַחֲרִי אֶת הָאוֹת הַנְּכוֹנָה!'
-                      : 'הַעֲבֵר עַכְבָּר עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבְחַר אֶת הָאוֹת הַנְּכוֹנָה!'
-                  : isTouch
-                    ? 'Move your finger over the cards to hear their names, then choose the correct one!'
-                    : 'Move your mouse over the cards to hear their names, then click the correct one!'}
+                {isTouch
+                  ? tr(
+                      lang,
+                      gender === 'girl'
+                        ? 'הַעֲבִירִי אֶצְבַּע עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבַחֲרִי אֶת הָאוֹת הַנְּכוֹנָה!'
+                        : 'הַעֲבֵר אֶצְבַּע עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבְחַר אֶת הָאוֹת הַנְּכוֹנָה!',
+                      'Move your finger over the cards to hear their names, then choose the correct one!',
+                      '¡Desliza tu dedo sobre las tarjetas para escuchar sus nombres y elige la correcta!'
+                    )
+                  : tr(
+                      lang,
+                      gender === 'girl'
+                        ? 'הַעֲבִירִי עַכְבָּר עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבַחֲרִי אֶת הָאוֹת הַנְּכוֹנָה!'
+                        : 'הַעֲבֵר עַכְבָּר עַל הַכַּרְטִיסִים כְּדֵי לִשְׁמוֹעַ אֶת הַשֵּׁמוֹת, וּבְחַר אֶת הָאוֹת הַנְּכוֹנָה!',
+                      'Move your mouse over the cards to hear their names, then click the correct one!',
+                      '¡Pasa el ratón sobre las tarjetas para escuchar sus nombres y haz clic en la correcta!'
+                    )}
               </span>
               <span className="text-base mr-auto ml-1">🔊</span>
             </button>
@@ -475,24 +499,27 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
                           ? 'bg-amber-500 text-white scale-125 animate-bounce'
                           : 'bg-white text-indigo-600 hover:bg-indigo-50 hover:scale-110'
                       }`}
-                      title={isHe ? 'שמע שם' : 'Hear name'}
+                      title={tr(lang, 'שמע שם', 'Hear name', 'Escuchar nombre')}
                     >
                       <Volume2 className="w-5 h-5" />
                     </div>
 
                     <span className="text-3xl md:text-4xl font-black mt-2">
-                      {isHe ? opt.displayWithNikud : opt.nameEn}
+                      {tr(lang, opt.displayWithNikud, opt.nameEn, opt.nameEs || opt.nameEn)}
                     </span>
                     <span className="text-xs text-slate-500 font-bold mt-1">
-                      {opt.soundQuoteHe}
+                      {tr(lang, opt.soundQuoteHe, opt.soundQuoteHe, opt.soundQuoteEs || opt.soundQuoteHe)}
                     </span>
 
                     {/* Hint badge */}
                     {helpHintActive && isTarget && (
                       <span className="mt-2 px-2 py-0.5 bg-amber-600 text-white rounded-full text-[10px] font-black animate-pulse">
-                        {isHe
-                          ? gender === 'girl' ? '👈 לַחְצִי כָּאן!' : '👈 לְחַץ כָּאן!'
-                          : '👈 Tap here!'}
+                        {tr(
+                          lang,
+                          gender === 'girl' ? '👈 לַחְצִי כָּאן!' : '👈 לְחַץ כָּאן!',
+                          '👈 Tap here!',
+                          '👈 ¡Toca aquí!'
+                        )}
                       </span>
                     )}
                   </button>
@@ -512,9 +539,12 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
             >
               <Volume2 className="w-8 h-8" />
               <span>
-                {isHe
-                  ? targetLetter.displayWithNikud
-                  : targetLetter.nameEn}
+                {tr(
+                  lang,
+                  targetLetter.displayWithNikud,
+                  targetLetter.nameEn,
+                  targetLetter.nameEs || targetLetter.nameEn
+                )}
               </span>
             </button>
 
@@ -561,18 +591,24 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
           <div className="mt-4 p-4 bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 border-4 border-amber-500 text-slate-900 rounded-3xl font-black text-xl md:text-2xl flex flex-col items-center gap-1 shadow-2xl animate-bounce">
             <span className="text-4xl">🎉 🥳 👑 🎈</span>
             <span>
-              {isHe
-                ? gender === 'girl'
+              {tr(
+                lang,
+                gender === 'girl'
                   ? `וָואוּ! כָּל הַכָּבוֹד! יָדַעַתְּ שֶׁזֹּאת הָאוֹת ${targetLetter?.displayWithNikud}!`
-                  : `וָואוּ! כָּל הַכָּבוֹד! יָדַעְתָּ שֶׁזֹּאת הָאוֹת ${targetLetter?.displayWithNikud}!`
-                : `WOW! AMAZING! You knew that this is ${targetLetter?.nameEn}!`}
+                  : `וָואוּ! כָּל הַכָּבוֹד! יָדַעְתָּ שֶׁזֹּאת הָאוֹת ${targetLetter?.displayWithNikud}!`,
+                `WOW! AMAZING! You knew that this is ${targetLetter?.nameEn}!`,
+                `¡GUAU! ¡INCREÍBLE! ¡Sabías que es ${targetLetter?.nameEs || targetLetter?.nameEn}!`
+              )}
             </span>
             <span className="text-sm font-bold text-amber-800">
-              {isHe
-                ? gender === 'girl'
+              {tr(
+                lang,
+                gender === 'girl'
                   ? 'אַתְּ אַלּוּפַת הָעוֹלָם! הִנֵּה עוֹד כּוֹכָב! ⭐'
-                  : 'אַתָּה אַלּוּף הָעוֹלָם! הִנֵּה עוֹד כּוֹכָב! ⭐'
-                : 'You are a champion! Here is another star! ⭐'}
+                  : 'אַתָּה אַלּוּף הָעוֹלָם! הִנֵּה עוֹד כּוֹכָב! ⭐',
+                'You are a champion! Here is another star! ⭐',
+                '¡Eres una estrella campeona! ¡Aquí tienes otra estrella! ⭐'
+              )}
             </span>
           </div>
         )}
@@ -580,11 +616,14 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
         {/* Helper Guidance Message when wrong */}
         {helpHintActive && isCorrect === false && (
           <div className="mt-3 p-3 bg-amber-100 border-2 border-amber-400 rounded-2xl text-amber-900 font-extrabold text-sm flex items-center gap-2">
-            <span>💡 {isHe
-              ? gender === 'girl'
+            <span>💡 {tr(
+              lang,
+              gender === 'girl'
                 ? 'לֹא נוֹרָא! עָזַרְנוּ לָךְ: הָאוֹת הַנְּכוֹנָה זוֹהֶרֶת עַכְשָׁו בְּצָהֹב! נַסִּי לִלְחֹץ עָלֶיהָ!'
-                : 'לֹא נוֹרָא! עָזַרְנוּ לְךָ: הָאוֹת הַנְּכוֹנָה זוֹהֶרֶת עַכְשָׁו בְּצָהֹב! נַסֵּה לִלְחֹץ עָלֶיהָ!'
-              : 'No problem! Here is a hint: the right answer is glowing in yellow! Tap it!'}</span>
+                : 'לֹא נוֹרָא! עָזַרְנוּ לְךָ: הָאוֹת הַנְּכוֹנָה זוֹהֶרֶת עַכְשָׁו בְּצָהֹב! נַסֵּה לִלְחֹץ עָלֶיהָ!',
+              'No problem! Here is a hint: the right answer is glowing in yellow! Tap it!',
+              '¡No pasa nada! Aquí tienes una pista: ¡la respuesta correcta brilla en amarillo! ¡Tócala!'
+            )}</span>
           </div>
         )}
 
@@ -594,7 +633,7 @@ export default function LetterQuiz({ lang, soundEnabled, gender = 'boy', onEarnS
           className="mt-6 flex items-center gap-1.5 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs transition"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          <span>{isHe ? 'שְׁאֵלָה הַבָּאָה ⬅️' : 'Next Question ➡️'}</span>
+          <span>{tr(lang, 'שְׁאֵלָה הַבָּאָה ⬅️', 'Next Question ➡️', 'Siguiente pregunta ➡️')}</span>
         </button>
       </div>
     </div>

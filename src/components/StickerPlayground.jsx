@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { Sparkles, Trophy, Star, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { playSound, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
+import { tr } from '../utils/i18n';
 
 const ALL_STICKERS = [
-  { id: 'st_balloon', emoji: '🎈', nameHe: 'בַּלּוֹן', starsNeeded: 0 },
-  { id: 'st_teddy', emoji: '🧸', nameHe: 'בֻּבָּה / דֹּב', starsNeeded: 2 },
-  { id: 'st_watermelon', emoji: '🍉', nameHe: 'אַבַטִּיחַ', starsNeeded: 5 },
-  { id: 'st_lion', emoji: '🦁', nameHe: 'אַרְיֵה', starsNeeded: 8 },
-  { id: 'st_plane', emoji: '✈️', nameHe: 'אֲוִירוֹן', starsNeeded: 12 },
-  { id: 'st_icecream', emoji: '🍦', nameHe: 'גְּלִידָה', starsNeeded: 15 },
-  { id: 'st_tractor', emoji: '🚜', nameHe: 'טְרַקְטוֹר', starsNeeded: 20 },
-  { id: 'st_rainbow', emoji: '🌈', nameHe: 'קֶשֶׁת', starsNeeded: 25 },
-  { id: 'st_crown', emoji: '👑', nameHe: 'כֶּתֶר מְלָכִים', starsNeeded: 30 },
+  { id: 'st_balloon', emoji: '🎈', nameHe: 'בַּלּוֹן', nameEs: 'Globo', starsNeeded: 0 },
+  { id: 'st_teddy', emoji: '🧸', nameHe: 'בֻּבָּה / דֹּב', nameEs: 'Osito', starsNeeded: 2 },
+  { id: 'st_watermelon', emoji: '🍉', nameHe: 'אַבַטִּיחַ', nameEs: 'Sandía', starsNeeded: 5 },
+  { id: 'st_lion', emoji: '🦁', nameHe: 'אַרְיֵה', nameEs: 'León', starsNeeded: 8 },
+  { id: 'st_plane', emoji: '✈️', nameHe: 'אֲוִירוֹן', nameEs: 'Avión', starsNeeded: 12 },
+  { id: 'st_icecream', emoji: '🍦', nameHe: 'גְּלִידָה', nameEs: 'Helado', starsNeeded: 15 },
+  { id: 'st_tractor', emoji: '🚜', nameHe: 'טְרַקְטוֹר', nameEs: 'Tractor', starsNeeded: 20 },
+  { id: 'st_rainbow', emoji: '🌈', nameHe: 'קֶשֶׁת', nameEs: 'Arcoíris', starsNeeded: 25 },
+  { id: 'st_crown', emoji: '👑', nameHe: 'כֶּתֶר מְלָכִים', nameEs: 'Corona', starsNeeded: 30 },
 ];
 
 export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', stars }) {
@@ -76,21 +77,24 @@ export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', 
       <div className="bg-gradient-to-r from-fuchsia-500 to-pink-500 rounded-3xl p-6 text-white text-center shadow-lg">
         <span className="text-4xl">🎪 🧸 🎨</span>
         <h2 className="text-2xl md:text-3xl font-black mt-2">
-          {isHe ? 'חֲדַר הַמַּדְבֵּקוֹת וְהַפְּרָסִים' : 'Kids Sticker & Trophy Playground'}
+          {tr(lang, 'חֲדַר הַמַּדְבֵּקוֹת וְהַפְּרָסִים', 'Kids Sticker & Trophy Playground', 'Parque de Pegatinas y Trofeos')}
         </h2>
         <p className="text-fuchsia-100 text-sm md:text-base mt-1 font-medium">
-          {isHe
-            ? 'כָּל כּוֹכָב שֶׁמַּרְוִיחִים פּוֹתֵחַ מַדְבֵּקוֹת חֲדָשׁוֹת לְשַׂחֵק אִתָּן!'
-            : 'Every star you earn unlocks new fun stickers to play with!'}
+          {tr(
+            lang,
+            'כָּל כּוֹכָב שֶׁמַּרְוִיחִים פּוֹתֵחַ מַדְבֵּקוֹת חֲדָשׁוֹת לְשַׂחֵק אִתָּן!',
+            'Every star you earn unlocks new fun stickers to play with!',
+            '¡Cada estrella que ganas desbloquea nuevas pegatinas divertidas para jugar!'
+          )}
         </p>
 
         <button
           onClick={() => playPhraseAudio('inst_stickers', gender)}
           className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full font-bold text-xs text-white shadow-sm"
-          title={isHe ? (gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת') : 'Hear Instructions'}
+          title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
         >
           <Sparkles className="w-4 h-4 text-amber-200" />
-          <span>{isHe ? (gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת') : '🔊 Hear Instructions'}</span>
+          <span>{tr(lang, gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת', '🔊 Hear Instructions', '🔊 Escuchar instrucciones')}</span>
         </button>
       </div>
 
@@ -98,11 +102,11 @@ export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', 
       <div className="bg-white rounded-3xl p-4 border-2 border-pink-200 shadow-sm">
         <div className="flex items-center justify-between mb-3 px-2">
           <span className="font-bold text-slate-700 text-sm">
-            {isHe ? 'לִחְצוּ עַל מַדְבֵּקָה כְּדֵי לְהוֹסִיף אוֹתָהּ לַלּוּחַ:' : 'Tap a sticker to add it to your playground:'}
+            {tr(lang, 'לִחְצוּ עַל מַדְבֵּקָה כְּדֵי לְהוֹסִיף אוֹתָהּ לַלּוּחַ:', 'Tap a sticker to add it to your playground:', 'Toca una pegatina para añadirla a tu tablero:')}
           </span>
           <div className="flex items-center gap-1 text-amber-600 font-extrabold text-sm">
             <Star className="w-4 h-4 fill-amber-400" />
-            <span>{stars} {isHe ? 'כּוֹכָבִים' : 'Stars'}</span>
+            <span>{stars} {tr(lang, 'כּוֹכָבִים', 'Stars', 'Estrellas')}</span>
           </div>
         </div>
 
@@ -122,7 +126,7 @@ export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', 
               >
                 <span className="text-4xl">{st.emoji}</span>
                 <span className="text-xs font-bold text-slate-700 mt-1">
-                  {st.nameHe}
+                  {tr(lang, st.nameHe, st.nameHe, st.nameEs)}
                 </span>
                 {!isUnlocked && (
                   <span className="text-[10px] text-amber-700 font-extrabold flex items-center gap-0.5 mt-0.5">
@@ -148,7 +152,7 @@ export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', 
           <button
             onClick={clearStickers}
             className="p-2 bg-white/80 hover:bg-white text-slate-600 rounded-full shadow border border-slate-200"
-            title="נקה מדבקות / Clear stickers"
+            title={tr(lang, 'נקה מדבקות', 'Clear stickers', 'Borrar pegatinas')}
           >
             <Trash2 className="w-5 h-5 text-red-500" />
           </button>
@@ -173,7 +177,7 @@ export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', 
 
         {placedStickers.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 font-bold text-base">
-            {isHe ? 'לִחְצוּ עַל מַדְבֵּקוֹת לְמַעְלָה כְּדֵי לְמַלֵּא אֶת הַלּוּחַ! 🎈' : 'Tap stickers above to decorate your playground! 🎈'}
+            {tr(lang, 'לִחְצוּ עַל מַדְבֵּקוֹת לְמַעְלָה כְּדֵי לְמַלֵּא אֶת הַלּוּחַ! 🎈', 'Tap stickers above to decorate your playground! 🎈', '¡Toca las pegatinas de arriba para decorar tu tablero! 🎈')}
           </div>
         )}
       </div>

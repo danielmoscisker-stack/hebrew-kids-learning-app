@@ -3,6 +3,7 @@ import { Star, Play, CheckCircle2, Trophy, Sparkles, Volume2 } from 'lucide-reac
 import { READING_TRAIN_DATA, LETTER_NAMES_DICT } from '../data/curriculumData';
 import { playSound, speakLetterName, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
+import { tr } from '../utils/i18n';
 
 export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
   const [activeLevelIdx, setActiveLevelIdx] = useState(0);
@@ -94,10 +95,10 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
       <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl p-6 text-white text-center shadow-lg relative overflow-hidden">
         <div className="text-4xl mb-2 animate-bounce-gentle">🚂 💨</div>
         <h2 className="text-2xl md:text-3xl font-black">
-          {isHe ? currentLevel.titleHe : currentLevel.titleEn}
+          {tr(lang, currentLevel.titleHe, currentLevel.titleEn, currentLevel.titleEs || currentLevel.titleEn)}
         </h2>
         <p className="text-blue-100 text-sm md:text-base mt-2 font-medium">
-          {isHe ? currentLevel.subtitleHe : currentLevel.subtitleEn}
+          {tr(lang, currentLevel.subtitleHe, currentLevel.subtitleEn, currentLevel.subtitleEs || currentLevel.subtitleEn)}
         </p>
 
         {/* Level Selector Tabs & Hear Instructions */}
@@ -105,10 +106,10 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
           <button
             onClick={() => playPhraseAudio('inst_train', gender)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-2xl font-bold text-xs text-white"
-            title={isHe ? (gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת') : 'Hear Instructions'}
+            title={tr(lang, gender === 'girl' ? 'הַשְׁמִיעִי הוֹרָאוֹת' : 'הַשְׁמַע הוֹרָאוֹת', 'Hear Instructions', 'Escuchar instrucciones')}
           >
             <Volume2 className="w-4 h-4 text-amber-300" />
-            <span>{isHe ? (gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת') : '🔊 Hear Instructions'}</span>
+            <span>{tr(lang, gender === 'girl' ? '🔊 שִׁמְעִי הוֹרָאוֹת' : '🔊 שְׁמַע הוֹרָאוֹת', '🔊 Hear Instructions', '🔊 Escuchar instrucciones')}</span>
           </button>
 
           {READING_TRAIN_DATA.map((lvl, idx) => (
@@ -121,7 +122,7 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
                   : 'bg-white/20 text-white hover:bg-white/30'
               }`}
             >
-              {isHe ? `שָׁלָב ${lvl.level}` : `Stage ${lvl.level}`}
+              {tr(lang, `שָׁלָב ${lvl.level}`, `Stage ${lvl.level}`, `Etapa ${lvl.level}`)}
             </button>
           ))}
         </div>
@@ -150,17 +151,17 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
                     {rowIdx + 1}
                   </span>
                   <span className="font-extrabold text-slate-800 text-sm md:text-base">
-                    {isHe ? row.labelHe : row.labelEn}
+                    {tr(lang, row.labelHe, row.labelEn, row.labelEs || row.labelEn)}
                   </span>
                 </div>
 
                 <button
                   onClick={() => playEntireRow(rowIdx)}
                   className="flex items-center gap-1 px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow btn-press-3d"
-                  title="השמע שורה / Play row"
+                  title={tr(lang, 'השמע שורה', 'Play row', 'Reproducir fila')}
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
-                  <span>{isHe ? 'הַשְׁמַע' : 'Play'}</span>
+                  <span>{tr(lang, 'הַשְׁמַע', 'Play', 'Escuchar')}</span>
                 </button>
               </div>
 
@@ -193,7 +194,7 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
                 {/* Animated locomotive engine leading the train with steam */}
                 <div
                   className="relative text-3xl md:text-4xl select-none px-2 flex items-center flex-shrink-0"
-                  title={isHe ? 'קִרְאוּ מִיָּמִין לִשְׂמֹאל אֶל הָרַכֶּבֶת!' : 'Read right-to-left towards the engine!'}
+                  title={tr(lang, 'קִרְאוּ מִיָּמִין לִשְׂמֹאל אֶל הָרַכֶּבֶת!', 'Read right-to-left towards the engine!', '¡Lee de derecha a izquierda hacia el tren!')}
                 >
                   <span className="inline-block animate-train-chug">🚂</span>
                   <span className="absolute -top-3 left-1 text-xs select-none animate-steam pointer-events-none">💨</span>
@@ -209,7 +210,11 @@ export default function ReadingTrain({ lang, soundEnabled, gender = 'boy', onEar
                       ? 'bg-amber-100 border-2 border-amber-400 text-amber-500 shadow-md animate-bounce-gentle'
                       : 'bg-slate-100 border-2 border-slate-200 text-slate-300'
                   }`}
-                  title={isCompleted ? 'הושלם! / Completed!' : 'לחצו כדי לקרוא / Tap to read'}
+                  title={
+                    isCompleted
+                      ? tr(lang, 'הושלם!', 'Completed!', '¡Completado!')
+                      : tr(lang, 'לחצו כדי לקרוא', 'Tap to read', 'Toca para leer')
+                  }
                 >
                   <Star className={`w-7 h-7 ${isCompleted ? 'fill-amber-400 text-amber-500' : 'text-slate-300'}`} />
                 </button>

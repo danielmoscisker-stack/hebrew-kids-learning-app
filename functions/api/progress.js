@@ -8,7 +8,7 @@ export async function onRequestPost({ request, env }) {
   const body = await request.json();
   const stars = Math.max(0, Math.min(99999, Number(body.stars) || 0));
   const gender = body.gender === 'girl' ? 'girl' : 'boy';
-  const lang = body.lang === 'en' ? 'en' : 'he';
+  const lang = body.lang === 'en' ? 'en' : body.lang === 'es' ? 'es' : 'he';
   const streakDays = Math.max(1, Number(body.streakDays) || 1);
   const lastPlayed = String(body.lastPlayed || '');
   const dataJson = JSON.stringify(body.data || {});

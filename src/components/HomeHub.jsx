@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Volume2, Sparkles, Star, Crown, Flame, Cloud } from 'lucide-react';
 import { playSound, playAudioFile, playPhraseAudio } from '../utils/audio';
+import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
 
 export const ACTIVITY_TILES = [
@@ -10,8 +11,10 @@ export const ACTIVITY_TILES = [
     badge: 'א בּ ג',
     titleHe: 'אוֹתִיּוֹת',
     titleEn: 'Letters',
+    titleEs: 'Letras',
     descHe: 'מַכִּירִים אֶת הָאָלֶף-בֵּית',
     descEn: 'Meet the Alef-Bet',
+    descEs: 'Conoce el Alef-Bet',
     gradient: 'from-amber-300 via-yellow-300 to-orange-300',
     border: 'border-amber-500',
     text: 'text-amber-950'
@@ -22,8 +25,10 @@ export const ACTIVITY_TILES = [
     badge: '?',
     titleHe: 'אֵיזוֹ אוֹת זֹאת?',
     titleEn: 'Letter Quiz',
+    titleEs: '¿Qué letra es?',
     descHe: 'שׁוֹמְעִים וּמְגַלִּים',
     descEn: 'Listen & Find',
+    descEs: 'Escucha y encuentra',
     gradient: 'from-orange-300 via-rose-300 to-pink-300',
     border: 'border-rose-500',
     text: 'text-rose-950'
@@ -34,8 +39,10 @@ export const ACTIVITY_TILES = [
     badge: 'א←ב',
     titleHe: 'רַכֶּבֶת הַקְּרִיאָה',
     titleEn: 'Reading Train',
+    titleEs: 'Tren de Lectura',
     descHe: 'קוֹרְאִים מִיָּמִין לִשְׂמֹאל',
     descEn: 'Read Right-to-Left',
+    descEs: 'Lee de derecha a izquierda',
     gradient: 'from-sky-300 via-blue-300 to-indigo-300',
     border: 'border-blue-500',
     text: 'text-blue-950'
@@ -46,8 +53,10 @@ export const ACTIVITY_TILES = [
     badge: 'בּ / ב',
     titleHe: 'בַּלָּשׁ הַפּוּפִּיק',
     titleEn: 'Pupik Detective',
+    titleEs: 'Detective Pupik',
     descHe: 'מְגַלִּים אֶת הַנְּקֻדָּה',
     descEn: 'Find the Belly Dot',
+    descEs: 'Encuentra el puntito',
     gradient: 'from-red-300 via-pink-300 to-rose-300',
     border: 'border-red-500',
     text: 'text-red-950'
@@ -58,8 +67,10 @@ export const ACTIVITY_TILES = [
     badge: '123',
     titleHe: 'מִסְפָּרִים 1–10',
     titleEn: 'Numbers 1–10',
+    titleEs: 'Números 1–10',
     descHe: 'סוֹפְרִים וּמְפוֹצְצִים',
     descEn: 'Count & Pop Balloons',
+    descEs: 'Cuenta y explota globos',
     gradient: 'from-amber-200 via-lime-300 to-emerald-300',
     border: 'border-lime-600',
     text: 'text-lime-950'
@@ -70,8 +81,10 @@ export const ACTIVITY_TILES = [
     badge: '⭐',
     titleHe: 'מִשְׂחַק זִכָּרוֹן',
     titleEn: 'Memory Game',
+    titleEs: 'Juego de Memoria',
     descHe: 'מוֹצְאִים זוּגוֹת',
     descEn: 'Match Pairs',
+    descEs: 'Encuentra las parejas',
     gradient: 'from-pink-300 via-rose-200 to-amber-200',
     border: 'border-pink-500',
     text: 'text-pink-950'
@@ -82,8 +95,10 @@ export const ACTIVITY_TILES = [
     badge: '🏆',
     titleHe: 'הַמַּדְבֵּקוֹת שֶׁלִּי',
     titleEn: 'My Stickers',
+    titleEs: 'Mis Pegatinas',
     descHe: 'פְּרָסִים וּמַדְבֵּקוֹת',
     descEn: 'Rewards & Playboard',
+    descEs: 'Premios y tablero',
     gradient: 'from-fuchsia-300 via-purple-300 to-indigo-300',
     border: 'border-fuchsia-500',
     text: 'text-fuchsia-950'
@@ -94,8 +109,10 @@ export const ACTIVITY_TILES = [
     badge: 'אָ אִ אוֹ',
     titleHe: 'עוֹלַם הַנִּקּוּד',
     titleEn: 'Vowel World',
+    titleEs: 'Mundo de Vocales',
     descHe: 'צְלִילִים וּפַרְצוּפִים',
     descEn: 'Sounds & Faces',
+    descEs: 'Sonidos y caritas',
     gradient: 'from-purple-300 via-fuchsia-300 to-pink-300',
     border: 'border-purple-500',
     text: 'text-purple-950',
@@ -107,8 +124,10 @@ export const ACTIVITY_TILES = [
     badge: 'אַבָּא',
     titleHe: 'מִלִּים רִאשׁוֹנוֹת',
     titleEn: 'First Words',
+    titleEs: 'Primeras Palabras',
     descHe: 'מְחַבְּרִים מִלִּים',
     descEn: 'Blend Real Words',
+    descEs: 'Forma palabras reales',
     gradient: 'from-emerald-300 via-teal-300 to-cyan-300',
     border: 'border-emerald-500',
     text: 'text-emerald-950',
@@ -120,8 +139,10 @@ export const ACTIVITY_TILES = [
     badge: '✍️',
     titleHe: 'צִיּוּר וּכְתִיבָה',
     titleEn: 'Draw & Trace',
+    titleEs: 'Dibuja y Traza',
     descHe: 'צוֹבְעִים אוֹתִיּוֹת',
     descEn: 'Color & Write',
+    descEs: 'Colorea y escribe',
     gradient: 'from-teal-300 via-cyan-300 to-sky-300',
     border: 'border-teal-500',
     text: 'text-teal-950',
@@ -133,8 +154,10 @@ export const ACTIVITY_TILES = [
     badge: 'א?',
     titleHe: 'הַקּוֹל הַפּוֹתֵחַ',
     titleEn: 'Opening Sound',
+    titleEs: 'Sonido Inicial',
     descHe: 'בְּאֵיזוֹ אוֹת מַתְחִיל?',
     descEn: 'First Sound Match',
+    descEs: '¿Con qué letra empieza?',
     gradient: 'from-violet-300 via-purple-300 to-fuchsia-300',
     border: 'border-violet-500',
     text: 'text-violet-950',
@@ -146,8 +169,10 @@ export const ACTIVITY_TILES = [
     badge: '1+2',
     titleHe: 'חֶשְׁבּוֹן רִאשׁוֹן',
     titleEn: 'First Math',
+    titleEs: 'Primeras Sumas',
     descHe: 'סוֹפְרִים פֵּרוֹת יַחַד',
     descEn: 'Fruit Addition',
+    descEs: 'Suma con frutas',
     gradient: 'from-lime-300 via-emerald-300 to-teal-300',
     border: 'border-emerald-600',
     text: 'text-emerald-950',
@@ -201,7 +226,7 @@ export default function HomeHub({
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-full font-black text-sm btn-press-3d"
             >
               <Volume2 className="w-4 h-4 text-amber-700 animate-pulse" />
-              <span>{isHe ? 'מִי מְשַׂחֵק הַיּוֹם?' : 'Who is playing today?'}</span>
+              <span>{tr(lang, 'מִי מְשַׂחֵק הַיּוֹם?', 'Who is playing today?', '¿Quién juega hoy?')}</span>
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
@@ -211,7 +236,7 @@ export default function HomeHub({
               className="p-4 rounded-3xl bg-gradient-to-b from-sky-100 to-blue-200 border-4 border-blue-400 hover:scale-105 transition flex flex-col items-center gap-1 btn-press-3d cursor-pointer"
             >
               <span className="text-5xl md:text-6xl animate-bounce-gentle">👦</span>
-              <span className="text-xl font-black text-blue-950">{isHe ? 'יֶלֶד' : 'Boy'}</span>
+              <span className="text-xl font-black text-blue-950">{tr(lang, 'יֶלֶד', 'Boy', 'Niño')}</span>
             </button>
             <button
               type="button"
@@ -219,7 +244,7 @@ export default function HomeHub({
               className="p-4 rounded-3xl bg-gradient-to-b from-pink-100 to-rose-200 border-4 border-pink-400 hover:scale-105 transition flex flex-col items-center gap-1 btn-press-3d cursor-pointer"
             >
               <span className="text-5xl md:text-6xl animate-bounce-gentle">👧</span>
-              <span className="text-xl font-black text-pink-950">{isHe ? 'יַלְדָּה' : 'Girl'}</span>
+              <span className="text-xl font-black text-pink-950">{tr(lang, 'יַלְדָּה', 'Girl', 'Niña')}</span>
             </button>
           </div>
         </div>
@@ -234,7 +259,7 @@ export default function HomeHub({
             </div>
             <div>
               <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center justify-center md:justify-start gap-2">
-                <span>{isHe ? 'שָׁלוֹם! מָה נִלְמַד הַיּוֹם?' : 'Hi! What shall we play?'}</span>
+                <span>{tr(lang, 'שָׁלוֹם! מָה נִלְמַד הַיּוֹם?', 'Hi! What shall we play?', '¡Hola! ¿A qué jugamos hoy?')}</span>
                 <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
               </h2>
               <p className="text-white/90 text-sm md:text-base font-bold mt-1">
@@ -246,19 +271,23 @@ export default function HomeHub({
                     : gender === 'girl'
                       ? 'הַעֲבִירִי עַכְבָּר כְּדֵי לִשְׁמוֹעַ, וְלַחֲצִי כְּדֵי לְשַׂחֵק!'
                       : 'הַעֲבֵר עַכְבָּר כְּדֵי לִשְׁמוֹעַ, וּלְחַץ כְּדֵי לְשַׂחֵק!'
-                  : isTouch
-                    ? 'Tap any game to start playing!'
-                    : 'Hover to hear the game name, click to play!'}
+                  : lang === 'es'
+                    ? isTouch
+                      ? '¡Toca cualquier juego para empezar!'
+                      : '¡Pasa el ratón para escuchar y haz clic para jugar!'
+                    : isTouch
+                      ? 'Tap any game to start playing!'
+                      : 'Hover to hear the game name, click to play!'}
               </p>
 
               {/* Daily Goal Progress Bar */}
               <div className="mt-3 flex flex-wrap items-center justify-center md:justify-start gap-2">
                 <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full text-xs font-black">
                   <Flame className="w-4 h-4 text-amber-300 fill-amber-300" />
-                  <span>{isHe ? `רֶצֶף: ${streakDays} יָמִים` : `${streakDays}-Day Streak`}</span>
+                  <span>{tr(lang, `רֶצֶף: ${streakDays} יָמִים`, `${streakDays}-Day Streak`, `Racha de ${streakDays} días`)}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-xs font-black">
-                  <span>{isHe ? `יַעַד יוֹמִי:` : 'Daily Goal:'}</span>
+                  <span>{tr(lang, 'יַעַד יוֹמִי:', 'Daily Goal:', 'Meta diaria:')}</span>
                   <div className="w-20 h-2.5 bg-white/30 rounded-full overflow-hidden">
                     <div className="h-full bg-amber-300 rounded-full transition-all duration-300" style={{ width: `${dailyPct}%` }} />
                   </div>
@@ -275,7 +304,7 @@ export default function HomeHub({
               className="flex items-center gap-2 px-4 py-2.5 bg-white/25 hover:bg-white/35 rounded-2xl font-black text-sm border-2 border-white/50 btn-press-3d cursor-pointer"
             >
               <Volume2 className="w-5 h-5 text-amber-200 animate-pulse" />
-              <span>{isHe ? '🔊 שְׁמַע' : '🔊 Listen'}</span>
+              <span>{tr(lang, '🔊 שְׁמַע', '🔊 Listen', '🔊 Escuchar')}</span>
             </button>
 
             {!isPro && (
@@ -288,7 +317,7 @@ export default function HomeHub({
                 className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-300 hover:bg-amber-400 text-amber-950 rounded-2xl font-black text-sm border-2 border-white shadow btn-press-3d cursor-pointer"
               >
                 <Crown className="w-4 h-4 text-amber-800" />
-                <span>{isHe ? 'גִּרְסָה מְלֵאָה' : 'Unlock All'}</span>
+                <span>{tr(lang, 'גִּרְסָה מְלֵאָה', 'Unlock All', 'Desbloquear Todo')}</span>
               </button>
             )}
 
@@ -299,10 +328,10 @@ export default function HomeHub({
                 onOpenParentGate();
               }}
               className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-2xl font-bold text-xs border border-white/40 btn-press-3d cursor-pointer"
-              title={isHe ? 'שְׁמִירַת הִתְקַדְּמוּת בֶּעָנָן' : 'Cloud Save'}
+              title={tr(lang, 'שְׁמִירַת הִתְקַדְּמוּת בֶּעָנָן', 'Cloud Save', 'Guardar en la nube')}
             >
               <Cloud className="w-4 h-4" />
-              <span>{user ? '✓ Google' : isHe ? 'שְׁמִירָה' : 'Save'}</span>
+              <span>{user ? '✓ Google' : tr(lang, 'שְׁמִירָה', 'Save', 'Guardar')}</span>
             </button>
           </div>
         </div>
@@ -352,7 +381,7 @@ export default function HomeHub({
                 <button
                   type="button"
                   onClick={(e) => speakTile(tile.id, e)}
-                  aria-label={isHe ? tile.titleHe : tile.titleEn}
+                  aria-label={tr(lang, tile.titleHe, tile.titleEn, tile.titleEs)}
                   className="w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm border border-white transition-transform group-hover:scale-110 cursor-pointer"
                 >
                   <Volume2 className="w-4 h-4 text-indigo-600" />
@@ -367,10 +396,10 @@ export default function HomeHub({
               {/* Title & short subtitle */}
               <div>
                 <div className={`text-lg md:text-xl font-black leading-tight ${tile.text}`}>
-                  {isHe ? tile.titleHe : tile.titleEn}
+                  {tr(lang, tile.titleHe, tile.titleEn, tile.titleEs)}
                 </div>
                 <div className={`text-xs font-bold opacity-85 mt-0.5 ${tile.text}`}>
-                  {isHe ? tile.descHe : tile.descEn}
+                  {tr(lang, tile.descHe, tile.descEn, tile.descEs)}
                 </div>
               </div>
             </div>
@@ -382,24 +411,30 @@ export default function HomeHub({
       <footer className="mt-4 bg-white/75 border-2 border-amber-200 rounded-3xl p-5 text-slate-600 text-xs leading-relaxed flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-black text-slate-800 text-sm">
-            {isHe
-              ? 'לִמּוּד אוֹתִיּוֹת א-ב, נִקּוּד וּמִסְפָּרִים לְגִיל 4 — בָּאֲתָר וּבְאַפְּלִיקַצְיָה'
-              : 'Hebrew Alphabet, Vowels & Early Math for Ages 3–5 — Free Online & Android'}
+            {tr(
+              lang,
+              'לִמּוּד אוֹתִיּוֹת א-ב, נִקּוּד וּמִסְפָּרִים לְגִיל 4 — בָּאֲתָר וּבְאַפְּלִיקַצְיָה',
+              'Hebrew Alphabet, Vowels & Early Math for Ages 3–5 — Free Online & Android',
+              'Alfabeto hebreo, vocales y matemáticas tempranas para edades 3–5 — Gratis en línea y Android'
+            )}
           </h3>
           <div className="flex items-center gap-3">
             <a href="/accessibility.html" className="text-indigo-700 hover:underline font-bold">
-              {isHe ? 'הַצְהָרַת נְגִישׁוּת' : 'Accessibility'}
+              {tr(lang, 'הַצְהָרַת נְגִישׁוּת', 'Accessibility', 'Accesibilidad')}
             </a>
             <span aria-hidden="true">•</span>
             <a href="/privacy.html" className="text-indigo-700 hover:underline font-bold">
-              {isHe ? 'מְדִינִיּוּת פְּרָטִיּוּת' : 'Privacy Policy'}
+              {tr(lang, 'מְדִינִיּוּת פְּרָטִיּוּת', 'Privacy Policy', 'Política de Privacidad')}
             </a>
           </div>
         </div>
         <p>
-          {isHe
-            ? 'משחקי אלף-בית מדובבים בעברית לגיל הרך: הכרת כל האותיות, זיהוי אותיות, רכבת קריאה מימין לשמאל, בלש הפופיק להבחנה בין דגש קל לרפה (בּ/ב, כּ/כ, פּ/פ), עולם הניקוד, קריאת מילים ראשונות, ספירה 1–10, צביעה וכתיבה במחשב (עכבר) ובטאבלט/טלפון (אצבע).'
-            : 'Interactive voice-guided Hebrew preschool learning games: Alef-Bet cards, letter quiz, right-to-left reading train, dagesh pupik detective, vowels (nikud), first word blending, numbers 1–10, guided tracing, phonological awareness, and fruit math.'}
+          {tr(
+            lang,
+            'משחקי אלף-בית מדובבים בעברית לגיל הרך: הכרת כל האותיות, זיהוי אותיות, רכבת קריאה מימין לשמאל, בלש הפופיק להבחנה בין דגש קל לרפה (בּ/ב, כּ/כ, פּ/פ), עולם הניקוד, קריאת מילים ראשונות, ספירה 1–10, צביעה וכתיבה במחשב (עכבר) ובטאבלט/טלפון (אצבע).',
+            'Interactive voice-guided Hebrew preschool learning games: Alef-Bet cards, letter quiz, right-to-left reading train, dagesh pupik detective, vowels (nikud), first word blending, numbers 1–10, guided tracing, phonological awareness, and fruit math.',
+            'Juegos educativos interactivos guiados por voz para preescolar en hebreo: tarjetas del Alef-Bet, juego de letras, tren de lectura de derecha a izquierda, detective Pupik del daguesh, vocales (nikud), formación de primeras palabras, números 1–10, trazado guiado, conciencia fonológica y sumas con frutas.'
+          )}
         </p>
       </footer>
     </div>

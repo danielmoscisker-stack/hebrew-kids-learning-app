@@ -4,21 +4,22 @@ import { LETTERS_DATA } from '../data/curriculumData';
 import { playSound, playWordAudio, speakLetterName, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { useDeviceType } from '../utils/useDeviceType';
+import { tr } from '../utils/i18n';
 
 // Curated clear-sound words for 4-year-olds from LETTERS_DATA
 const SOUND_QUESTIONS = [
-  { letterId: 'alef', letter: 'א', wordHe: 'אֲוִירוֹן', wordEn: 'Airplane', emoji: '✈️' },
-  { letterId: 'bet_dagesh', letter: 'בּ', wordHe: 'בַּלּוֹן', wordEn: 'Balloon', emoji: '🎈' },
-  { letterId: 'bet_dagesh', letter: 'בּ', wordHe: 'בַּנָנָה', wordEn: 'Banana', emoji: '🍌' },
-  { letterId: 'gimel', letter: 'ג', wordHe: 'גְּלִידָה', wordEn: 'Ice Cream', emoji: '🍦' },
-  { letterId: 'dalet', letter: 'ד', wordHe: 'דָּג', wordEn: 'Fish', emoji: '🐟' },
-  { letterId: 'he', letter: 'ה', wordHe: 'הַר', wordEn: 'Mountain', emoji: '⛰️' },
-  { letterId: 'kaf_dagesh', letter: 'כּ', wordHe: 'כֶּלֶב', wordEn: 'Dog', emoji: '🐶' },
-  { letterId: 'lamed', letter: 'ל', wordHe: 'לִימוֹן', wordEn: 'Lemon', emoji: '🍋' },
-  { letterId: 'mem', letter: 'מ', wordHe: 'מַיִם', wordEn: 'Water', emoji: '💧' },
-  { letterId: 'pe_dagesh', letter: 'פּ', wordHe: 'פִּיל', wordEn: 'Elephant', emoji: '🐘' },
-  { letterId: 'shin', letter: 'שׁ', wordHe: 'שֶׁמֶשׁ', wordEn: 'Sun', emoji: '☀️' },
-  { letterId: 'tav', letter: 'ת', wordHe: 'תַּפּוּחַ', wordEn: 'Apple', emoji: '🍎' }
+  { letterId: 'alef', letter: 'א', wordHe: 'אֲוִירוֹן', wordEn: 'Airplane', wordEs: 'Avión', emoji: '✈️' },
+  { letterId: 'bet_dagesh', letter: 'בּ', wordHe: 'בַּלּוֹן', wordEn: 'Balloon', wordEs: 'Globo', emoji: '🎈' },
+  { letterId: 'bet_dagesh', letter: 'בּ', wordHe: 'בַּנָנָה', wordEn: 'Banana', wordEs: 'Plátano', emoji: '🍌' },
+  { letterId: 'gimel', letter: 'ג', wordHe: 'גְּלִידָה', wordEn: 'Ice Cream', wordEs: 'Helado', emoji: '🍦' },
+  { letterId: 'dalet', letter: 'ד', wordHe: 'דָּג', wordEn: 'Fish', wordEs: 'Pez', emoji: '🐟' },
+  { letterId: 'he', letter: 'ה', wordHe: 'הַר', wordEn: 'Mountain', wordEs: 'Montaña', emoji: '⛰️' },
+  { letterId: 'kaf_dagesh', letter: 'כּ', wordHe: 'כֶּלֶב', wordEn: 'Dog', wordEs: 'Perro', emoji: '🐶' },
+  { letterId: 'lamed', letter: 'ל', wordHe: 'לִימוֹן', wordEn: 'Lemon', wordEs: 'Limón', emoji: '🍋' },
+  { letterId: 'mem', letter: 'מ', wordHe: 'מַיִם', wordEn: 'Water', wordEs: 'Agua', emoji: '💧' },
+  { letterId: 'pe_dagesh', letter: 'פּ', wordHe: 'פִּיל', wordEn: 'Elephant', wordEs: 'Elefante', emoji: '🐘' },
+  { letterId: 'shin', letter: 'שׁ', wordHe: 'שֶׁמֶשׁ', wordEn: 'Sun', wordEs: 'Sol', emoji: '☀️' },
+  { letterId: 'tav', letter: 'ת', wordHe: 'תַּפּוּחַ', wordEn: 'Apple', wordEs: 'Manzana', emoji: '🍎' }
 ];
 
 export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
@@ -78,14 +79,17 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
       <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-3xl p-6 text-white text-center shadow-lg border-4 border-white">
         <span className="text-4xl">🔊 🎈 🎯</span>
         <h2 className="text-2xl md:text-3xl font-black mt-2">
-          {isHe ? 'הַקּוֹל הַפּוֹתֵחַ: בְּאֵיזוֹ אוֹת מַתְחִיל?' : 'Opening Sound: Which Letter Starts It?'}
+          {tr(lang, 'הַקּוֹל הַפּוֹתֵחַ: בְּאֵיזוֹ אוֹת מַתְחִיל?', 'Opening Sound: Which Letter Starts It?', 'Sonido Inicial: ¿Con qué letra empieza?')}
         </h2>
         <p className="text-purple-100 text-sm md:text-base font-bold mt-1">
-          {isHe
-            ? isTouch
+          {tr(
+            lang,
+            isTouch
               ? 'שִׁמְעוּ אֶת הַמִּלָּה וְלִחְצוּ עַל הָאוֹת שֶׁבָּהּ הִיא מַתְחִילָה!'
-              : 'הַקְשִׁיבוּ לַמִּלָּה וּבַחֲרוּ עִם הָעַכְבָּר אֶת הָאוֹת הַפּוֹתַחַת!'
-            : 'Hear the word and pick the starting letter!'}
+              : 'הַקְשִׁיבוּ לַמִּלָּה וּבַחֲרוּ עִם הָעַכְבָּר אֶת הָאוֹת הַפּוֹתַחַת!',
+            'Hear the word and pick the starting letter!',
+            '¡Escucha la palabra y elige la letra con la que empieza!'
+          )}
         </p>
         <div className="mt-3 inline-flex items-center gap-2 bg-white/20 px-4 py-1 rounded-full font-black text-sm">
           <Trophy className="w-4 h-4 text-amber-300" />
@@ -107,14 +111,19 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
           <span className="text-3xl md:text-4xl font-black text-slate-800">{question.wordHe}</span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-300 text-amber-950 rounded-full text-xs font-black">
             <Volume2 className="w-4 h-4 animate-pulse" />
-            <span>{isHe ? 'שְׁמַע מִלָּה' : 'Hear Word'}</span>
+            <span>{tr(lang, 'שְׁמַע מִלָּה', 'Hear Word', 'Escuchar palabra')}</span>
           </span>
         </button>
 
         <div className="text-base md:text-lg font-black text-violet-800 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-amber-500" />
           <span>
-            {isHe ? `בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה "${question.wordHe}"?` : `Which letter starts "${question.wordEn}"?`}
+            {tr(
+              lang,
+              `בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה "${question.wordHe}"?`,
+              `Which letter starts "${question.wordEn}"?`,
+              `¿Con qué letra empieza "${question.wordEs}"?`
+            )}
           </span>
         </div>
 
@@ -152,7 +161,7 @@ export default function OpeningSoundGame({ lang, soundEnabled, gender = 'boy', o
           className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold cursor-pointer"
         >
           <RefreshCw className="w-4 h-4" />
-          <span>{isHe ? 'מִלָּה אַחֶרֶת' : 'Skip Word'}</span>
+          <span>{tr(lang, 'מִלָּה אַחֶרֶת', 'Skip Word', 'Otra palabra')}</span>
         </button>
       </div>
     </div>

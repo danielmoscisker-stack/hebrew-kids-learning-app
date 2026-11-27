@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Lock, Crown, CheckCircle2, Sparkles, KeyRound, ExternalLink } from 'lucide-react';
 import { playSound, playAudioFile } from '../utils/audio';
+import { tr } from '../utils/i18n';
 import { redeemActivationCode } from '../utils/cloudSync';
 
 /**
@@ -64,10 +65,13 @@ export default function ProUpgradeModal({
       await redeemActivationCode(code.trim());
       playSound('win');
       onUnlockPro();
-      setCodeMsg({ ok: true, text: isHe ? '🎉 גִּישַׁת PRO נִפְתְּחָה בְּהַצְלָחָה!' : '🎉 Pro Access Unlocked!' });
+      setCodeMsg({
+        ok: true,
+        text: tr(lang, '🎉 גִּישַׁת PRO נִפְתְּחָה בְּהַצְלָחָה!', '🎉 Pro Access Unlocked!', '🎉 ¡Acceso Pro Desbloqueado!')
+      });
     } catch (err) {
       playSound('whoosh');
-      setCodeMsg({ ok: false, text: err.message || (isHe ? 'קוֹד לֹא תָּקֵף' : 'Invalid code') });
+      setCodeMsg({ ok: false, text: err.message || tr(lang, 'קוֹד לֹא תָּקֵף', 'Invalid code', 'Código inválido') });
     } finally {
       setBusy(false);
     }
@@ -84,11 +88,16 @@ export default function ProUpgradeModal({
             {unlockedGate ? <Crown className="w-6 h-6 text-amber-500" /> : <Lock className="w-6 h-6 text-indigo-600" />}
             <h3 className="text-xl font-black text-slate-800">
               {unlockedGate
-                ? isHe ? 'מַסְלוּל מִשְׁפָּחָה PRO' : 'Family Pro Pass'
-                : isHe ? 'אֵזוֹר הוֹרִים בִּלְבַד' : 'Parents Only'}
+                ? tr(lang, 'מַסְלוּל מִשְׁפָּחָה PRO', 'Family Pro Pass', 'Pase Familiar Pro')
+                : tr(lang, 'אֵזוֹר הוֹרִים בִּלְבַד', 'Parents Only', 'Solo para Padres')}
             </h3>
           </div>
-          <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={tr(lang, 'סְגוֹר', 'Close', 'Cerrar')}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -96,9 +105,12 @@ export default function ProUpgradeModal({
         {!unlockedGate ? (
           <div className="text-center py-4 flex flex-col items-center gap-4">
             <p className="text-slate-600 font-bold text-base">
-              {isHe
-                ? 'מִשְׂחָק זֶה שַׁיָּךְ לְמַסְלוּל הַמָּלֵא. הוֹרִים — פִּתְרוּ כְּדֵי לְהַמְשִׁיךְ:'
-                : 'This learning world is part of the full Family Pass. Parents — solve to continue:'}
+              {tr(
+                lang,
+                'מִשְׂחָק זֶה שַׁיָּךְ לְמַסְלוּל הַמָּלֵא. הוֹרִים — פִּתְרוּ כְּדֵי לְהַמְשִׁיךְ:',
+                'This learning world is part of the full Family Pass. Parents — solve to continue:',
+                'Este mundo de aprendizaje forma parte del Pase Familiar completo. Padres — resolved para continuar:'
+              )}
             </p>
             <div className="text-4xl font-black text-indigo-700 bg-indigo-50 border-2 border-indigo-200 px-8 py-4 rounded-2xl" dir="ltr">
               {challenge.a} + {challenge.b} = ?
@@ -123,31 +135,41 @@ export default function ProUpgradeModal({
                 </button>
               ))}
             </div>
-            {wrong && <p className="text-sm font-bold text-rose-600">{isHe ? 'נַסּוּ שׁוּב :)' : 'Try again :)'}</p>}
+            {wrong && <p className="text-sm font-bold text-rose-600">{tr(lang, 'נַסּוּ שׁוּב :)', 'Try again :)', 'Inténtalo de nuevo :)')}</p>}
           </div>
         ) : (
           <div className="space-y-4 text-sm text-slate-700">
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2">
               <div className="font-black text-amber-950 text-base flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-500" />
-                <span>{isHe ? 'מָה כָּלוּל בְּגִרְסַת הַ-PRO הַמְּלֵאָה?' : 'What’s unlocked in Family Pro:'}</span>
+                <span>{tr(lang, 'מָה כָּלוּל בְּגִרְסַת הַ-PRO הַמְּלֵאָה?', 'What’s unlocked in Family Pro:', '¿Qué incluye el Pase Familiar Pro?')}</span>
               </div>
               <ul className="space-y-1.5 text-xs md:text-sm font-bold text-slate-700">
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {isHe ? 'עוֹלַם הַנִּקּוּד (פַּתַח, חִירִיק, חוֹלָם, שׁוּרוּק, סֶגוֹל)' : 'World of Vowels (Nikud & Mouth Cues)'}</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {isHe ? 'מִלִּים רִאשׁוֹנוֹת (הַרְכָּבַת מִלִּים מֵהֲבָרוֹת)' : 'First Words Blending Studio'}</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {isHe ? 'צִיּוּר וּכְתִיבָה מֻנְחָה שֶׁל כָּל הָאוֹתִיּוֹת וְהַמִּסְפָּרִים' : 'Guided Letter & Number Tracing'}</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {isHe ? 'הַקּוֹל הַפּוֹתֵחַ + חֶשְׁבּוֹן רִאשׁוֹן עִם פֵּרוֹת' : 'Opening Sound + First Fruit Math Games'}</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {tr(lang, 'עוֹלַם הַנִּקּוּד (פַּתַח, חִירִיק, חוֹלָם, שׁוּרוּק, סֶגוֹל)', 'World of Vowels (Nikud & Mouth Cues)', 'Mundo de Vocales (Nikud y gestos)')}</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {tr(lang, 'מִלִּים רִאשׁוֹנוֹת (הַרְכָּבַת מִלִּים מֵהֲבָרוֹת)', 'First Words Blending Studio', 'Estudio de Primeras Palabras')}</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {tr(lang, 'צִיּוּר וּכְתִיבָה מֻנְחָה שֶׁל כָּל הָאוֹתִיּוֹת וְהַמִּסְפָּרִים', 'Guided Letter & Number Tracing', 'Trazado Guiado de Letras y Números')}</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> {tr(lang, 'הַקּוֹל הַפּוֹתֵחַ + חֶשְׁבּוֹן רִאשׁוֹן עִם פֵּרוֹת', 'Opening Sound + First Fruit Math Games', 'Sonido Inicial + Primeras Sumas con Frutas')}</li>
               </ul>
               <p className="text-[11px] text-amber-800 pt-1">
                 {user
-                  ? isHe ? `מְחֻבָּר כְּ-${user.email} — הַפְּתִיחָה תִּשָּׁמֵר בֶּעָנָן.` : `Signed in as ${user.email} — Pro syncs to your account.`
-                  : isHe ? 'מוּמְלָץ לְהִתְחַבֵּר עִם Google בְּאֵזוֹר הַהוֹרִים כְּדֵי לִשְׁמֹר גִּישָׁה בְּכָל הַמַּכְשִׁירִים.' : 'Sign in with Google in Parent Zone to keep Pro synced across devices.'}
+                  ? tr(
+                      lang,
+                      `מְחֻבָּר כְּ-${user.email} — הַפְּתִיחָה תִּשָּׁמֵר בֶּעָנָן.`,
+                      `Signed in as ${user.email} — Pro syncs to your account.`,
+                      `Conectado como ${user.email} — Pro se sincroniza con tu cuenta.`
+                    )
+                  : tr(
+                      lang,
+                      'מוּמְלָץ לְהִתְחַבֵּר עִם Google בְּאֵזוֹר הַהוֹרִים כְּדֵי לִשְׁמֹר גִּישָׁה בְּכָל הַמַּכְשִׁירִים.',
+                      'Sign in with Google in Parent Zone to keep Pro synced across devices.',
+                      'Inicia sesión con Google en la Zona de Padres para sincronizar Pro entre dispositivos.'
+                    )}
               </p>
             </div>
 
             {isPro ? (
               <div className="p-4 bg-emerald-100 border-2 border-emerald-400 rounded-2xl text-emerald-950 font-black text-center">
-                {isHe ? '✅ גִּישַׁת PRO פְּעִילָה בַּחֶשְׁבּוֹן זֶה!' : '✅ Pro Access is Active!'}
+                {tr(lang, '✅ גִּישַׁת PRO פְּעִילָה בַּחֶשְׁבּוֹן זֶה!', '✅ Pro Access is Active!', '✅ ¡El acceso Pro está activo!')}
               </div>
             ) : (
               <>
@@ -160,9 +182,12 @@ export default function ProUpgradeModal({
                   >
                     <Crown className="w-5 h-5" />
                     <span>
-                      {isHe
-                        ? `שִׁדְרוּג מָלֵא בְּ-${serverConfig.proPriceLabel || '$4.99'}`
-                        : `Unlock Full Access (${serverConfig.proPriceLabel || '$4.99'})`}
+                      {tr(
+                        lang,
+                        `שִׁדְרוּג מָלֵא בְּ-${serverConfig.proPriceLabel || '$4.99'}`,
+                        `Unlock Full Access (${serverConfig.proPriceLabel || '$4.99'})`,
+                        `Desbloquear Todo (${serverConfig.proPriceLabel || '$4.99'})`
+                      )}
                     </span>
                     <ExternalLink className="w-4 h-4" />
                   </a>
@@ -170,9 +195,12 @@ export default function ProUpgradeModal({
 
                 {isNativeAndroid && (
                   <div className="p-3.5 bg-indigo-50 border border-indigo-200 rounded-2xl text-xs text-indigo-950 font-bold text-center">
-                    {isHe
-                      ? 'בְּאַפְּלִיקַצְיַת Google Play, הַשִּׁדְרוּג מִתְבַּצֵּעַ דֶּרֶךְ Google Play Billing אוֹ עִם קוֹד מִשְׁפָּחָה.'
-                      : 'On Android, Pro unlocks via Google Play In-App Purchase or a Family Activation Code below.'}
+                    {tr(
+                      lang,
+                      'בְּאַפְּלִיקַצְיַת Google Play, הַשִּׁדְרוּג מִתְבַּצֵּעַ דֶּרֶךְ Google Play Billing אוֹ עִם קוֹד מִשְׁפָּחָה.',
+                      'On Android, Pro unlocks via Google Play In-App Purchase or a Family Activation Code below.',
+                      'En Android, Pro se desbloquea mediante Google Play Billing o con un código familiar abajo.'
+                    )}
                   </div>
                 )}
 
@@ -180,14 +208,14 @@ export default function ProUpgradeModal({
                 <form onSubmit={handleRedeem} className="flex flex-col gap-2 pt-1">
                   <label className="text-xs font-extrabold text-slate-600 flex items-center gap-1.5">
                     <KeyRound className="w-4 h-4 text-indigo-600" />
-                    <span>{isHe ? 'יֵשׁ לָכֶם קוֹד מִשְׁפָּחָה / מַתָּנָה?' : 'Have a Family / Gift Activation Code?'}</span>
+                    <span>{tr(lang, 'יֵשׁ לָכֶם קוֹד מִשְׁפָּחָה / מַתָּנָה?', 'Have a Family / Gift Activation Code?', '¿Tienes un código familiar o de regalo?')}</span>
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
-                      placeholder={isHe ? 'הַקְלִידוּ קוֹד...' : 'Enter code...'}
+                      placeholder={tr(lang, 'הַקְלִידוּ קוֹד...', 'Enter code...', 'Introduce el código...')}
                       className="flex-1 px-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-400 outline-none font-bold uppercase text-sm"
                       dir="ltr"
                     />
@@ -196,7 +224,7 @@ export default function ProUpgradeModal({
                       disabled={busy}
                       className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl btn-press-3d cursor-pointer disabled:opacity-50"
                     >
-                      {isHe ? 'הַפְעֵל' : 'Activate'}
+                      {tr(lang, 'הַפְעֵל', 'Activate', 'Activar')}
                     </button>
                   </div>
                   {codeMsg && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud } from 'lucide-react';
 import { playSound, playAudioFile } from '../utils/audio';
+import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
 import { loadGoogleIdentityScript, signInWithGoogleCredential, signOutSession } from '../utils/cloudSync';
 
@@ -57,13 +58,13 @@ export default function ParentModal({
         client_id: serverConfig.googleClientId,
         callback: async (response) => {
           try {
-            setAuthStatus(isHe ? 'מתחבר...' : 'Signing in...');
+            setAuthStatus(tr(lang, 'מתחבר...', 'Signing in...', 'Iniciando sesión...'));
             const result = await signInWithGoogleCredential(response.credential);
             playSound('star');
             onAuthSuccess(result);
             setAuthStatus(null);
           } catch (err) {
-            setAuthStatus(err.message || 'Sign-in failed');
+            setAuthStatus(err.message || tr(lang, 'ההתחברות נכשלה', 'Sign-in failed', 'Error al iniciar sesión'));
           }
         }
       });
@@ -79,7 +80,7 @@ export default function ParentModal({
     return () => {
       cancelled = true;
     };
-  }, [open, unlocked, user, serverConfig, isHe, onAuthSuccess]);
+  }, [open, unlocked, user, serverConfig, lang, onAuthSuccess]);
 
   useEffect(() => {
     if (!open) return;
@@ -92,9 +93,9 @@ export default function ParentModal({
 
   if (!open) return null;
 
-  const toggleLanguage = () => {
+  const selectLanguage = (newLang) => {
+    if (newLang === lang) return;
     playSound('pop');
-    const newLang = isHe ? 'en' : 'he';
     setLang(newLang);
     document.documentElement.lang = newLang;
     document.documentElement.dir = newLang === 'he' ? 'rtl' : 'ltr';
@@ -118,13 +119,14 @@ export default function ParentModal({
             {unlocked ? <Sparkles className="w-6 h-6 text-pink-500" aria-hidden="true" /> : <Lock className="w-6 h-6 text-indigo-600" aria-hidden="true" />}
             <h3 id="parent-modal-title" className="text-xl font-black text-slate-800">
               {unlocked
-                ? isHe ? 'אֵזוֹר הוֹרִים וְגַנָּנוֹת' : 'Parents & Educators'
-                : isHe ? 'אֵזוֹר הוֹרִים בִּלְבַד' : 'For Parents Only'}
+                ? tr(lang, 'אֵזוֹר הוֹרִים וְגַנָּנוֹת', 'Parents & Educators', 'Padres y Educadores')
+                : tr(lang, 'אֵזוֹר הוֹרִים בִּלְבַד', 'For Parents Only', 'Solo para Padres')}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
+            aria-label={tr(lang, 'סְגוֹר', 'Close', 'Cerrar')}
             className="p-2 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
           >
             <X className="w-6 h-6" />
@@ -134,9 +136,12 @@ export default function ParentModal({
         {!unlocked ? (
           <div className="text-center py-4 flex flex-col items-center gap-4">
             <p className="text-slate-600 font-bold text-base">
-              {isHe
-                ? 'כְּדֵי לְהִכָּנֵס לַהַגְדָּרוֹת, פִּתְרוּ אֶת הַתַּרְגִּיל:'
-                : 'To access parent settings, solve this quick question:'}
+              {tr(
+                lang,
+                'כְּדֵי לְהִכָּנֵס לַהַגְדָּרוֹת, פִּתְרוּ אֶת הַתַּרְגִּיל:',
+                'To access parent settings, solve this quick question:',
+                'Para acceder a los ajustes para padres, resuelve esta pregunta:'
+              )}
             </p>
             <div className="text-4xl font-black text-indigo-700 bg-indigo-50 border-2 border-indigo-200 px-8 py-4 rounded-2xl" dir="ltr">
               {challenge.a} + {challenge.b} = ?
@@ -161,7 +166,7 @@ export default function ParentModal({
                 </button>
               ))}
             </div>
-            {wrong && <p className="text-sm font-bold text-rose-600">{isHe ? 'נַסּוּ שׁוּב :)' : 'Try again :)'}</p>}
+            {wrong && <p className="text-sm font-bold text-rose-600">{tr(lang, 'נַסּוּ שׁוּב :)', 'Try again :)', 'Inténtalo de nuevo :)')}</p>}
           </div>
         ) : (
           <div className="space-y-4 text-sm text-slate-700">
@@ -170,7 +175,7 @@ export default function ParentModal({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 font-black text-sky-950">
                   <Cloud className="w-5 h-5 text-sky-600" />
-                  <span>{isHe ? 'שְׁמִירַת הִתְקַדְּמוּת בֶּעָנָן (אוֹפְּצְיוֹנָלִי)' : 'Cloud Progress Backup (Optional)'}</span>
+                  <span>{tr(lang, 'שְׁמִירַת הִתְקַדְּמוּת בֶּעָנָן (אוֹפְּצְיוֹנָלִי)', 'Cloud Progress Backup (Optional)', 'Copia de seguridad en la nube (Opcional)')}</span>
                 </div>
               </div>
 
@@ -194,38 +199,67 @@ export default function ParentModal({
                     className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-xl font-bold text-xs cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>{isHe ? 'הִתְנַתְּקוּת' : 'Sign Out'}</span>
+                    <span>{tr(lang, 'הִתְנַתְּקוּת', 'Sign Out', 'Cerrar sesión')}</span>
                   </button>
                 </div>
               ) : serverConfig?.googleClientId ? (
                 <div className="flex flex-col items-center gap-2 pt-1">
                   <p className="text-xs text-sky-900 text-center">
-                    {isHe
-                      ? 'הַיְּלָדִים מְשַׂחֲקִים בְּלִי הִתְחַבְּרוּת. הוֹרִים יְכוֹלִים לְהִתְחַבֵּר עִם Google כְּדֵי לְסַנְכְּרֵן כּוֹכָבִים וְ-PRO בֵּין מַכְשִׁירִים:'
-                      : 'Kids never need to log in. Parents can optionally sign in with Google to sync stars & Pro across devices:'}
+                    {tr(
+                      lang,
+                      'הַיְּלָדִים מְשַׂחֲקִים בְּלִי הִתְחַבְּרוּת. הוֹרִים יְכוֹלִים לְהִתְחַבֵּר עִם Google כְּדֵי לְסַנְכְּרֵן כּוֹכָבִים וְ-PRO בֵּין מַכְשִׁירִים:',
+                      'Kids never need to log in. Parents can optionally sign in with Google to sync stars & Pro across devices:',
+                      'Los niños nunca necesitan iniciar sesión. Los padres pueden iniciar sesión con Google opcionalmente para sincronizar estrellas y Pro entre dispositivos:'
+                    )}
                   </p>
                   <div ref={googleBtnRef} />
                   {authStatus && <span className="text-xs font-bold text-indigo-700">{authStatus}</span>}
                 </div>
               ) : (
                 <p className="text-xs text-sky-900">
-                  {isHe
-                    ? 'הִתְחַבְּרוּת Google מוּכָנָה בַּשָּׁרָת — הוֹסִיפוּ GOOGLE_CLIENT_ID בְּהַגְדָּרוֹת Cloudflare Pages כְּדֵי לְהַפְעִיל אֶת הַכַּפְתּוֹר.'
-                    : 'Google Sign-In backend is ready — set GOOGLE_CLIENT_ID in Cloudflare Pages environment variables to enable the button.'}
+                  {tr(
+                    lang,
+                    'הִתְחַבְּרוּת Google מוּכָנָה בַּשָּׁרָת — הוֹסִיפוּ GOOGLE_CLIENT_ID בְּהַגְדָּרוֹת Cloudflare Pages כְּדֵי לְהַפְעִיל אֶת הַכַּפְתּוֹר.',
+                    'Google Sign-In backend is ready — set GOOGLE_CLIENT_ID in Cloudflare Pages environment variables to enable the button.',
+                    'El inicio de sesión con Google está listo en el servidor — configura GOOGLE_CLIENT_ID en las variables de entorno de Cloudflare Pages para activar el botón.'
+                  )}
                 </p>
               )}
             </div>
 
             {/* Settings + Pro Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={toggleLanguage}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl btn-press-3d cursor-pointer"
-              >
-                <Languages className="w-5 h-5" />
-                <span>{isHe ? 'Switch to English 🇬🇧' : 'הַחֲלֵף לְעִבְרִית 🇮🇱'}</span>
-              </button>
+              {/* 3-Way Language Selector */}
+              <div className="sm:col-span-2 p-2.5 bg-indigo-50 border-2 border-indigo-200 rounded-2xl flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-xs font-black text-indigo-950 px-1">
+                  <Languages className="w-4 h-4 text-indigo-600" />
+                  <span>{tr(lang, 'שְׂפַת הַמִּמְשָׁק', 'App Language', 'Idioma de la aplicación')}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { code: 'he', label: 'עִבְרִית 🇮🇱' },
+                    { code: 'en', label: 'English 🇬🇧' },
+                    { code: 'es', label: 'Español 🇪🇸' }
+                  ].map((opt) => {
+                    const active = lang === opt.code;
+                    return (
+                      <button
+                        key={opt.code}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => selectLanguage(opt.code)}
+                        className={`py-2.5 px-2 rounded-xl font-black text-xs sm:text-sm border-2 btn-press-3d cursor-pointer transition ${
+                          active
+                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                            : 'bg-white text-slate-700 border-indigo-200 hover:bg-indigo-100'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               <button
                 type="button"
@@ -233,14 +267,18 @@ export default function ParentModal({
                   onClose();
                   onOpenPro();
                 }}
-                className={`flex items-center justify-center gap-2 px-4 py-3 font-black rounded-2xl border-2 btn-press-3d cursor-pointer ${
+                className={`sm:col-span-2 flex items-center justify-center gap-2 px-4 py-3 font-black rounded-2xl border-2 btn-press-3d cursor-pointer ${
                   isPro
                     ? 'bg-emerald-100 border-emerald-400 text-emerald-950'
                     : 'bg-amber-300 hover:bg-amber-400 border-amber-500 text-amber-950'
                 }`}
               >
                 <Crown className="w-5 h-5" />
-                <span>{isPro ? (isHe ? 'גִּרְסַת PRO פְּעִילָה ✓' : 'Pro Active ✓') : isHe ? 'שִׁדְרוּג לְגִרְסָה מְלֵאָה' : 'Upgrade to Pro'}</span>
+                <span>
+                  {isPro
+                    ? tr(lang, 'גִּרְסַת PRO פְּעִילָה ✓', 'Pro Active ✓', 'Pro Activo ✓')
+                    : tr(lang, 'שִׁדְרוּג לְגִרְסָה מְלֵאָה', 'Upgrade to Pro', 'Mejorar a Pro')}
+                </span>
               </button>
 
               {!isTouch && (
@@ -258,9 +296,12 @@ export default function ParentModal({
                 >
                   <MousePointer2 className="w-5 h-5" />
                   <span>
-                    {isHe
-                      ? `סַמָּן עַכְבָּר גָּדוֹל: ${kidCursorEnabled ? 'פָּעִיל ⭐' : 'כָּבוּי'}`
-                      : `Big Kid Cursor: ${kidCursorEnabled ? 'ON ⭐' : 'OFF'}`}
+                    {tr(
+                      lang,
+                      `סַמָּן עַכְבָּר גָּדוֹל: ${kidCursorEnabled ? 'פָּעִיל ⭐' : 'כָּבוּי'}`,
+                      `Big Kid Cursor: ${kidCursorEnabled ? 'ON ⭐' : 'OFF'}`,
+                      `Cursor Grande Infantil: ${kidCursorEnabled ? 'ACTIVO ⭐' : 'APAGADO'}`
+                    )}
                   </span>
                 </button>
               )}
@@ -269,23 +310,32 @@ export default function ParentModal({
             {/* Pedagogy & Privacy Summary */}
             <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200 leading-relaxed">
               <h4 className="font-black text-amber-900 mb-1">
-                {isHe
-                  ? 'תְּאִימוּת לְתָכְנִית מִשְׂרַד הַחִנּוּךְ (גִּילָאֵי 4–5):'
-                  : 'Curriculum & Play Psychology (Ages 4–5):'}
+                {tr(
+                  lang,
+                  'תְּאִימוּת לְתָכְנִית מִשְׂרַד הַחִנּוּךְ (גִּילָאֵי 4–5):',
+                  'Curriculum & Play Psychology (Ages 4–5):',
+                  'Currículo y Psicología del Juego (Edades 4–5):'
+                )}
               </h4>
               <p className="text-xs md:text-sm">
-                {isHe
-                  ? 'מודעות פונולוגית, שיטת "הפופיק" לדגש קל (בּ/ב, כּ/כ, פּ/פ), תנועות יסוד והבעות פנים, קריאה מימין לשמאל ברכבת הקריאה, וספירה חד-חד-ערכית 1–10 עם משוב חיובי ללא ענישה.'
-                  : 'Phonological awareness, Pupik somatic dagesh method, vowel mouth cues, right-to-left reading train, and 1-to-1 counting 1–10 with zero-punishment encouragement.'}
+                {tr(
+                  lang,
+                  'מודעות פונולוגית, שיטת "הפופיק" לדגש קל (בּ/ב, כּ/כ, פּ/פ), תנועות יסוד והבעות פנים, קריאה מימין לשמאל ברכבת הקריאה, וספירה חד-חד-ערכית 1–10 עם משוב חיובי ללא ענישה.',
+                  'Phonological awareness, Pupik somatic dagesh method, vowel mouth cues, right-to-left reading train, and 1-to-1 counting 1–10 with zero-punishment encouragement.',
+                  'Conciencia fonológica, método somático Pupik para el daguesh, pistas visuales de vocales, tren de lectura de derecha a izquierda y conteo 1-a-1 del 1 al 10 con refuerzo positivo sin castigos.'
+                )}
               </p>
             </div>
 
             <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-start gap-2.5">
               <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
               <p className="text-xs md:text-sm text-emerald-950 font-medium">
-                {isHe
-                  ? 'פְּרָטִיּוּת מְלֵאָה לִילָדִים: 100% אופליין, ללא פרסומות וללא מעקב. התחברות Google היא אופציונלית להורים בלבד.'
-                  : '100% Kid-Safe: Runs offline with zero ads and zero tracking. Google Sign-In is optional for parents only.'}
+                {tr(
+                  lang,
+                  'פְּרָטִיּוּת מְלֵאָה לִילָדִים: 100% אופליין, ללא פרסומות וללא מעקב. התחברות Google היא אופציונלית להורים בלבד.',
+                  '100% Kid-Safe: Runs offline with zero ads and zero tracking. Google Sign-In is optional for parents only.',
+                  '100% Seguro para Niños: Funciona sin conexión, sin anuncios y sin rastreo. El inicio de sesión con Google es opcional solo para padres.'
+                )}
               </p>
             </div>
 
@@ -299,7 +349,7 @@ export default function ParentModal({
                 className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 px-3 py-2 rounded-xl cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>{isHe ? 'אִפּוּס כּוֹכָבִים' : 'Reset Stars'}</span>
+                <span>{tr(lang, 'אִפּוּס כּוֹכָבִים', 'Reset Stars', 'Reiniciar Estrellas')}</span>
               </button>
 
               <button
@@ -307,7 +357,7 @@ export default function ParentModal({
                 onClick={onClose}
                 className="px-6 py-2.5 bg-amber-400 hover:bg-amber-500 font-black text-slate-900 rounded-2xl shadow btn-press-3d cursor-pointer"
               >
-                {isHe ? 'סְגוֹר' : 'Close'}
+                {tr(lang, 'סְגוֹר', 'Close', 'Cerrar')}
               </button>
             </div>
           </div>

@@ -322,7 +322,7 @@ export default function App() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-indigo-700 focus:text-white focus:font-black focus:rounded-xl focus:shadow-lg"
       >
-        {isHe ? 'דַּלֵּג לַתֹּכֶן הָרָאשִׁי' : 'Skip to main content'}
+        {lang === 'he' ? 'דַּלֵּג לַתֹּכֶן הָרָאשִׁי' : lang === 'es' ? 'Saltar al contenido principal' : 'Skip to main content'}
       </a>
 
       <Navbar

@@ -357,7 +357,18 @@ export const playSound = (type) => {
  */
 export const speakText = (text, lang = 'iw') => {
   try {
-    if (!normalizeTtsText(text)) return;
+    const clean = normalizeTtsText(text);
+    if (!clean) return;
+    if (ttsLang(lang) === 'es') {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(clean);
+        utt.lang = 'es-ES';
+        utt.rate = 0.92;
+        window.speechSynthesis.speak(utt);
+      }
+      return;
+    }
     // Bundled, pre-generated clip (see scripts/generate-ui-audio.js) – works fully offline
     playAudioFile(`/audio/tts/${ttsFileName(text, lang)}`);
   } catch (e) {

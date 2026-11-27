@@ -2,13 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Trophy, RefreshCw, Sparkles } from 'lucide-react';
 import { playSound, playNumberAudio, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
+import { tr } from '../utils/i18n';
 
 const FRUIT_THEMES = [
-  { emoji: '🍎', nameHe: 'תַּפּוּחִים', nameEn: 'apples' },
-  { emoji: '🍌', nameHe: 'בָּנָנוֹת', nameEn: 'bananas' },
-  { emoji: '🎈', nameHe: 'בַּלּוֹנִים', nameEn: 'balloons' },
-  { emoji: '⭐', nameHe: 'כּוֹכָבִים', nameEn: 'stars' },
-  { emoji: '🍓', nameHe: 'תּוּתִים', nameEn: 'strawberries' }
+  { emoji: '🍎', nameHe: 'תַּפּוּחִים', nameEn: 'apples', nameEs: 'manzanas' },
+  { emoji: '🍌', nameHe: 'בָּנָנוֹת', nameEn: 'bananas', nameEs: 'plátanos' },
+  { emoji: '🎈', nameHe: 'בַּלּוֹנִים', nameEn: 'balloons', nameEs: 'globos' },
+  { emoji: '⭐', nameHe: 'כּוֹכָבִים', nameEn: 'stars', nameEs: 'estrellas' },
+  { emoji: '🍓', nameHe: 'תּוּתִים', nameEn: 'strawberries', nameEs: 'fresas' }
 ];
 
 export default function MathPlay({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
@@ -74,12 +75,15 @@ export default function MathPlay({ lang, soundEnabled, gender = 'boy', onEarnSta
       <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl p-6 text-white text-center shadow-lg border-4 border-white">
         <span className="text-4xl">🍎 ➕ 🍌 🟰 🌟</span>
         <h2 className="text-2xl md:text-3xl font-black mt-2">
-          {isHe ? 'חֶשְׁבּוֹן רִאשׁוֹן עִם פֵּרוֹת' : 'First Math with Fruits'}
+          {tr(lang, 'חֶשְׁבּוֹן רִאשׁוֹן עִם פֵּרוֹת', 'First Math with Fruits', 'Primeras Sumas con Frutas')}
         </h2>
         <p className="text-emerald-100 text-sm md:text-base font-bold mt-1">
-          {isHe
-            ? 'סִפְרוּ אֶת כָּל הַפְּרִיטִים יַחַד וּבַחֲרוּ אֶת הַמִּסְפָּר הַנָּכוֹן!'
-            : 'Count all items together and pick the matching number!'}
+          {tr(
+            lang,
+            'סִפְרוּ אֶת כָּל הַפְּרִיטִים יַחַד וּבַחֲרוּ אֶת הַמִּסְפָּר הַנָּכוֹן!',
+            'Count all items together and pick the matching number!',
+            '¡Cuenta todos los objetos juntos y elige el número correcto!'
+          )}
         </p>
         <div className="mt-3 inline-flex items-center gap-2 bg-white/20 px-4 py-1 rounded-full font-black text-sm">
           <Trophy className="w-4 h-4 text-amber-300" />
@@ -148,7 +152,7 @@ export default function MathPlay({ lang, soundEnabled, gender = 'boy', onEarnSta
 
         <div className="text-sm font-black text-slate-600 flex items-center gap-1.5">
           <Sparkles className="w-4 h-4 text-amber-500" />
-          <span>{isHe ? 'כַּמָּה יֵשׁ יַחַד? לִחְצוּ עַל הַתְּשׁוּבָה:' : 'How many altogether? Tap the answer:'}</span>
+          <span>{tr(lang, 'כַּמָּה יֵשׁ יַחַד? לִחְצוּ עַל הַתְּשׁוּבָה:', 'How many altogether? Tap the answer:', '¿Cuántos hay en total? Toca la respuesta:')}</span>
         </div>
 
         <div className="grid grid-cols-3 gap-4 w-full max-w-md" dir="ltr">
@@ -181,7 +185,7 @@ export default function MathPlay({ lang, soundEnabled, gender = 'boy', onEarnSta
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold cursor-pointer"
         >
           <RefreshCw className="w-4 h-4" />
-          <span>{isHe ? 'תַּרְגִּיל אַחֵר' : 'Another Question'}</span>
+          <span>{tr(lang, 'תַּרְגִּיל אַחֵר', 'Another Question', 'Otro ejercicio')}</span>
         </button>
       </div>
     </div>

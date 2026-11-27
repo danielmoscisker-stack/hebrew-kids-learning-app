@@ -4,6 +4,20 @@ import { NUMBERS_DATA } from '../data/curriculumData';
 import { playSound, playNumberAudio, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { useDeviceType } from '../utils/useDeviceType';
+import { tr } from '../utils/i18n';
+
+const NUMBERS_ES = {
+  1: { name: 'Uno', itemLabel: 'Un globo' },
+  2: { name: 'Dos', itemLabel: 'Dos manzanas' },
+  3: { name: 'Tres', itemLabel: 'Tres plátanos' },
+  4: { name: 'Cuatro', itemLabel: 'Cuatro coches' },
+  5: { name: 'Cinco', itemLabel: 'Cinco estrellas' },
+  6: { name: 'Seis', itemLabel: 'Seis gatos' },
+  7: { name: 'Siete', itemLabel: 'Siete fresas' },
+  8: { name: 'Ocho', itemLabel: 'Ocho perritos' },
+  9: { name: 'Nueve', itemLabel: 'Nueve helados' },
+  10: { name: 'Diez', itemLabel: 'Diez mariposas' },
+};
 
 export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
   const [currentNumIdx, setCurrentNumIdx] = useState(0);
@@ -100,21 +114,24 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
       <div className="bg-gradient-to-r from-orange-400 to-amber-500 rounded-3xl p-6 text-white text-center shadow-lg relative">
         <span className="text-4xl">🔢 🎈 ⭐</span>
         <h2 className="text-2xl md:text-3xl font-black mt-2">
-          {isHe ? 'עוֹלַם הַמִּסְפָּרִים מִ-1 עַד 10 (לְגִיל 4)' : 'World of Numbers: 1 to 10 (Age 4)'}
+          {tr(lang, 'עוֹלַם הַמִּסְפָּרִים מִ-1 עַד 10 (לְגִיל 4)', 'World of Numbers: 1 to 10 (Age 4)', 'El Mundo de los Números: del 1 al 10 (4 años)')}
         </h2>
         <p className="text-amber-100 text-sm md:text-base mt-1 font-medium">
-          {isHe
-            ? `סוֹפְרִים פְרִיטִים ${withDeviceHe}, לוֹמְדִים אֶת הַכַּמּוּת וּמְפַצְּצִים בַּלּוֹנִים!`
-            : `Count items ${withDeviceEn}, understand quantity, and pop balloons!`}
+          {tr(
+            lang,
+            `סוֹפְרִים פְרִיטִים ${withDeviceHe}, לוֹמְדִים אֶת הַכַּמּוּת וּמְפַצְּצִים בַּלּוֹנִים!`,
+            `Count items ${withDeviceEn}, understand quantity, and pop balloons!`,
+            `¡Cuenta objetos ${isTouch ? 'con el dedo' : 'con el ratón'}, aprende la cantidad y explota globos!`
+          )}
         </p>
 
         <button
           onClick={() => playPhraseAudio(isTouch ? 'inst_numbers_touch' : 'inst_numbers_mouse', gender)}
           className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full font-bold text-xs text-white shadow-sm"
-          title="השמע הוראות לילד"
+          title={tr(lang, 'השמע הוראות לילד', 'Hear instructions', 'Escuchar instrucciones')}
         >
           <Volume2 className="w-4 h-4 text-amber-200" />
-          <span>{isHe ? '🔊 שְׁמַע הוֹרָאוֹת' : '🔊 Hear Instructions'}</span>
+          <span>{tr(lang, '🔊 שְׁמַע הוֹרָאוֹת', '🔊 Hear Instructions', '🔊 Escuchar instrucciones')}</span>
         </button>
       </div>
 
@@ -131,7 +148,7 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
               : 'bg-white text-slate-700 border-slate-200'
           }`}
         >
-          {isHe ? '🖐️ לוֹמְדִים וְסוֹפְרִים' : '🖐️ Learn & Count'}
+          {tr(lang, '🖐️ לוֹמְדִים וְסוֹפְרִים', '🖐️ Learn & Count', '🖐️ Aprender y Contar')}
         </button>
 
         <button
@@ -145,7 +162,7 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
               : 'bg-white text-slate-700 border-slate-200'
           }`}
         >
-          {isHe ? '🎈 מִשְׂחַק פִּיצוּץ בַּלּוֹנִים' : '🎈 Balloon Popper Game'}
+          {tr(lang, '🎈 מִשְׂחַק פִּיצוּץ בַּלּוֹנִים', '🎈 Balloon Popper Game', '🎈 Juego de Explotar Globos')}
         </button>
       </div>
 
@@ -156,14 +173,14 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
           <button
             onClick={handlePrev}
             className="pointer-events-auto p-3 bg-amber-200 hover:bg-amber-300 active:scale-95 text-slate-800 rounded-full shadow-md btn-press-3d transition"
-            title={isHe ? 'הַקּוֹדֵם' : 'Previous'}
+            title={tr(lang, 'הַקּוֹדֵם', 'Previous', 'Anterior')}
           >
             {isHe ? <ChevronRight className="w-8 h-8" /> : <ChevronLeft className="w-8 h-8" />}
           </button>
           <button
             onClick={handleNext}
             className="pointer-events-auto p-3 bg-amber-200 hover:bg-amber-300 active:scale-95 text-slate-800 rounded-full shadow-md btn-press-3d transition"
-            title={isHe ? 'הַבָּא' : 'Next'}
+            title={tr(lang, 'הַבָּא', 'Next', 'Siguiente')}
           >
             {isHe ? <ChevronLeft className="w-8 h-8" /> : <ChevronRight className="w-8 h-8" />}
           </button>
@@ -183,10 +200,10 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
         {/* Number Names */}
         <div className="mt-4">
           <h3 className="text-3xl md:text-4xl font-black text-slate-800">
-            {isHe ? numberObj.nameHe : numberObj.nameEn}
+            {tr(lang, numberObj.nameHe, numberObj.nameEn, NUMBERS_ES[numberObj.number]?.name || numberObj.nameEn)}
           </h3>
           <p className="text-lg font-bold text-amber-600 mt-1">
-            {isHe ? numberObj.itemLabelHe : numberObj.itemLabelEn}
+            {tr(lang, numberObj.itemLabelHe, numberObj.itemLabelEn, NUMBERS_ES[numberObj.number]?.itemLabel || numberObj.itemLabelEn)}
           </p>
         </div>
 
@@ -194,7 +211,7 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
         {!balloonMode && (
           <div className="w-full mt-6 flex flex-col items-center">
             <p className="text-sm font-bold text-slate-500 mb-4">
-              {isHe ? 'לִחְצוּ עַל כָּל פְּרִיט כְּדֵי לִסְפּוֹר אוֹתוֹ:' : 'Tap each item to count it:'}
+              {tr(lang, 'לִחְצוּ עַל כָּל פְּרִיט כְּדֵי לִסְפּוֹר אוֹתוֹ:', 'Tap each item to count it:', 'Toca cada objeto para contarlo:')}
             </p>
 
             <div className="flex flex-wrap justify-center gap-3 md:gap-4 max-w-lg">
@@ -224,12 +241,12 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
             {isAllCounted ? (
               <div className="mt-6 p-4 bg-emerald-100 border-2 border-emerald-400 rounded-2xl text-emerald-900 font-black text-lg flex items-center gap-2 animate-bounce">
                 <Trophy className="w-6 h-6 text-emerald-600" />
-                <span>{isHe ? `מְעֻלֶּה! יֵשׁ כָּאן ${numberObj.number}! 🏆` : `Great! There are ${numberObj.number}! 🏆`}</span>
+                <span>{tr(lang, `מְעֻלֶּה! יֵשׁ כָּאן ${numberObj.number}! 🏆`, `Great! There are ${numberObj.number}! 🏆`, `¡Genial! ¡Hay ${numberObj.number}! 🏆`)}</span>
                 <button
                   onClick={resetCount}
                   className="mr-3 px-3 py-1 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow"
                 >
-                  {isHe ? 'סְפוֹר שׁוּב' : 'Count Again'}
+                  {tr(lang, 'סְפוֹר שׁוּב', 'Count Again', 'Contar de nuevo')}
                 </button>
               </div>
             ) : (
@@ -238,7 +255,7 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
                 className="mt-6 flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>{isHe ? 'אִפּוּס סְפִירָה' : 'Reset'}</span>
+                <span>{tr(lang, 'אִפּוּס סְפִירָה', 'Reset', 'Reiniciar')}</span>
               </button>
             )}
           </div>
@@ -248,7 +265,7 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
         {balloonMode && (
           <div className="w-full mt-6 flex flex-col items-center">
             <p className="text-sm font-bold text-pink-600 mb-4 animate-pulse">
-              {isHe ? `פּוֹצְצוּ ${numberObj.number} בַּלּוֹנִים!` : `Pop ${numberObj.number} balloons!`}
+              {tr(lang, `פּוֹצְצוּ ${numberObj.number} בַּלּוֹנִים!`, `Pop ${numberObj.number} balloons!`, numberObj.number === 1 ? '¡Explota 1 globo!' : `¡Explota ${numberObj.number} globos!`)}
             </p>
 
             <div className="flex flex-wrap justify-center gap-4 max-w-lg min-h-36 items-center">
@@ -283,12 +300,12 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
             {isAllPopped ? (
               <div className="mt-6 p-4 bg-pink-100 border-2 border-pink-400 rounded-2xl text-pink-900 font-black text-lg flex items-center gap-2 animate-bounce">
                 <Trophy className="w-6 h-6 text-pink-600" />
-                <span>{isHe ? 'כָּל הַבַּלּוֹנִים הִתְפּוֹצְצוּ! כָּל הַכָּבוֹד! 🎉' : 'All balloons popped! Awesome! 🎉'}</span>
+                <span>{tr(lang, 'כָּל הַבַּלּוֹנִים הִתְפּוֹצְצוּ! כָּל הַכָּבוֹד! 🎉', 'All balloons popped! Awesome! 🎉', '¡Todos los globos explotaron! ¡Genial! 🎉')}</span>
                 <button
                   onClick={resetCount}
                   className="mr-3 px-3 py-1 bg-pink-600 text-white rounded-xl text-sm font-bold shadow"
                 >
-                  {isHe ? 'שַׂחֵק שׁוּב' : 'Play Again'}
+                  {tr(lang, 'שַׂחֵק שׁוּב', 'Play Again', 'Jugar de nuevo')}
                 </button>
               </div>
             ) : (
@@ -297,7 +314,7 @@ export default function NumbersWorld({ lang, soundEnabled, gender = 'boy', onEar
                 className="mt-6 flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>{isHe ? 'בַּלּוֹנִים חֲדָשִׁים' : 'New Balloons'}</span>
+                <span>{tr(lang, 'בַּלּוֹנִים חֲדָשִׁים', 'New Balloons', 'Nuevos globos')}</span>
               </button>
             )}
           </div>

@@ -4,6 +4,7 @@ import { VOWELS_DATA, VOWEL_CONTRASTS, VOWEL_TRAIN_ROWS } from '../data/curricul
 import { playSound, speakText, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import { useDeviceType } from '../utils/useDeviceType';
+import { tr } from '../utils/i18n';
 
 export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
   const [activeVowel, setActiveVowel] = useState(0);
@@ -19,6 +20,8 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
     if (soundEnabled) {
       if (isHe) {
         speakText(`${vowel.sound}. ${vowel.soundHintHe}`, 'he-IL');
+      } else if (lang === 'es') {
+        speakText(`${vowel.sound}. ${vowel.soundHintEs || vowel.soundHintEn}`, 'es-ES');
       } else {
         speakText(`${vowel.sound}. ${vowel.soundHintEn}`, 'en-US');
       }
@@ -57,12 +60,15 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl p-6 text-white text-center shadow-lg">
         <span className="text-4xl">🎵 😮 😁 😲</span>
         <h2 className="text-2xl md:text-3xl font-black mt-2">
-          {isHe ? 'עוֹלַם הַנְּקֻדּוֹת שֶׁל הָאוֹתִיּוֹת (לְגִיל 4)' : 'World of Vowels & Mouth Sounds (Age 4)'}
+          {tr(lang, 'עוֹלַם הַנְּקֻדּוֹת שֶׁל הָאוֹתִיּוֹת (לְגִיל 4)', 'World of Vowels & Mouth Sounds (Age 4)', 'El mundo de las vocales y sonidos (4 años)')}
         </h2>
         <p className="text-purple-100 text-sm md:text-base mt-1 font-medium">
-          {isHe
-            ? 'כָּל נְקֻדָּה נוֹתֶנֶת לָאוֹת קוֹל מְיֻחָד • עֲשׂוּ אֶת הַפַּרְצוּף וְתַשְׁמִיעוּ אֶת הַקּוֹל!'
-            : 'Each vowel gives the letter a special sound • Make the face and make the sound!'}
+          {tr(
+            lang,
+            'כָּל נְקֻדָּה נוֹתֶנֶת לָאוֹת קוֹל מְיֻחָד • עֲשׂוּ אֶת הַפַּרְצוּף וְתַשְׁמִיעוּ אֶת הַקּוֹל!',
+            'Each vowel gives the letter a special sound • Make the face and make the sound!',
+            '¡Cada vocal da a la letra un sonido especial • Haz la cara y haz el sonido!'
+          )}
         </p>
 
         <button
@@ -76,17 +82,23 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
         >
           <Volume2 className="w-4 h-4 text-purple-200 animate-pulse" />
           <span>
-            {isHe
-              ? isTouch
-                ? gender === 'girl'
-                  ? 'גְּעִי עִם הָאֶצְבַּע בַּצְּלִילִים (🔊 שִׁמְעִי הוֹרָאוֹת)'
-                  : 'גַּע עִם הָאֶצְבַּע בַּצְּלִילִים (🔊 שְׁמַע הוֹרָאוֹת)'
-                : gender === 'girl'
-                  ? 'הַעֲבִירִי עַכְבָּר עַל הַצְּלִילִים (🔊 שִׁמְעִי הוֹרָאוֹת)'
-                  : 'הַעֲבֵר עַכְבָּר עַל הַצְּלִילִים (🔊 שְׁמַע הוֹרָאוֹת)'
-              : isTouch
-                ? 'Tap sounds with finger! (🔊 Hear Instructions)'
-                : 'Move mouse over sounds! (🔊 Hear Instructions)'}
+            {isTouch
+              ? tr(
+                  lang,
+                  gender === 'girl'
+                    ? 'גְּעִי עִם הָאֶצְבַּע בַּצְּלִילִים (🔊 שִׁמְעִי הוֹרָאוֹת)'
+                    : 'גַּע עִם הָאֶצְבַּע בַּצְּלִילִים (🔊 שְׁמַע הוֹרָאוֹת)',
+                  'Tap sounds with finger! (🔊 Hear Instructions)',
+                  '¡Toca los sonidos con el dedo! (🔊 Escuchar instrucciones)'
+                )
+              : tr(
+                  lang,
+                  gender === 'girl'
+                    ? 'הַעֲבִירִי עַכְבָּר עַל הַצְּלִילִים (🔊 שִׁמְעִי הוֹרָאוֹת)'
+                    : 'הַעֲבֵר עַכְבָּר עַל הַצְּלִילִים (🔊 שְׁמַע הוֹרָאוֹת)',
+                  'Move mouse over sounds! (🔊 Hear Instructions)',
+                  '¡Pasa el ratón sobre los sonidos! (🔊 Escuchar instrucciones)'
+                )}
           </span>
         </button>
       </div>
@@ -115,10 +127,10 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
                 "{vowel.sound}"
               </span>
               <span className="text-xs font-bold text-slate-600 mt-1">
-                {isHe ? vowel.nameHe : vowel.nameEn}
+                {tr(lang, vowel.nameHe, vowel.nameEn, vowel.nameEs || vowel.nameEn)}
               </span>
               <p className="text-[11px] text-slate-500 font-medium mt-2 leading-tight">
-                {isHe ? vowel.soundHintHe : vowel.soundHintEn}
+                {tr(lang, vowel.soundHintHe, vowel.soundHintEn, vowel.soundHintEs || vowel.soundHintEn)}
               </p>
             </button>
           );
@@ -130,14 +142,14 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-5 h-5 text-amber-500" />
           <h3 className="text-lg md:text-xl font-black text-slate-800">
-            {isHe ? 'שִׂימוּ לֵב: בּוּם (בּ) מוּל רוּחַ (ב) עִם נְקֻדּוֹת!' : 'Notice: Boom (בּ) vs Wind (ב) with Vowels!'}
+            {tr(lang, 'שִׂימוּ לֵב: בּוּם (בּ) מוּל רוּחַ (ב) עִם נְקֻדּוֹת!', 'Notice: Boom (בּ) vs Wind (ב) with Vowels!', '¡Fíjate: Bum (בּ) vs Viento (ב) con vocales!')}
           </h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {VOWEL_CONTRASTS.map((item, idx) => (
             <div key={idx} className="bg-amber-50/70 border-2 border-amber-200 rounded-2xl p-3 flex flex-col items-center gap-2">
-              <span className="text-xs font-bold text-slate-600">{item.desc}</span>
+              <span className="text-xs font-bold text-slate-600">{tr(lang, item.desc, item.descEn || item.desc, item.descEs || item.desc)}</span>
               <div className="flex gap-4">
                 <button
                   onClick={() => handleContrastTap(item.left, item.leftSound)}
@@ -163,10 +175,10 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
       {/* Vowel Reading Train from Right to Left (דף 14) */}
       <div className="bg-white rounded-3xl p-6 border-3 border-teal-300 shadow-md">
         <h3 className="text-lg md:text-xl font-black text-slate-800 mb-1">
-          {isHe ? '🚂 רַכֶּבֶת קְרִיאָה עִם נְקֻדּוֹת: מ-א\' עַד ה\'' : '🚂 Vowel Reading Train: Alef to He'}
+          {tr(lang, '🚂 רַכֶּבֶת קְרִיאָה עִם נְקֻדּוֹת: מ-א\' עַד ה\'', '🚂 Vowel Reading Train: Alef to He', '🚂 Tren de lectura con vocales: de Álef a He')}
         </h3>
         <p className="text-xs text-slate-500 mb-4 font-medium">
-          {isHe ? 'שִׂימוּ אֶצְבַּע מִיָּמִין לִשְׂמֹאל • קוֹרְאִים אֶת הָאוֹת עִם הַנְּקֻדָּה שֶׁלָּהּ!' : 'Read right-to-left • Read the letter with its vowel!'}
+          {tr(lang, 'שִׂימוּ אֶצְבַּע מִיָּמִין לִשְׂמֹאל • קוֹרְאִים אֶת הָאוֹת עִם הַנְּקֻדָּה שֶׁלָּהּ!', 'Read right-to-left • Read the letter with its vowel!', 'Lee de derecha a izquierda • ¡Lee la letra con su vocal!')}
         </p>
 
         <div className="flex flex-col gap-3">
@@ -177,7 +189,7 @@ export default function VowelsWorld({ lang, soundEnabled, gender = 'boy', onEarn
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{row.emoji}</span>
                   <span className="font-extrabold text-slate-800 text-sm">
-                    {isHe ? row.titleHe : row.titleEn}
+                    {tr(lang, row.titleHe, row.titleEn, row.titleEs || row.titleEn)}
                   </span>
                 </div>
 

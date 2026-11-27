@@ -20,7 +20,7 @@ export async function onRequestPost({ request, env }) {
     }
     const activityId = body.activityId ? String(body.activityId).slice(0, 40) : null;
     const deviceType = body.deviceType === 'mobile' ? 'mobile' : 'desktop';
-    const lang = body.lang === 'en' ? 'en' : 'he';
+    const lang = body.lang === 'en' ? 'en' : body.lang === 'es' ? 'es' : 'he';
     const sessionId = body.sessionId ? String(body.sessionId).slice(0, 48) : null;
     const referrer = body.referrer ? String(body.referrer).slice(0, 120) : null;
     const searchTerm = body.searchTerm ? String(body.searchTerm).slice(0, 120) : null;
