@@ -1,6 +1,12 @@
 import { getSessionUser } from './api/_lib.js';
 
-const OWNER_EMAIL = 'danielmoscisker@gmail.com';
+const OWNER_EMAILS = new Set([
+  'danielmoscisker@gmail.com',
+  'danielmoscisker@googlemail.com'
+]);
+
+const normalizeEmail = (email) =>
+  String(email || '').trim().toLowerCase().replace(/@googlemail\.com$/, '@gmail.com');
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -12,15 +18,15 @@ export async function onRequestGet({ request, env }) {
   const keyValid = Boolean(env.ADMIN_STATS_KEY && providedKey && providedKey === env.ADMIN_STATS_KEY);
   const sessionUser = await getSessionUser(request, env);
   const isOwnerGoogle = Boolean(
-    sessionUser?.email && sessionUser.email.toLowerCase() === OWNER_EMAIL
+    sessionUser?.email && OWNER_EMAILS.has(normalizeEmail(sessionUser.email))
   );
 
-  // Not authorized yet -> show private Google + PIN login gate (no stats leaked!)
+  // Not authorized yet -> show private Google + PIN login gate (zero email or stats leaked!)
   if (!keyValid && !isOwnerGoogle) {
     const clientId = env.GOOGLE_CLIENT_ID || '';
     const wrongAccountMsg =
       sessionUser && !isOwnerGoogle
-        ? `<p style="color:#f87171;font-weight:700">Signed in as ${sessionUser.email} — only ${OWNER_EMAIL} is authorized.</p>`
+        ? `<p style="color:#f87171;font-weight:700">This account is not authorized.</p>`
         : '';
 
     const gateHtml = `<!doctype html>
@@ -46,8 +52,8 @@ export async function onRequestGet({ request, env }) {
 </head>
 <body>
   <div class="box">
-    <h1>Owner Stats</h1>
-    <p>Sign in with <strong>${OWNER_EMAIL}</strong> or enter your admin key.</p>
+    <h1>Restricted Access</h1>
+    <p>Sign in with an authorized Google account or enter your admin key.</p>
     ${wrongAccountMsg}
     ${clientId ? '<div id="gbtn"></div>' : ''}
     <div class="sep">or</div>
