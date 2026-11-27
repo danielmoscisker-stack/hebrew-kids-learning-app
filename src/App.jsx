@@ -693,6 +693,7 @@ export default function App() {
             onEarnStar={handleEarnStar}
             isFocusLocked={quizFocusLocked}
             onFocusLockChange={setQuizFocusLocked}
+            onNavigate={setCurrentTab}
           />
         )}
         {currentTab === 'train' && (
@@ -719,6 +720,7 @@ export default function App() {
             onEarnStar={handleEarnStar}
             fixedAge="7"
             onChangeAge={handleChangeAge}
+            onSwitchActivity={setCurrentTab}
           />
         )}
         {currentTab === 'math_age9' && (
@@ -730,6 +732,7 @@ export default function App() {
             onEarnStar={handleEarnStar}
             fixedAge="9"
             onChangeAge={handleChangeAge}
+            onSwitchActivity={setCurrentTab}
           />
         )}
         {currentTab === 'tracing' && (

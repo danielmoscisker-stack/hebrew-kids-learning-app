@@ -39,7 +39,8 @@ export default function LetterQuiz({
   gender = 'boy',
   onEarnStar,
   isFocusLocked = false,
-  onFocusLockChange
+  onFocusLockChange,
+  onNavigate
 }) {
   const isHe = lang === 'he';
   const { isTouch } = useDeviceType();
@@ -62,6 +63,10 @@ export default function LetterQuiz({
   const [previewedOptionId, setPreviewedOptionId] = useState(null);
   const [streak, setStreak] = useState(0);
   const [score, setScore] = useState(0);
+
+  // Adaptive Learning Coach (pauses after 3 wrong answers in a row to teach the letter)
+  const [consecutiveWrong, setConsecutiveWrong] = useState(0);
+  const [learningPause, setLearningPause] = useState(false);
 
   // Focus Lock long-press exit progress (0..1) and gentle tap hint
   const [holdProgress, setHoldProgress] = useState(0);
@@ -232,17 +237,18 @@ export default function LetterQuiz({
   );
 
   // Gentle ~8.5s idle attention nudge when child pauses
-  const showIdleNudge = idleNudge && isCorrect !== true && !isCrazyCelebrating && !showSettings && Boolean(targetLetter);
+  const showIdleNudge =
+    idleNudge && isCorrect !== true && !isCrazyCelebrating && !showSettings && !learningPause && Boolean(targetLetter);
 
   useEffect(() => {
-    if (isCorrect === true || isCrazyCelebrating || showSettings || !targetLetter) {
+    if (isCorrect === true || isCrazyCelebrating || showSettings || learningPause || !targetLetter) {
       return;
     }
     const timer = setTimeout(() => {
       setIdleNudge(true);
     }, IDLE_NUDGE_MS);
     return () => clearTimeout(timer);
-  }, [lastInteractionTick, targetLetter, isCorrect, isCrazyCelebrating, showSettings]);
+  }, [lastInteractionTick, targetLetter, isCorrect, isCrazyCelebrating, showSettings, learningPause]);
 
   // Start a fresh round based on selected letters pool
   const startNewRound = useCallback(
@@ -259,6 +265,7 @@ export default function LetterQuiz({
       setIsCrazyCelebrating(false);
       setHelpHintActive(false);
       setWrongOptionIds([]);
+      setLearningPause(false);
       setIdleNudge(false);
       setLastInteractionTick((t) => t + 1);
 
@@ -299,6 +306,7 @@ export default function LetterQuiz({
     }
     setSelectedLetterIds(nextIds);
     setShowSettings(false);
+    setConsecutiveWrong(0);
     startNewRound(nextIds, gameMode);
   };
 
@@ -313,6 +321,7 @@ export default function LetterQuiz({
       nextIds = [...selectedLetterIds, id];
     }
     setSelectedLetterIds(nextIds);
+    setConsecutiveWrong(0);
     startNewRound(nextIds, gameMode);
   };
 
@@ -321,6 +330,7 @@ export default function LetterQuiz({
     markInteraction();
     if (nextMode === gameMode) return;
     setGameMode(nextMode);
+    setConsecutiveWrong(0);
     startNewRound(selectedLetterIds, nextMode);
   };
 
@@ -358,12 +368,14 @@ export default function LetterQuiz({
   };
 
   const submitAnswer = (option) => {
-    if (isCorrect === true || !targetLetter) return;
+    if (isCorrect === true || learningPause || !targetLetter) return;
     markInteraction();
     setSelectedOptionId(option.id);
 
     if (option.id === targetLetter.id) {
       setIsCorrect(true);
+      setConsecutiveWrong(0);
+      setLearningPause(false);
       setScore((s) => s + 1);
       setStreak((st) => st + 1);
       onEarnStar(1);
@@ -375,6 +387,17 @@ export default function LetterQuiz({
       setWrongOptionIds((prev) => (prev.includes(option.id) ? prev : [...prev, option.id]));
       setPreviewedOptionId(null);
       setHelpHintActive(true);
+
+      const nextWrong = consecutiveWrong + 1;
+      setConsecutiveWrong(nextWrong);
+
+      if (nextWrong >= 3) {
+        setLearningPause(true);
+        if (soundEnabled) {
+          scheduleTimeout(() => speakLetterName(targetLetter.id), 250);
+        }
+        return;
+      }
 
       if (soundEnabled) {
         speakLetterName(option.id);
@@ -822,6 +845,111 @@ export default function LetterQuiz({
                     '¡Eres genial! ¡+1 Estrella! ⭐'
                   )}
                 </span>
+              </div>
+            </div>
+          )}
+          {/* ---------------- FLOATING LEARNING COACH OVERLAY (STOPS BLIND GUESSING) ---------------- */}
+          {learningPause && targetLetter && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="absolute inset-0 z-40 flex items-center justify-center p-3 sm:p-5 bg-white/95 backdrop-blur-xs"
+            >
+              <div className="w-full max-w-lg bg-amber-50 border-4 border-amber-400 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col items-center text-center gap-3 animate-pop-in">
+                <div className="flex items-center gap-2 text-amber-900 font-black text-base sm:text-xl">
+                  <span className="text-2xl sm:text-3xl">🦉</span>
+                  <span>
+                    {tr(
+                      lang,
+                      'רֶגַע שֶׁל לְמִידָה! בּוֹאוּ נַכִּיר אֶת הָאוֹת הַזֹּאת:',
+                      'Quick Learning Break! Let’s learn this letter:',
+                      '¡Pausa para aprender esta letra juntos!'
+                    )}
+                  </span>
+                </div>
+
+                {/* Big tap-to-hear Letter Showcase + Memory Clue */}
+                <div className="flex items-center justify-center gap-4 w-full bg-white rounded-2xl p-3 sm:p-4 border-2 border-amber-200 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('pop');
+                      speakLetterName(targetLetter.id);
+                    }}
+                    className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr ${targetLetter.color} flex items-center justify-center shadow-lg border-2 border-white flex-shrink-0 cursor-pointer btn-press-3d`}
+                  >
+                    <span className="text-5xl sm:text-6xl font-black text-white leading-none">
+                      {targetLetter.letter}
+                    </span>
+                  </button>
+
+                  <div className="flex flex-col items-start text-start min-w-0 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => speakLetterName(targetLetter.id)}
+                      className="inline-flex items-center gap-1.5 text-xl sm:text-2xl font-black text-slate-900 hover:text-indigo-700 cursor-pointer"
+                    >
+                      <Volume2 className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                      <span>{tr(lang, targetLetter.displayWithNikud, targetLetter.nameEn, targetLetter.nameEs || targetLetter.nameEn)}</span>
+                    </button>
+
+                    <p className="text-xs sm:text-sm font-bold text-slate-600">
+                      {tr(lang, targetLetter.shapeDescriptionHe, targetLetter.shapeDescriptionEn, targetLetter.shapeDescriptionEs || targetLetter.shapeDescriptionEn)}
+                    </p>
+
+                    {targetLetter.examples?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-0.5">
+                        {targetLetter.examples.slice(0, 2).map((ex) => (
+                          <span
+                            key={ex.en}
+                            className="inline-flex items-center gap-1 text-xs font-black bg-amber-100 text-amber-950 px-2 py-0.5 rounded-full"
+                          >
+                            <span>{ex.emoji}</span>
+                            <span>{tr(lang, ex.he, ex.en, ex.es || ex.en)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Supportive Action Buttons */}
+                <div className="w-full flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('pop');
+                      setConsecutiveWrong(0);
+                      startNewRound();
+                    }}
+                    className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base rounded-2xl shadow btn-press-3d cursor-pointer"
+                  >
+                    ✨ {tr(lang, 'הֵבַנְתִּי! בּוֹאוּ נַמְשִׁיךְ לְשַׂחֵק', 'Got It! Let’s Keep Playing', '¡Entendido! Seguir jugando')}
+                  </button>
+
+                  <div className={`grid gap-2 ${!isFocusLocked && onNavigate ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                    <button
+                      type="button"
+                      onClick={() => setPreset('first_five')}
+                      className="py-2 px-3 bg-sky-100 hover:bg-sky-200 text-sky-950 border-2 border-sky-300 font-black text-xs sm:text-sm rounded-2xl btn-press-3d cursor-pointer"
+                    >
+                      🌱 {tr(lang, 'אוֹתִיּוֹת קַלּוֹת (א–ה)', 'Easier Letters (א–ה)', 'Letras fáciles (א–ה)')}
+                    </button>
+
+                    {!isFocusLocked && onNavigate && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('pop');
+                          onNavigate('letters');
+                        }}
+                        className="py-2 px-3 bg-indigo-100 hover:bg-indigo-200 text-indigo-950 border-2 border-indigo-300 font-black text-xs sm:text-sm rounded-2xl btn-press-3d cursor-pointer"
+                      >
+                        🔤 {tr(lang, 'לְמַד בְּכַרְטִיסִיּוֹת', 'Learn in Cards', 'Aprender letras')}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}

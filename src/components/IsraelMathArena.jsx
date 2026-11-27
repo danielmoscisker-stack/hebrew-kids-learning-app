@@ -10,7 +10,8 @@ import {
   Delete,
   Sparkles,
   Flame,
-  ArrowRight
+  ArrowRight,
+  BookOpen
 } from 'lucide-react';
 import { AGE_TOPICS, generateMathArenaProblem } from '../data/mathArenaGenerator';
 import { playSound, playPhraseAudio } from '../utils/audio';
@@ -19,6 +20,60 @@ import { tr } from '../utils/i18n';
 
 const MISSION_LENGTH = 5;
 const BONUS_STARS = 5;
+const WRONG_PAUSE_THRESHOLD = 3;
+
+const TOPIC_IMPROVE_TIPS = {
+  add_sub: {
+    he: 'טְרִיק הַזָּהָב: קֹדֶם מַשְׁלִימִים לַעֲשֶׂרֶת עֲגֻלָּה (10, 20, 30...), וְרַק אָז מוֹסִיפִים אוֹ מוֹרִידִים אֶת מָה שֶׁנִּשְׁאַר!',
+    en: 'Golden trick: always bridge to a round ten (10, 20, 30...) first, then add or subtract the leftover!',
+    es: 'Truco de oro: llega primero a una decena exacta (10, 20, 30...) y luego suma o resta lo que sobra.'
+  },
+  missing: {
+    he: 'טְרִיק מִסְפָּר חָסֵר: חִבּוּר וְחִסּוּר הֵם הֲפוּכִים! אִם חָסֵר מִסְפָּר בְּחִבּוּר — עוֹשִׂים חִסּוּר כְּדֵי לִמְצֹא אוֹתוֹ.',
+    en: 'Missing-number trick: + and − are opposites! Use subtraction to find a missing addend, or count up to the total.',
+    es: 'Truco: suma y resta son opuestas. Usa la resta para hallar un sumando faltante.'
+  },
+  mult_starter: {
+    he: 'טְרִיק הַכֶּפֶל: סִפְרוּ בִּקְפִיצוֹת שָׁווֹת! (×2 זֶה כָּפוּל עַצְמוֹ, ×5 מִסְתַּיֵּם בְּ-0 אוֹ 5, ×10 מוֹסִיף 0).',
+    en: 'Multiplication trick: skip-count by groups! (×2 doubles, ×5 ends in 0 or 5, ×10 adds a 0).',
+    es: 'Truco: cuenta a saltos iguales (×2 es el doble, ×5 termina en 0 o 5, ×10 añade un 0).'
+  },
+  compare: {
+    he: 'טְרִיק הַהַשְׁוָאָה: אַל תְּנַחֲשׁוּ! חַשְּׁבוּ קֹדֶם אֶת צַד שְׂמֹאל, אָז אֶת צַד יָמִין, וְהַפֶּה הַפָּתוּחַ תָּמִיד פּוֹנֶה לַגָּדוֹל.',
+    en: 'Comparison trick: never guess! Solve the left side, solve the right side, and open the mouth toward the bigger number.',
+    es: 'Truco: calcula primero el lado izquierdo, luego el derecho; la boca abierta siempre apunta al mayor.'
+  },
+  word_ils: {
+    he: 'טְרִיק בְּעָיוֹת בְּ-₪: חַפְּשׂוּ מִלּוֹת מַפְתֵּחַ — "בְּסַךְ הַכֹּל / עוֹד" = חִבּוּר (+), "עֹדֶף / נִשְׁאַר" = חִסּוּר (−).',
+    en: 'Shekel story trick: look for clue words — "total / more" means add (+), "change / left" means subtract (−).',
+    es: 'Truco de problemas: "en total / más" es sumar (+), "cambio / queda" es restar (−).'
+  },
+  times_div: {
+    he: 'טְרִיק לוּחַ הַכֶּפֶל: בְּ-×9 כּוֹפְלִים בְּ-10 וּמוֹרִידִים פַּעַם אַחַת. בְּחִלּוּק שׁוֹאֲלִים: "מָה כָּפוּל הַמְּחַלֵּק נוֹתֵן אֶת הַתּוֹצָאָה?"',
+    en: 'Times & Division trick: for ×9 do ×10 minus once; for division ask "what × divisor = total?"',
+    es: 'Truco: para ×9 haz ×10 menos una vez; en división pregunta "¿qué número multiplicado da el total?"'
+  },
+  mental_1000: {
+    he: 'טְרִיק עַד 1,000: פָּרְקוּ לְמֵאוֹת וַעֲשָׂרוֹת! אִם מִסְפָּר קָרוֹב לְמֵאָה (כְּמוֹ 199), עַגְּלוּ לְ-200 וְאָז תַּקְּנוּ בְּ-1.',
+    en: 'Mental-to-1,000 trick: split hundreds & tens, or round numbers like 199 to 200 and adjust by 1!',
+    es: 'Truco hasta 1,000: separa centenas y decenas, o redondea 199 a 200 y ajusta por 1.'
+  },
+  order_ops: {
+    he: 'סֵדֶר פְּעֻלּוֹת קָבוּעַ: 1) קֹדֶם סוֹגְרַיִם ( )  •  2) אָז כֶּפֶל וְחִלּוּק × ÷  •  3) בַּסּוֹף חִבּוּר וְחִסּוּר + −.',
+    en: 'Order of Operations rule: 1) Parentheses ( ) first  •  2) × and ÷ next  •  3) + and − last!',
+    es: 'Orden fijo: 1) Paréntesis ( )  •  2) × y ÷  •  3) + y − al final.'
+  },
+  fractions: {
+    he: 'טְרִיק שְׁבָרִים: הַמִּסְפָּר לְמַטָּה (מְכַנֶּה) אוֹמֵר לְכַמָּה חֲלָקִים חִלַּקְנוּ. בְּחִבּוּר/חִסּוּר עִם מְכַנֶּה זֵהֶה מְחַשְּׁבִים רַק לְמַעְלָה!',
+    en: 'Fractions trick: the bottom number is total equal parts. When bottoms match, only add/subtract the top numbers!',
+    es: 'Truco de fracciones: el número de abajo es el total de partes iguales; si coincide, solo opera arriba.'
+  },
+  word_perimeter: {
+    he: 'טְרִיק הֶקֵּף וְעֹדֶף: בְּהֶקֵּף מַלְבֵּן מְחַבְּרִים אֹרֶךְ + רֹחַב וּמַכְפִּילִים בְּ-2. בְּעֹדֶף — קֹדֶם מְחַשְּׁבִים כַּמָּה עָלְתָה הַקְּנִיָּה!',
+    en: 'Perimeter & Change trick: rectangle perimeter = (L + W) × 2. For change, find total purchase cost first!',
+    es: 'Truco: perímetro de rectángulo = (largo + ancho) × 2. Para cambio, calcula primero el total de la compra.'
+  }
+};
 
 /** Check answer equivalence (also accepts equivalent fractions like 1/2 for 4/8 when typed on keypad) */
 function isAnswerEquivalent(rawInput, expected, answerType) {
@@ -207,7 +262,8 @@ export default function IsraelMathArena({
   onEarnStar,
   fixedAge = null,
   selectedAge = null,
-  onChangeAge
+  onChangeAge,
+  onSwitchActivity
 }) {
   const isHe = lang === 'he';
   const lockedAge = fixedAge === '7' || fixedAge === '9' ? fixedAge : null;
@@ -221,6 +277,10 @@ export default function IsraelMathArena({
   const [missionComplete, setMissionComplete] = useState(false);
   const [firstTryCount, setFirstTryCount] = useState(0);
   const [hadWrongThisQ, setHadWrongThisQ] = useState(false);
+
+  // Adaptive learning coach state (pauses after 3 consecutive misses to teach before continuing)
+  const [consecutiveWrong, setConsecutiveWrong] = useState(0);
+  const [learningPause, setLearningPause] = useState(false);
 
   // Current question state
   const [problem, setProblem] = useState(() =>
@@ -261,15 +321,16 @@ export default function IsraelMathArena({
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   const loadNextQuestion = useCallback(
-    (nextAge, nextTopic, resetMission = false) => {
+    (nextAge, nextTopic, resetMission = false, openHintByDefault = false) => {
       clearTimers();
       setProblem(generateMathArenaProblem(nextAge, nextTopic));
       setWrongChoices([]);
       setKeypadValue('');
       setKeypadWrongFlash(false);
       setSolved(false);
-      setShowHint(false);
+      setShowHint(openHintByDefault);
       setHadWrongThisQ(false);
+      setLearningPause(false);
       if (resetMission) {
         setMissionStep(0);
         setMissionComplete(false);
@@ -284,6 +345,7 @@ export default function IsraelMathArena({
     playSound('pop');
     setAge(nextAge);
     setTopic('mix');
+    setConsecutiveWrong(0);
     loadNextQuestion(nextAge, 'mix', true);
     onChangeAge?.(Number(nextAge));
   };
@@ -292,11 +354,14 @@ export default function IsraelMathArena({
     if (nextTopic === topic) return;
     playSound('pop');
     setTopic(nextTopic);
+    setConsecutiveWrong(0);
     loadNextQuestion(age, nextTopic, true);
   };
 
   const handleCorrectAnswer = useCallback(() => {
     setSolved(true);
+    setConsecutiveWrong(0);
+    setLearningPause(false);
     setStreak((s) => s + 1);
     const nextCompleted = missionStep + 1;
     setMissionStep(nextCompleted);
@@ -338,18 +403,56 @@ export default function IsraelMathArena({
       playSound('whoosh');
       setStreak(0);
       setHadWrongThisQ(true);
+      const nextWrongStreak = consecutiveWrong + 1;
+      setConsecutiveWrong(nextWrongStreak);
+
       if (choiceVal !== null) {
         setWrongChoices((prev) => (prev.includes(choiceVal) ? prev : [...prev, choiceVal]));
       } else {
         setKeypadWrongFlash(true);
         schedule(() => setKeypadWrongFlash(false), 650);
       }
+
+      // On 2nd consecutive miss, automatically reveal the Smart Hint trick
+      if (nextWrongStreak === 2) {
+        setShowHint(true);
+      }
+
+      // On 3rd consecutive miss, pause and show the interactive Learning Coach mini-lesson
+      if (nextWrongStreak >= WRONG_PAUSE_THRESHOLD) {
+        setShowHint(true);
+        setLearningPause(true);
+        return;
+      }
+
       if (soundEnabled && isHe) {
         playPhraseAudio('try_again', gender);
       }
     },
-    [soundEnabled, isHe, gender, schedule]
+    [consecutiveWrong, soundEnabled, isHe, gender, schedule]
   );
+
+  const handleResumeAfterLesson = () => {
+    playSound('pop');
+    setConsecutiveWrong(0);
+    // Start a fresh question with the Smart Hint open as gentle scaffolding
+    loadNextQuestion(age, topic, false, true);
+  };
+
+  const handleTryEasierTopic = () => {
+    playSound('pop');
+    setConsecutiveWrong(0);
+    const easierTopic =
+      age === '9'
+        ? topic === 'times_div'
+          ? 'mental_1000'
+          : 'times_div'
+        : topic === 'add_sub'
+          ? 'compare'
+          : 'add_sub';
+    setTopic(easierTopic);
+    loadNextQuestion(age, easierTopic, true, true);
+  };
 
   const handleChoiceTap = (choice) => {
     if (solved || wrongChoices.includes(choice)) return;
@@ -386,7 +489,7 @@ export default function IsraelMathArena({
   const useKeypad = inputMode === 'keypad' && problem.answerType !== 'compare';
 
   useEffect(() => {
-    if (!useKeypad || missionComplete || solved) return;
+    if (!useKeypad || missionComplete || learningPause || solved) return;
     const onKeyDown = (e) => {
       if (e.key >= '0' && e.key <= '9') {
         e.preventDefault();
@@ -404,7 +507,7 @@ export default function IsraelMathArena({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [useKeypad, missionComplete, solved, problem.answerType, appendKeypadChar, handleKeypadSubmit]);
+  }, [useKeypad, missionComplete, learningPause, solved, problem.answerType, appendKeypadChar, handleKeypadSubmit]);
 
   const topics = AGE_TOPICS[age] || AGE_TOPICS['7'];
   const activeTopicObj = topics.find((t) => t.id === topic) || topics[0];
@@ -681,6 +784,112 @@ export default function IsraelMathArena({
               <span>{tr(lang, 'מְשִׂימָה חֲדָשָׁה! 🚀', 'Start Next Mission! 🚀', '¡Nueva misión! 🚀')}</span>
               <ArrowRight className={`w-5 h-5 ${isHe ? 'rotate-180' : ''}`} />
             </button>
+          </div>
+        ) : learningPause ? (
+          /* ---------------- LEARNING COACH MINI-LESSON (STOPS BLIND GUESSING) ---------------- */
+          <div className="py-3 sm:py-5 flex flex-col items-center text-center gap-4 animate-pop-in">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-200 via-yellow-200 to-orange-200 border-4 border-amber-400 shadow-lg flex items-center justify-center text-5xl">
+              🦉
+            </div>
+
+            <div className="max-w-xl">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-black border border-amber-300 mb-2">
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>{tr(lang, 'עוֹצְרִים לְרֶגַע וְלוֹמְדִים יַחַד!', 'Quick Learning Break!', '¡Pausa para aprender juntos!')}</span>
+              </span>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                {tr(
+                  lang,
+                  'בּוֹאוּ נִרְאֶה יַחַד אֵיךְ פּוֹתְרִים אֶת זֶה בְּקַלּוּת!',
+                  'Let’s learn the easy trick for this one together!',
+                  '¡Veamos juntos el truco fácil para resolverlo!'
+                )}
+              </h3>
+            </div>
+
+            {/* Step-by-step walkthrough of the exact problem they missed */}
+            <div className="w-full max-w-xl bg-amber-50 border-3 border-amber-300 rounded-3xl p-4 sm:p-5 flex flex-col items-center gap-3 shadow-sm">
+              {problem.story && (
+                <p className="text-sm sm:text-base font-bold text-slate-700 leading-relaxed">
+                  {tr(lang, problem.story.he, problem.story.en, problem.story.es)}
+                </p>
+              )}
+
+              {problem.equation && (
+                <div dir="ltr" className="px-5 py-2.5 bg-white border-2 border-amber-300 rounded-2xl text-2xl sm:text-3xl font-black text-slate-900">
+                  {problem.equation
+                    .replace('?', problem.answer)
+                    .replace('□', problem.answer)
+                    .replace('◯', problem.answer)}
+                </div>
+              )}
+
+              {!problem.equation && (
+                <div dir="ltr" className="px-5 py-2 bg-emerald-100 border-2 border-emerald-400 rounded-2xl text-xl sm:text-2xl font-black text-emerald-950">
+                  = {problem.answer}
+                  {problem.unit ? ` ${tr(lang, problem.unit.he, problem.unit.en, problem.unit.es)}` : ''}
+                </div>
+              )}
+
+              <p className="text-sm sm:text-base font-extrabold text-amber-950 leading-relaxed">
+                💡 {tr(lang, problem.hint.he, problem.hint.en, problem.hint.es)}
+              </p>
+
+              {problem.hintMath && (
+                <div dir="ltr" className="px-4 py-2 bg-white border-2 border-indigo-200 rounded-2xl font-black text-base sm:text-lg text-indigo-900 shadow-2xs">
+                  {problem.hintMath}
+                </div>
+              )}
+            </div>
+
+            {/* Topic-wide "How to Improve" tip */}
+            {TOPIC_IMPROVE_TIPS[problem.topic] && (
+              <div className="w-full max-w-xl bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3.5 sm:p-4 text-indigo-950 text-xs sm:text-sm font-extrabold leading-relaxed">
+                <span className="font-black text-indigo-700 block mb-1">
+                  🎯 {tr(lang, 'אֵיךְ לְהִשְׁתַּפֵּר בְּנוֹשֵׂא הַזֶּה:', 'How to Improve at This Topic:', 'Cómo mejorar en este tema:')}
+                </span>
+                {tr(
+                  lang,
+                  TOPIC_IMPROVE_TIPS[problem.topic].he,
+                  TOPIC_IMPROVE_TIPS[problem.topic].en,
+                  TOPIC_IMPROVE_TIPS[problem.topic].es
+                )}
+              </div>
+            )}
+
+            {/* Clear Next-Step Options: Continue with Hint, Try Easier Topic, or Drop to Easier Age */}
+            <div className="w-full max-w-xl flex flex-col sm:flex-row flex-wrap items-stretch justify-center gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={handleResumeAfterLesson}
+                className="flex-1 min-w-[200px] py-3.5 px-5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base rounded-2xl shadow-md btn-press-3d cursor-pointer"
+              >
+                ✨ {tr(lang, 'הֵבַנְתִּי! נַסֶּה תַּרְגִּיל חָדָשׁ עִם רֶמֶז', 'Got It! Try a Fresh One with Hint', '¡Entendido! Probar otro con pista')}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTryEasierTopic}
+                className="py-3.5 px-4 bg-sky-100 hover:bg-sky-200 text-sky-950 border-2 border-sky-300 font-black text-sm rounded-2xl btn-press-3d cursor-pointer"
+              >
+                🌱 {tr(lang, 'נַסֶּה נוֹשֵׂא קַל יוֹתֵר', 'Try Easier Topic', 'Probar tema más fácil')}
+              </button>
+
+              {onSwitchActivity && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('pop');
+                    onSwitchActivity(age === '9' ? 'math_age7' : 'numbers');
+                  }}
+                  className="py-3.5 px-4 bg-amber-100 hover:bg-amber-200 text-amber-950 border-2 border-amber-400 font-black text-sm rounded-2xl btn-press-3d cursor-pointer"
+                >
+                  {age === '9'
+                    ? tr(lang, '🧮 עֲבֹר לְחֶשְׁבּוֹן גִּיל 7', '🧮 Try Age 7 Math', '🧮 Probar Mates Edad 7')
+                    : tr(lang, '🔢 תִּרְגּוּל מִסְפָּרִים 1–10', '🔢 Practice Numbers 1–10', '🔢 Practicar Números 1–10')}
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           /* ---------------- ACTIVE QUESTION STAGE ---------------- */
