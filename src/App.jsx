@@ -22,8 +22,28 @@ import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
 import { fetchServerConfig, fetchCurrentSession, pushCloudProgress } from './utils/cloudSync';
 import { trackEvent, getAcquisitionInfo } from './utils/analytics';
+import { tr } from './utils/i18n';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
+const APP_BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
+
+function formatLastUpdated(iso, lang) {
+  try {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return iso;
+    const locale = lang === 'he' ? 'he-IL' : lang === 'es' ? 'es-ES' : 'en-GB';
+    return new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date);
+  } catch {
+    return iso;
+  }
+}
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('home');
@@ -455,6 +475,18 @@ export default function App() {
           <MathPlay lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
       </main>
+
+      {!isQuizTab && (
+        <div
+          className="w-full py-3 pb-5 px-4 text-center text-xs font-bold text-slate-500"
+          dir={isHe ? 'rtl' : 'ltr'}
+        >
+          <span>{tr(lang, 'עודכן לאחרונה:', 'Last updated:', 'Última actualización:')}</span>{' '}
+          <time dateTime={APP_BUILD_TIME} className="font-extrabold text-slate-600">
+            <bdi dir="ltr">{formatLastUpdated(APP_BUILD_TIME, lang)}</bdi>
+          </time>
+        </div>
+      )}
 
       <ParentModal
         open={showParentModal}

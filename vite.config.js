@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     host: '0.0.0.0'
   },
+  define: {
+    'import.meta.env.VITE_BUILD_TIME': JSON.stringify(new Date().toISOString())
+  },
   plugins: [
     react(),
     tailwindcss()
