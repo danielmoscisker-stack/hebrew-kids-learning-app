@@ -1,6 +1,6 @@
 import React from 'react';
 import { Star, Volume2, VolumeX, Home, Lock, Sparkles } from 'lucide-react';
-import { playSound, playPhraseAudio } from '../utils/audio';
+import { playSound } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { ACTIVITY_TILES } from './HomeHub';
 
@@ -12,7 +12,9 @@ export default function Navbar({
   soundEnabled,
   setSoundEnabled,
   gender = 'boy',
-  setGender,
+  kidAge = 4,
+  activeProfile = null,
+  onOpenProfilePicker,
   onOpenParentGate
 }) {
   const isHe = lang === 'he';
@@ -22,6 +24,18 @@ export default function Navbar({
     playSound('whoosh');
     setCurrentTab('home');
   };
+
+  const ageSubtitle =
+    kidAge === 9
+      ? tr(lang, 'גִּיל 9 • חֶשְׁבּוֹן כִּתָּה ג׳–ד׳', 'Age 9 • Grades 3–4 Math', 'Edad 9 • Mates Grados 3–4')
+      : kidAge === 7
+        ? tr(lang, 'גִּיל 7 • חֶשְׁבּוֹן כִּתָּה א׳–ב׳', 'Age 7 • Grades 1–2 Math', 'Edad 7 • Mates Grados 1–2')
+        : tr(lang, 'גִּיל 4 • הַכְנָסָה כֵּיפִית לַקְּרִיאָה', 'Age 4 • Fun Early Learning', 'Edad 4 • Aprendizaje Divertido');
+
+  const profileAvatar = activeProfile?.avatar || (gender === 'girl' ? '👧' : '👦');
+  const profileLabel =
+    activeProfile?.name ||
+    (gender === 'girl' ? tr(lang, 'יַלְדָּה', 'Girl', 'Niña') : tr(lang, 'יֶלֶד', 'Boy', 'Niño'));
 
   return (
     <header
@@ -52,49 +66,42 @@ export default function Navbar({
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-2.5">
-            <div className="w-12 h-12 bg-gradient-to-tr from-amber-400 via-pink-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md border-2 border-white">
-              <span className="text-2xl font-black text-white">א</span>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-tr from-amber-400 via-pink-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md border-2 border-white flex-shrink-0">
+              <span className="text-2xl font-black text-white">{kidAge >= 7 ? '🧮' : 'א'}</span>
             </div>
-            <div>
-              <h1 className="text-lg md:text-2xl font-black text-slate-800 tracking-tight leading-none">
-                {tr(lang, 'אָלֶף-בֵּית וּמִסְפָּרִים', 'Kids Hebrew & Numbers', 'Hebreo y Números para Niños')}
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg md:text-2xl font-black text-slate-800 tracking-tight leading-none truncate">
+                {tr(lang, 'אָלֶף-בֵּית וְחֶשְׁבּוֹן', 'Kids Hebrew & Math', 'Hebreo y Mates para Niños')}
               </h1>
-              <span className="text-xs font-bold text-pink-600 flex items-center gap-1 mt-0.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                {tr(lang, 'גִּיל 4 • הַכְנָסָה כֵּיפִית לַקְּרִיאָה', 'Age 4 • Fun Early Learning', 'Edad 4 • Aprendizaje Divertido')}
+              <span className="text-[11px] sm:text-xs font-bold text-pink-600 flex items-center gap-1 mt-0.5 truncate">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                <span className="truncate">{ageSubtitle}</span>
               </span>
             </div>
           </div>
         )}
 
         {/* Right / End Controls: Kid-friendly large 48px+ targets */}
-        <div className="flex items-center gap-2">
-          {/* Boy / Girl Toggle */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Active Kid Profile & Age Switcher Pill */}
           <button
             type="button"
             onClick={() => {
-              const nextGender = gender === 'boy' ? 'girl' : 'boy';
-              setGender(nextGender);
               playSound('pop');
-              if (soundEnabled) {
-                if (isHe) {
-                  setTimeout(() => playPhraseAudio('great_job', nextGender), 150);
-                } else {
-                  playSound('star');
-                }
-              }
+              onOpenProfilePicker?.();
             }}
-            className={`flex items-center gap-1.5 px-3 min-h-[48px] rounded-2xl font-black text-xs md:text-sm border-2 btn-press-3d cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 min-h-[48px] rounded-2xl font-black text-xs md:text-sm border-2 btn-press-3d cursor-pointer max-w-[165px] sm:max-w-[220px] ${
               gender === 'boy'
                 ? 'bg-sky-100 hover:bg-sky-200 text-sky-950 border-sky-400'
                 : 'bg-pink-100 hover:bg-pink-200 text-pink-950 border-pink-400'
             }`}
-            title={tr(lang, 'הַחֲלֵף יֶלֶד / יַלְדָּה', 'Switch Boy / Girl', 'Cambiar Niño / Niña')}
+            title={tr(lang, 'הַחֲלֵף פְּרוֹפִיל יֶלֶד אוֹ גִּיל', 'Switch Kid Profile or Age', 'Cambiar perfil o edad')}
           >
-            <span className="text-xl">{gender === 'boy' ? '👦' : '👧'}</span>
-            <span className="hidden sm:inline font-black">
-              {gender === 'boy' ? tr(lang, 'יֶלֶד', 'Boy', 'Niño') : tr(lang, 'יַלְדָּה', 'Girl', 'Niña')}
+            <span className="text-xl flex-shrink-0">{profileAvatar}</span>
+            <span className="truncate font-black">{profileLabel}</span>
+            <span className="bg-white/85 text-indigo-900 px-1.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-black flex-shrink-0">
+              {tr(lang, `גִּיל ${kidAge}`, `${kidAge}y`, `${kidAge}a`)}
             </span>
           </button>
 

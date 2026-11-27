@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud } from 'lucide-react';
+import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud, Users } from 'lucide-react';
 import { playSound, playAudioFile } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
@@ -23,6 +23,8 @@ export default function ParentModal({
   onSignOut,
   isPro,
   onOpenPro,
+  profilesCount = 0,
+  onOpenProfilePicker,
   serverConfig
 }) {
   const isHe = lang === 'he';
@@ -65,6 +67,7 @@ export default function ParentModal({
             playSound('star');
             onAuthSuccess(result);
             setAuthStatus(null);
+            onClose();
           } catch (err) {
             setAuthStatus(err.message || tr(lang, 'ההתחברות נכשלה', 'Sign-in failed', 'Error al iniciar sesión'));
           }
@@ -82,7 +85,7 @@ export default function ParentModal({
     return () => {
       cancelled = true;
     };
-  }, [open, unlocked, user, serverConfig, lang, onAuthSuccess]);
+  }, [open, unlocked, user, serverConfig, lang, onAuthSuccess, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -182,27 +185,51 @@ export default function ParentModal({
               </div>
 
               {user ? (
-                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-sky-200">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {user.picture && (
-                      <img src={user.picture} alt="" className="w-9 h-9 rounded-full border border-sky-300" />
-                    )}
-                    <div className="truncate">
-                      <div className="font-black text-slate-800 truncate">{user.name}</div>
-                      <div className="text-xs text-slate-500 truncate">{user.email}</div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-sky-200">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {user.picture && (
+                        <img src={user.picture} alt="" className="w-9 h-9 rounded-full border border-sky-300" />
+                      )}
+                      <div className="truncate">
+                        <div className="font-black text-slate-800 truncate">{user.name}</div>
+                        <div className="text-xs text-slate-500 truncate">{user.email}</div>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await signOutSession();
+                        onSignOut();
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-xl font-bold text-xs cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>{tr(lang, 'הִתְנַתְּקוּת', 'Sign Out', 'Cerrar sesión')}</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await signOutSession();
-                      onSignOut();
-                    }}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-xl font-bold text-xs cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>{tr(lang, 'הִתְנַתְּקוּת', 'Sign Out', 'Cerrar sesión')}</span>
-                  </button>
+
+                  {onOpenProfilePicker && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('pop');
+                        onClose();
+                        onOpenProfilePicker();
+                      }}
+                      className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm btn-press-3d cursor-pointer"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>
+                        {tr(
+                          lang,
+                          `פְּרוֹפִילֵי יְלָדִים (${profilesCount}) — בְּחִירָה וְהוֹסָפָה`,
+                          `Kid Profiles (${profilesCount}) — Switch or Add`,
+                          `Perfiles de niños (${profilesCount}) — Cambiar o añadir`
+                        )}
+                      </span>
+                    </button>
+                  )}
                 </div>
               ) : serverConfig?.googleClientId ? (
                 <div className="flex flex-col items-center gap-2 pt-1">

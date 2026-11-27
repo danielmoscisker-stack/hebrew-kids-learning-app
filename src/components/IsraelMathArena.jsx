@@ -189,7 +189,9 @@ function PerimeterVisual({ visual, lang }) {
   );
 }
 
-function getSavedAge() {
+function getInitialArenaAge(selectedAge) {
+  if (Number(selectedAge) === 9) return '9';
+  if (Number(selectedAge) === 7) return '7';
   try {
     const saved = localStorage.getItem('hk_math_arena_age');
     return saved === '9' ? '9' : '7';
@@ -198,10 +200,17 @@ function getSavedAge() {
   }
 }
 
-export default function IsraelMathArena({ lang, soundEnabled, gender = 'boy', onEarnStar }) {
+export default function IsraelMathArena({
+  lang,
+  soundEnabled,
+  gender = 'boy',
+  onEarnStar,
+  selectedAge = null,
+  onChangeAge
+}) {
   const isHe = lang === 'he';
 
-  const [age, setAge] = useState(getSavedAge);
+  const [age, setAge] = useState(() => getInitialArenaAge(selectedAge));
   const [topic, setTopic] = useState('mix');
   const [inputMode, setInputMode] = useState('choices'); // 'choices' | 'keypad'
 
@@ -212,7 +221,7 @@ export default function IsraelMathArena({ lang, soundEnabled, gender = 'boy', on
   const [hadWrongThisQ, setHadWrongThisQ] = useState(false);
 
   // Current question state
-  const [problem, setProblem] = useState(() => generateMathArenaProblem(getSavedAge(), 'mix'));
+  const [problem, setProblem] = useState(() => generateMathArenaProblem(getInitialArenaAge(selectedAge), 'mix'));
   const [wrongChoices, setWrongChoices] = useState([]);
   const [keypadValue, setKeypadValue] = useState('');
   const [keypadWrongFlash, setKeypadWrongFlash] = useState(false);
@@ -272,6 +281,7 @@ export default function IsraelMathArena({ lang, soundEnabled, gender = 'boy', on
     setAge(nextAge);
     setTopic('mix');
     loadNextQuestion(nextAge, 'mix', true);
+    onChangeAge?.(Number(nextAge));
   };
 
   const handleTopicSwitch = (nextTopic) => {

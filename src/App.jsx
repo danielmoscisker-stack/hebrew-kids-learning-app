@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Navbar from './components/Navbar';
 import HomeHub from './components/HomeHub';
 import KidCursor from './components/KidCursor';
 import ParentModal from './components/ParentModal';
 import ProUpgradeModal from './components/ProUpgradeModal';
+import ProfilePickerModal from './components/ProfilePickerModal';
 import AlphabetCards from './components/AlphabetCards';
 import LetterQuiz from './components/LetterQuiz';
 import ReadingTrain from './components/ReadingTrain';
@@ -23,8 +24,18 @@ import { useDeviceType } from './utils/useDeviceType';
 import { fetchServerConfig, fetchCurrentSession, pushCloudProgress } from './utils/cloudSync';
 import { trackEvent, getAcquisitionInfo } from './utils/analytics';
 import { tr } from './utils/i18n';
+import {
+  todayStr,
+  normalizeAge,
+  createKidProfile,
+  sanitizeProfilesList,
+  loadLocalProfiles,
+  saveLocalProfiles,
+  loadLocalActiveProfileId,
+  saveLocalActiveProfileId,
+  touchProfileForToday
+} from './utils/profiles';
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
 const APP_BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
 
 function formatLastUpdated(iso, lang) {
@@ -58,10 +69,34 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showParentModal, setShowParentModal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
+  const [showProfilePicker, setShowProfilePicker] = useState(false);
   const [proSkipGate, setProSkipGate] = useState(false);
   const [quizFocusLocked, setQuizFocusLocked] = useState(false);
   const [serverConfig, setServerConfig] = useState(null);
   const [user, setUser] = useState(null);
+  const cloudHydratedRef = useRef(false);
+
+  const [profiles, setProfiles] = useState(() => loadLocalProfiles());
+  const [activeProfileId, setActiveProfileId] = useState(() => {
+    const localList = loadLocalProfiles();
+    const savedId = loadLocalActiveProfileId();
+    if (savedId && localList.some((p) => p.id === savedId)) return savedId;
+    return localList[0]?.id || null;
+  });
+
+  const activeProfile = profiles.find((p) => p.id === activeProfileId) || null;
+
+  const [kidAge, setKidAge] = useState(() => {
+    const localList = loadLocalProfiles();
+    const savedId = loadLocalActiveProfileId();
+    const initialProf = localList.find((p) => p.id === savedId) || localList[0];
+    if (initialProf) return normalizeAge(initialProf.age);
+    try {
+      return normalizeAge(localStorage.getItem('hk_kid_age'));
+    } catch {
+      return 4;
+    }
+  });
 
   const [isPro, setIsPro] = useState(() => {
     try {
@@ -73,6 +108,8 @@ export default function App() {
 
   const [needsGenderPick, setNeedsGenderPick] = useState(() => {
     try {
+      const localList = loadLocalProfiles();
+      if (localList.length > 0) return false;
       return !localStorage.getItem('kid_gender');
     } catch {
       return false;
@@ -80,6 +117,10 @@ export default function App() {
   });
 
   const [gender, setGender] = useState(() => {
+    const localList = loadLocalProfiles();
+    const savedId = loadLocalActiveProfileId();
+    const initialProf = localList.find((p) => p.id === savedId) || localList[0];
+    if (initialProf) return initialProf.gender;
     try {
       return localStorage.getItem('kid_gender') || 'boy';
     } catch {
@@ -105,6 +146,10 @@ export default function App() {
   }, []);
 
   const [stars, setStars] = useState(() => {
+    const localList = loadLocalProfiles();
+    const savedId = loadLocalActiveProfileId();
+    const initialProf = localList.find((p) => p.id === savedId) || localList[0];
+    if (initialProf) return initialProf.stars;
     try {
       const saved = localStorage.getItem('kids_stars_total');
       return saved ? parseInt(saved, 10) : 5;
@@ -114,6 +159,10 @@ export default function App() {
   });
 
   const [streakDays, setStreakDays] = useState(() => {
+    const localList = loadLocalProfiles();
+    const savedId = loadLocalActiveProfileId();
+    const initialProf = localList.find((p) => p.id === savedId) || localList[0];
+    if (initialProf) return touchProfileForToday(initialProf).streakDays;
     try {
       const today = todayStr();
       const last = localStorage.getItem('kids_last_played');
@@ -131,6 +180,10 @@ export default function App() {
   });
 
   const [dailyStars, setDailyStars] = useState(() => {
+    const localList = loadLocalProfiles();
+    const savedId = loadLocalActiveProfileId();
+    const initialProf = localList.find((p) => p.id === savedId) || localList[0];
+    if (initialProf) return touchProfileForToday(initialProf).dailyStars;
     try {
       const today = todayStr();
       if (localStorage.getItem('kids_daily_date') === today) {
@@ -143,6 +196,22 @@ export default function App() {
       return 0;
     }
   });
+
+  useEffect(() => {
+    saveLocalProfiles(profiles);
+  }, [profiles]);
+
+  useEffect(() => {
+    saveLocalActiveProfileId(activeProfileId);
+  }, [activeProfileId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('hk_kid_age', String(kidAge));
+    } catch {
+      // ignore
+    }
+  }, [kidAge]);
 
   useEffect(() => {
     try {
@@ -190,28 +259,70 @@ export default function App() {
     setMuted(!soundEnabled);
   }, [soundEnabled]);
 
+  const applyProfileState = useCallback((profile) => {
+    if (!profile) return;
+    const touched = touchProfileForToday(profile);
+    setActiveProfileId(touched.id);
+    setStars(touched.stars);
+    setDailyStars(touched.dailyStars);
+    setStreakDays(touched.streakDays);
+    setGender(touched.gender);
+    setKidAge(normalizeAge(touched.age));
+    setNeedsGenderPick(false);
+    setProfiles((prev) => prev.map((p) => (p.id === touched.id ? touched : p)));
+  }, []);
+
   // Load optional Cloudflare config + session on startup (non-blocking)
   useEffect(() => {
     fetchServerConfig().then((cfg) => cfg && setServerConfig(cfg));
     fetchCurrentSession().then((sess) => {
+      cloudHydratedRef.current = true;
       if (!sess) return;
       if (sess.isPro) setIsPro(true);
       if (sess.user) setUser(sess.user);
       if (sess.progress) {
-        setStars((prev) => Math.max(prev, sess.progress.stars || 0));
-        if (sess.progress.streakDays) setStreakDays((prev) => Math.max(prev, sess.progress.streakDays));
-        if (sess.progress.gender) setGender(sess.progress.gender);
         if (sess.progress.lang) setLang(sess.progress.lang);
         const d = sess.progress.data || {};
         if (d.kidCursorSize) setKidCursorSize(d.kidCursorSize);
         else if (typeof d.kidCursorEnabled === 'boolean') setKidCursorSize(d.kidCursorEnabled ? 'large' : 'off');
+
+        const cloudProfiles = sanitizeProfilesList(d.profiles);
+        if (cloudProfiles.length > 0) {
+          setProfiles(cloudProfiles);
+          const preferredId =
+            (d.activeProfileId && cloudProfiles.some((p) => p.id === d.activeProfileId) && d.activeProfileId) ||
+            cloudProfiles[0].id;
+          const picked = cloudProfiles.find((p) => p.id === preferredId) || cloudProfiles[0];
+          const touched = touchProfileForToday(picked);
+          setActiveProfileId(touched.id);
+          setStars(touched.stars);
+          setDailyStars(touched.dailyStars);
+          setStreakDays(touched.streakDays);
+          setGender(touched.gender);
+          setKidAge(normalizeAge(touched.age));
+          setNeedsGenderPick(false);
+
+          // Prompt kid to choose their profile once per browser session when logged in with Google
+          try {
+            if (sess.user && !sessionStorage.getItem('hk_profile_picked')) {
+              setShowProfilePicker(true);
+            }
+          } catch {
+            // ignore
+          }
+        } else {
+          setStars((prev) => Math.max(prev, sess.progress.stars || 0));
+          if (sess.progress.streakDays) setStreakDays((prev) => Math.max(prev, sess.progress.streakDays));
+          if (sess.progress.gender) setGender(sess.progress.gender);
+          if (d.kidAge) setKidAge(normalizeAge(d.kidAge));
+        }
       }
     });
   }, []);
 
   // Debounced cloud progress backup when signed in
   useEffect(() => {
-    if (!user) return;
+    if (!user || !cloudHydratedRef.current) return;
     const t = setTimeout(() => {
       pushCloudProgress({
         stars,
@@ -219,11 +330,17 @@ export default function App() {
         lang,
         streakDays,
         lastPlayed: todayStr(),
-        data: { kidCursorEnabled, kidCursorSize }
+        data: {
+          kidCursorEnabled,
+          kidCursorSize,
+          kidAge,
+          profiles,
+          activeProfileId
+        }
       });
-    }, 1200);
+    }, 900);
     return () => clearTimeout(t);
-  }, [user, stars, gender, lang, streakDays, kidCursorEnabled, kidCursorSize]);
+  }, [user, stars, gender, lang, streakDays, kidCursorEnabled, kidCursorSize, kidAge, profiles, activeProfileId]);
 
   const { isTouch } = useDeviceType();
 
@@ -331,8 +448,111 @@ export default function App() {
   const handleEarnStar = (amount = 1) => {
     setStars((prev) => prev + amount);
     setDailyStars((prev) => prev + amount);
+    if (activeProfileId) {
+      const today = todayStr();
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === activeProfileId
+            ? {
+                ...p,
+                stars: (p.stars || 0) + amount,
+                dailyStars: (p.dailyDate === today ? p.dailyStars || 0 : 0) + amount,
+                dailyDate: today,
+                lastPlayed: today
+              }
+            : p
+        )
+      );
+    }
     trackEvent('star_earned', { activityId: currentTab, isTouch, lang });
   };
+
+  const handleChangeAge = useCallback(
+    (nextAge) => {
+      const safeAge = normalizeAge(nextAge);
+      setKidAge(safeAge);
+      if (activeProfileId) {
+        setProfiles((prev) => prev.map((p) => (p.id === activeProfileId ? { ...p, age: safeAge } : p)));
+      }
+    },
+    [activeProfileId]
+  );
+
+  const handleSelectProfile = useCallback(
+    (profileId) => {
+      const target = profiles.find((p) => p.id === profileId);
+      if (!target) return;
+      applyProfileState(target);
+      try {
+        sessionStorage.setItem('hk_profile_picked', target.id);
+      } catch {
+        // ignore
+      }
+    },
+    [profiles, applyProfileState]
+  );
+
+  const handleSaveProfile = useCallback(
+    ({ id, name, age, gender: profGender, avatar }) => {
+      const safeAge = normalizeAge(age);
+      const safeGender = profGender === 'girl' ? 'girl' : 'boy';
+
+      if (id) {
+        setProfiles((prev) =>
+          prev.map((p) =>
+            p.id === id ? { ...p, name, age: safeAge, gender: safeGender, avatar } : p
+          )
+        );
+        if (id === activeProfileId) {
+          setKidAge(safeAge);
+          setGender(safeGender);
+        }
+        return;
+      }
+
+      // First profile inherits existing guest progress; subsequent siblings start fresh
+      const isFirst = profiles.length === 0;
+      const created = createKidProfile({
+        name,
+        age: safeAge,
+        gender: safeGender,
+        avatar,
+        stars: isFirst ? stars : 5,
+        dailyStars: isFirst ? dailyStars : 0,
+        streakDays: isFirst ? streakDays : 1
+      });
+
+      setProfiles((prev) => [...prev, created]);
+      setActiveProfileId(created.id);
+      setStars(created.stars);
+      setDailyStars(created.dailyStars);
+      setStreakDays(created.streakDays);
+      setGender(created.gender);
+      setKidAge(created.age);
+      setNeedsGenderPick(false);
+      try {
+        sessionStorage.setItem('hk_profile_picked', created.id);
+      } catch {
+        // ignore
+      }
+    },
+    [activeProfileId, profiles.length, stars, dailyStars, streakDays]
+  );
+
+  const handleDeleteProfile = useCallback(
+    (profileId) => {
+      const remaining = profiles.filter((p) => p.id !== profileId);
+      setProfiles(remaining);
+      if (profileId === activeProfileId) {
+        if (remaining.length > 0) {
+          applyProfileState(remaining[0]);
+        } else {
+          setActiveProfileId(null);
+        }
+      }
+    },
+    [profiles, activeProfileId, applyProfileState]
+  );
 
   const handlePickGender = (picked) => {
     setGender(picked);
@@ -344,19 +564,47 @@ export default function App() {
   };
 
   const handleAuthSuccess = useCallback((result) => {
+    cloudHydratedRef.current = true;
     trackEvent('google_signin', { isTouch, lang });
     if (result?.user) {
       setUser(result.user);
       if (result.user.isPro) setIsPro(true);
     }
     if (result?.progress) {
-      setStars((prev) => Math.max(prev, result.progress.stars || 0));
-      if (result.progress.gender) setGender(result.progress.gender);
       if (result.progress.lang) setLang(result.progress.lang);
       const d = result.progress.data || {};
       if (d.kidCursorSize) setKidCursorSize(d.kidCursorSize);
       else if (typeof d.kidCursorEnabled === 'boolean') setKidCursorSize(d.kidCursorEnabled ? 'large' : 'off');
+
+      const cloudProfiles = sanitizeProfilesList(d.profiles);
+      if (cloudProfiles.length > 0) {
+        setProfiles(cloudProfiles);
+        const preferredId =
+          (d.activeProfileId && cloudProfiles.some((p) => p.id === d.activeProfileId) && d.activeProfileId) ||
+          cloudProfiles[0].id;
+        const picked = cloudProfiles.find((p) => p.id === preferredId) || cloudProfiles[0];
+        const touched = touchProfileForToday(picked);
+        setActiveProfileId(touched.id);
+        setStars(touched.stars);
+        setDailyStars(touched.dailyStars);
+        setStreakDays(touched.streakDays);
+        setGender(touched.gender);
+        setKidAge(normalizeAge(touched.age));
+        setNeedsGenderPick(false);
+      } else {
+        setStars((prev) => Math.max(prev, result.progress.stars || 0));
+        if (result.progress.gender) setGender(result.progress.gender);
+        if (d.kidAge) setKidAge(normalizeAge(d.kidAge));
+      }
     }
+
+    // Always prompt to pick (or create) a kid profile right after logging in with Google
+    try {
+      sessionStorage.removeItem('hk_profile_picked');
+    } catch {
+      // ignore
+    }
+    setShowProfilePicker(true);
   }, []);
 
   const isHe = lang === 'he';
@@ -396,7 +644,9 @@ export default function App() {
           soundEnabled={soundEnabled}
           setSoundEnabled={setSoundEnabled}
           gender={gender}
-          setGender={setGender}
+          kidAge={kidAge}
+          activeProfile={activeProfile}
+          onOpenProfilePicker={() => setShowProfilePicker(true)}
           onOpenParentGate={() => setShowParentModal(true)}
         />
       )}
@@ -404,14 +654,18 @@ export default function App() {
       <main
         id="main-content"
         tabIndex={-1}
-        className={isQuizTab ? 'flex-1 min-h-0 overflow-hidden pb-0 outline-none' : 'flex-1 pb-12 outline-none'}
+        className={isQuizTab ? 'flex-1 min-h-0 overflow-hidden pb-0 outline-none' : 'flex-1 pb-6 outline-none'}
       >
         {currentTab === 'home' && (
           <HomeHub
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
-            stars={stars}
+            kidAge={kidAge}
+            onChangeAge={handleChangeAge}
+            activeProfile={activeProfile}
+            profilesCount={profiles.length}
+            onOpenProfilePicker={() => setShowProfilePicker(true)}
             streakDays={streakDays}
             dailyStars={dailyStars}
             isPro={isPro}
@@ -457,7 +711,15 @@ export default function App() {
           <NumbersWorld lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'math_arena' && (
-          <IsraelMathArena lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+          <IsraelMathArena
+            key={activeProfileId || 'guest'}
+            lang={lang}
+            soundEnabled={soundEnabled}
+            gender={gender}
+            onEarnStar={handleEarnStar}
+            selectedAge={kidAge}
+            onChangeAge={handleChangeAge}
+          />
         )}
         {currentTab === 'tracing' && (
           <LetterTracer lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
@@ -488,6 +750,19 @@ export default function App() {
         </div>
       )}
 
+      <ProfilePickerModal
+        open={showProfilePicker}
+        onClose={() => setShowProfilePicker(false)}
+        lang={lang}
+        user={user}
+        profiles={profiles}
+        activeProfileId={activeProfileId}
+        onSelectProfile={handleSelectProfile}
+        onSaveProfile={handleSaveProfile}
+        onDeleteProfile={handleDeleteProfile}
+        onOpenParentGate={() => setShowParentModal(true)}
+      />
+
       <ParentModal
         open={showParentModal}
         onClose={() => setShowParentModal(false)}
@@ -500,6 +775,11 @@ export default function App() {
         onResetStars={() => {
           setStars(5);
           setDailyStars(0);
+          if (activeProfileId) {
+            setProfiles((prev) =>
+              prev.map((p) => (p.id === activeProfileId ? { ...p, stars: 5, dailyStars: 0 } : p))
+            );
+          }
         }}
         user={user}
         onAuthSuccess={handleAuthSuccess}
@@ -510,6 +790,8 @@ export default function App() {
           setProSkipGate(Boolean(skipGate));
           setShowProModal(true);
         }}
+        profilesCount={profiles.length}
+        onOpenProfilePicker={() => setShowProfilePicker(true)}
         serverConfig={serverConfig}
       />
 

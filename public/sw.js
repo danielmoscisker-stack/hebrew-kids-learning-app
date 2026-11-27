@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kids-hebrew-app-v2';
+const CACHE_NAME = 'kids-hebrew-app-v3';
 
 const STATIC_ASSETS = [
   '/',
@@ -28,6 +28,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  // Never cache API requests
+  if (event.request.url.includes('/api/')) return;
+
   // Cache-first strategy for audio and static assets
   if (event.request.url.includes('/audio/') || event.request.destination === 'image' || event.request.destination === 'font') {
     event.respondWith(
@@ -40,7 +45,7 @@ self.addEventListener('fetch', (event) => {
             cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;
-        } catch (e) {
+        } catch {
           return cachedResponse;
         }
       })
@@ -48,9 +53,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first strategy for HTML and JS
+  // Network-first strategy for HTML and JS (always revalidate navigation requests)
+  const req = event.request.mode === 'navigate'
+    ? new Request(event.request, { cache: 'no-cache' })
+    : event.request;
+
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then((response) => {
         if (response && response.status === 200) {
           const clone = response.clone();

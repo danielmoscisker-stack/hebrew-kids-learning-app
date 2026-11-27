@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Volume2, Sparkles, Star, Crown, Flame, Cloud, Lock } from 'lucide-react';
+import { Volume2, Sparkles, Crown, Flame, Cloud, Lock, Users, ArrowRight } from 'lucide-react';
 import { playSound, playAudioFile, playPhraseAudio, speakText } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
@@ -199,7 +199,11 @@ export default function HomeHub({
   lang,
   soundEnabled,
   gender = 'boy',
-  stars,
+  kidAge = 4,
+  onChangeAge,
+  activeProfile = null,
+  profilesCount = 0,
+  onOpenProfilePicker,
   streakDays = 1,
   dailyStars = 0,
   isPro = false,
@@ -248,10 +252,28 @@ export default function HomeHub({
   const dailyGoal = 5;
   const dailyPct = Math.min(100, Math.round((dailyStars / dailyGoal) * 100));
 
+  // Put Israel Math Arena first when Age 7 or 9 is selected
+  const orderedTiles =
+    kidAge >= 7
+      ? [
+          ...ACTIVITY_TILES.filter((t) => t.id === 'math_arena'),
+          ...ACTIVITY_TILES.filter((t) => t.id !== 'math_arena')
+        ]
+      : ACTIVITY_TILES;
+
+  const greetingText = activeProfile?.name
+    ? tr(
+        lang,
+        `שָׁלוֹם ${activeProfile.name}! מָה נִלְמַד הַיּוֹם?`,
+        `Hi ${activeProfile.name}! What shall we play?`,
+        `¡Hola ${activeProfile.name}! ¿A qué jugamos?`
+      )
+    : tr(lang, 'שָׁלוֹם! מָה נִלְמַד הַיּוֹם?', 'Hi! What shall we play?', '¡Hola! ¿A qué jugamos hoy?');
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-5 flex flex-col gap-5" dir={isHe ? 'rtl' : 'ltr'}>
       {/* Friendly First-Launch Who-Is-Playing Card */}
-      {needsGenderPick && (
+      {needsGenderPick && !activeProfile && (
         <div className="bg-white/95 border-4 border-amber-400 rounded-3xl p-5 md:p-6 shadow-xl text-center animate-pop-in">
           <div className="flex items-center justify-center gap-2 mb-3">
             <button
@@ -284,17 +306,25 @@ export default function HomeHub({
         </div>
       )}
 
-      {/* Playroom Welcome + Daily Progress Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-5 md:p-6 text-white shadow-xl border-4 border-white">
+      {/* Playroom Welcome + Age Switcher + Daily Progress Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-5 md:p-6 text-white shadow-xl border-4 border-white flex flex-col gap-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 text-center md:text-start">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-white/25 backdrop-blur-sm border-2 border-white/60 flex items-center justify-center text-4xl md:text-5xl shadow-inner animate-bounce-gentle flex-shrink-0">
-              {gender === 'girl' ? '👧' : '👦'}
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                playSound('pop');
+                onOpenProfilePicker?.();
+              }}
+              title={tr(lang, 'הַחֲלֵף יֶלֶד / פְּרוֹפִיל', 'Switch Kid Profile', 'Cambiar perfil')}
+              className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-white/25 hover:bg-white/35 backdrop-blur-sm border-2 border-white/60 flex items-center justify-center text-4xl md:text-5xl shadow-inner animate-bounce-gentle flex-shrink-0 cursor-pointer"
+            >
+              {activeProfile?.avatar || (gender === 'girl' ? '👧' : '👦')}
+            </button>
             <div>
               <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center justify-center md:justify-start gap-2">
-                <span>{tr(lang, 'שָׁלוֹם! מָה נִלְמַד הַיּוֹם?', 'Hi! What shall we play?', '¡Hola! ¿A qué jugamos hoy?')}</span>
-                <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
+                <span>{greetingText}</span>
+                <Sparkles className="w-6 h-6 text-amber-300 animate-pulse flex-shrink-0" />
               </h2>
               <p className="text-white/90 text-sm md:text-base font-bold mt-1">
                 {isHe
@@ -334,8 +364,24 @@ export default function HomeHub({
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
+              onClick={() => {
+                playSound('pop');
+                onOpenProfilePicker?.();
+              }}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-white text-indigo-900 hover:bg-amber-50 rounded-2xl font-black text-sm border-2 border-white shadow btn-press-3d cursor-pointer"
+            >
+              <Users className="w-4 h-4 text-indigo-600" />
+              <span>
+                {profilesCount > 0
+                  ? tr(lang, `הַחֲלֵף יֶלֶד/ה (${profilesCount})`, `Switch Kid (${profilesCount})`, `Cambiar niño (${profilesCount})`)
+                  : tr(lang, 'הוֹסֵף שֵׁם יֶלֶד/ה', 'Add Kid Profile', 'Añadir perfil')}
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => soundEnabled && isHe && playPhraseAudio('welcome_home', gender)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white/25 hover:bg-white/35 rounded-2xl font-black text-sm border-2 border-white/50 btn-press-3d cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-white/25 hover:bg-white/35 rounded-2xl font-black text-sm border-2 border-white/50 btn-press-3d cursor-pointer"
             >
               <Volume2 className="w-5 h-5 text-amber-200 animate-pulse" />
               <span>{tr(lang, '🔊 שְׁמַע', '🔊 Listen', '🔊 Escuchar')}</span>
@@ -348,7 +394,7 @@ export default function HomeHub({
                   playSound('pop');
                   onOpenPro();
                 }}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-300 hover:bg-amber-400 text-amber-950 rounded-2xl font-black text-sm border-2 border-white shadow btn-press-3d cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-2.5 bg-amber-300 hover:bg-amber-400 text-amber-950 rounded-2xl font-black text-sm border-2 border-white shadow btn-press-3d cursor-pointer"
               >
                 <Crown className="w-4 h-4 text-amber-800" />
                 <span>{tr(lang, 'גִּרְסָה מְלֵאָה', 'Unlock All', 'Desbloquear Todo')}</span>
@@ -369,11 +415,98 @@ export default function HomeHub({
             </button>
           </div>
         </div>
+
+        {/* Prominent 3-Way Age Switcher (Age 4 / Age 7 / Age 9) */}
+        <div className="bg-black/15 p-1.5 rounded-2xl grid grid-cols-3 gap-2">
+          {[
+            { age: 4, icon: '🧸', titleHe: 'גִּיל 4', subHe: 'אָלֶף-בֵּית וְגַן', titleEn: 'Age 4', subEn: 'Alef-Bet & 1–10', titleEs: 'Edad 4', subEs: 'Alef-Bet y 1–10' },
+            { age: 7, icon: '🧒', titleHe: 'גִּיל 7', subHe: 'חֶשְׁבּוֹן כִּתָּה א׳–ב׳', titleEn: 'Age 7', subEn: 'Grades 1–2 Math', titleEs: 'Edad 7', subEs: 'Mates Grados 1–2' },
+            { age: 9, icon: '🚀', titleHe: 'גִּיל 9', subHe: 'חֶשְׁבּוֹן כִּתָּה ג׳–ד׳', titleEn: 'Age 9', subEn: 'Grades 3–4 Math', titleEs: 'Edad 9', subEs: 'Mates Grados 3–4' }
+          ].map((opt) => {
+            const active = kidAge === opt.age;
+            return (
+              <button
+                key={opt.age}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  playSound('pop');
+                  onChangeAge?.(opt.age);
+                }}
+                className={`py-2.5 px-2 sm:px-4 rounded-xl font-black transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer ${
+                  active
+                    ? 'bg-white text-indigo-950 shadow-lg scale-[1.01]'
+                    : 'bg-white/10 text-white hover:bg-white/25'
+                }`}
+              >
+                <span className="text-xl sm:text-2xl">{opt.icon}</span>
+                <div className="flex flex-col items-center sm:items-start leading-tight">
+                  <span className="text-sm sm:text-base font-black">
+                    {tr(lang, opt.titleHe, opt.titleEn, opt.titleEs)}
+                  </span>
+                  <span className={`text-[10px] sm:text-xs font-bold ${active ? 'text-indigo-600' : 'text-white/80'}`}>
+                    {tr(lang, opt.subHe, opt.subEn, opt.subEs)}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Featured Math Arena Launch Banner when Age 7 or Age 9 is selected */}
+      {kidAge >= 7 && (
+        <button
+          type="button"
+          onClick={() => {
+            playSound('star');
+            onSelectActivity('math_arena');
+          }}
+          className={`w-full rounded-3xl p-5 sm:p-6 text-white shadow-xl border-4 border-white flex flex-col sm:flex-row items-center justify-between gap-4 btn-press-3d cursor-pointer text-center sm:text-start animate-pop-in ${
+            kidAge === 9
+              ? 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600'
+              : 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600'
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <span className="text-5xl sm:text-6xl drop-shadow-sm">{kidAge === 9 ? '🚀' : '🧮'}</span>
+            <div>
+              <span className="inline-block text-[11px] font-black bg-amber-300 text-amber-950 px-2.5 py-0.5 rounded-full mb-1">
+                {tr(lang, 'חִנָּם • מֻתְאָם לַגִּיל שֶׁלְּךָ!', 'FREE • MATCHED TO YOUR AGE!', 'GRATIS • PARA TU EDAD')}
+              </span>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-black leading-tight">
+                {kidAge === 9
+                  ? tr(lang, 'חֶשְׁבּוֹן גִּיל 9 • כִּתָּה ג׳–ד׳', 'Israel Math Arena • Age 9 (Grades 3–4)', 'Arena de Mates • Edad 9 (Grados 3–4)')
+                  : tr(lang, 'חֶשְׁבּוֹן גִּיל 7 • כִּתָּה א׳–ב׳', 'Israel Math Arena • Age 7 (Grades 1–2)', 'Arena de Mates • Edad 7 (Grados 1–2)')}
+              </h3>
+              <p className="text-white/90 text-xs sm:text-sm font-bold mt-0.5">
+                {kidAge === 9
+                  ? tr(
+                      lang,
+                      'לוּחַ הַכֶּפֶל וְחִלּוּק, סֵדֶר פְּעֻלּוֹת, שְׁבָרִים, עֹדֶף בְּ-₪ וְהֶקֵּף — מְשִׂימוֹת 5 כּוֹכָבִים!',
+                      'Times & Division, Mental to 1,000, Order of Ops, Fractions, Shekels & Perimeter!',
+                      'Tablas, división, cálculo hasta 1,000, fracciones, cambio en ₪ y perímetro.'
+                    )
+                  : tr(
+                      lang,
+                      'חִבּוּר וְחִסּוּר עַד 100, מִסְפָּר חָסֵר, כֶּפֶל רִאשׁוֹן, הַשְׁוָאָה < = > וּבְעָיוֹת בְּ-₪!',
+                      'Add & Sub to 100, Missing Numbers, Starter Multiplication, Comparisons & Shekel Stories!',
+                      'Sumas y restas hasta 100, números faltantes, multiplicación inicial y problemas en ₪.'
+                    )}
+              </p>
+            </div>
+          </div>
+
+          <div className="px-6 py-3 bg-white text-indigo-950 font-black text-base sm:text-lg rounded-2xl shadow-lg flex items-center gap-2 flex-shrink-0">
+            <span>{tr(lang, 'הַתְחֵל לְשַׂחֵק!', 'Play Now!', '¡Jugar ahora!')}</span>
+            <ArrowRight className={`w-5 h-5 ${isHe ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+      )}
 
       {/* Big Joyful Activity Tiles Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {ACTIVITY_TILES.map((tile) => {
+        {orderedTiles.map((tile) => {
           const locked = Boolean(tile.isProFeature && !isPro);
           const titleText = tr(lang, tile.titleHe, tile.titleEn, tile.titleEs);
           const descText = tr(lang, tile.descHe, tile.descEn, tile.descEs);

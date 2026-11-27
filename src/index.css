@@ -7,6 +7,12 @@
     -webkit-user-select: none;
   }
 
+  input,
+  textarea {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
   body {
     font-family: 'Fredoka', 'Rubik', 'Varela Round', system-ui, -apple-system, sans-serif;
     touch-action: manipulation;
