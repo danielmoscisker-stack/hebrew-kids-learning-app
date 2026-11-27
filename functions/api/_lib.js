@@ -33,6 +33,50 @@ const fromBase64Url = (str) => {
 
 const getSecret = (env) => env.SESSION_SECRET || 'hebrew-kids-fallback-dev-secret-change-in-cf';
 
+async function getAesKey(env) {
+  const secret = env.DATA_ENCRYPTION_KEY || env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error('Missing DATA_ENCRYPTION_KEY or SESSION_SECRET');
+  }
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`hebrew-kids:aes-gcm-v1:${secret}`)
+  );
+  return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+
+export async function encryptPii(plaintext, env) {
+  const value = String(plaintext || '');
+  if (!value) return '';
+  const key = await getAesKey(env);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(value)
+  );
+  return `enc:v1:${toBase64Url(iv)}:${toBase64Url(ct)}`;
+}
+
+export async function decryptPii(stored, env) {
+  const value = String(stored || '');
+  if (!value) return '';
+  if (!value.startsWith('enc:v1:')) return value;
+  try {
+    const [, , ivStr, ctStr] = value.split(':');
+    if (!ivStr || !ctStr) return '';
+    const key = await getAesKey(env);
+    const plain = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: fromBase64Url(ivStr) },
+      key,
+      fromBase64Url(ctStr)
+    );
+    return new TextDecoder().decode(plain);
+  } catch {
+    return '';
+  }
+}
+
 async function hmacKey(secret) {
   return crypto.subtle.importKey(
     'raw',
@@ -96,7 +140,13 @@ export async function getSessionUser(request, env) {
   )
     .bind(session.sub)
     .first();
-  return user || null;
+  if (!user) return null;
+  return {
+    ...user,
+    email: await decryptPii(user.email, env),
+    name: await decryptPii(user.name, env),
+    picture: await decryptPii(user.picture, env)
+  };
 }
 
 export async function hasProCookie(request, env) {

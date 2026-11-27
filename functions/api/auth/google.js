@@ -1,4 +1,4 @@
-import { json, makeCookie, signToken, verifyGoogleIdToken, hasProCookie } from '../_lib.js';
+import { json, makeCookie, signToken, verifyGoogleIdToken, hasProCookie, encryptPii } from '../_lib.js';
 
 export async function onRequestPost({ request, env }) {
   try {
@@ -12,6 +12,12 @@ export async function onRequestPost({ request, env }) {
     const proFromCookie = await hasProCookie(request, env);
 
     if (env.DB) {
+      const [encEmail, encName, encPicture] = await Promise.all([
+        encryptPii(gUser.email, env),
+        encryptPii(gUser.name, env),
+        encryptPii(gUser.picture, env)
+      ]);
+
       await env.DB.prepare(
         `INSERT INTO users (sub, email, name, picture, is_pro, pro_source, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -24,9 +30,9 @@ export async function onRequestPost({ request, env }) {
       )
         .bind(
           gUser.sub,
-          gUser.email,
-          gUser.name,
-          gUser.picture,
+          encEmail,
+          encName,
+          encPicture,
           proFromCookie ? 1 : 0,
           proFromCookie ? 'code' : null,
           now,
@@ -35,7 +41,7 @@ export async function onRequestPost({ request, env }) {
         .run();
 
       const dbUser = await env.DB.prepare(
-        'SELECT sub, email, name, picture, is_pro, pro_source FROM users WHERE sub = ?'
+        'SELECT sub, is_pro, pro_source FROM users WHERE sub = ?'
       )
         .bind(gUser.sub)
         .first();
@@ -55,9 +61,9 @@ export async function onRequestPost({ request, env }) {
         {
           user: {
             sub: dbUser.sub,
-            email: dbUser.email,
-            name: dbUser.name,
-            picture: dbUser.picture,
+            email: gUser.email,
+            name: gUser.name,
+            picture: gUser.picture,
             isPro: Boolean(dbUser.is_pro)
           },
           progress: prog

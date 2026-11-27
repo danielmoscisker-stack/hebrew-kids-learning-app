@@ -1,4 +1,4 @@
-import { getSessionUser } from './api/_lib.js';
+import { getSessionUser, decryptPii, encryptPii } from './api/_lib.js';
 
 const OWNER_EMAILS = new Set([
   'danielmoscisker@gmail.com',
@@ -7,6 +7,22 @@ const OWNER_EMAILS = new Set([
 
 const normalizeEmail = (email) =>
   String(email || '').trim().toLowerCase().replace(/@googlemail\.com$/, '@gmail.com');
+
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const SECURITY_HEADERS = {
+  'X-Robots-Tag': 'noindex, nofollow',
+  'Cache-Control': 'no-store, private',
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer'
+};
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -93,8 +109,7 @@ export async function onRequestGet({ request, env }) {
       status: 401,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'X-Robots-Tag': 'noindex, nofollow',
-        'Cache-Control': 'no-store'
+        ...SECURITY_HEADERS
       }
     });
   }
@@ -105,7 +120,7 @@ export async function onRequestGet({ request, env }) {
   const sinceIso = new Date(Date.now() - days * 86400000).toISOString();
   const last24hIso = new Date(Date.now() - 86400000).toISOString();
 
-  const [totals, todayRow, byActivity, byDevice, byLang, dailyTrend, funnel, userCounts] =
+  const [totals, todayRow, byActivity, byDevice, byLang, dailyTrend, funnel, userCounts, rawUsers] =
     await Promise.all([
       env.DB.prepare(
         `SELECT
@@ -152,8 +167,43 @@ export async function onRequestGet({ request, env }) {
       ).bind(sinceIso).first(),
       env.DB.prepare(
         `SELECT COUNT(*) AS totalUsers, COUNT(CASE WHEN is_pro = 1 THEN 1 END) AS proUsers FROM users`
-      ).first()
+      ).first(),
+      env.DB.prepare(
+        `SELECT sub, email, name, picture, is_pro, pro_source, created_at, updated_at
+         FROM users ORDER BY created_at DESC`
+      ).all()
     ]);
+
+  const users = await Promise.all(
+    (rawUsers?.results || []).map(async (u) => {
+      const email = await decryptPii(u.email, env);
+      const name = await decryptPii(u.name, env);
+      // Auto-upgrade any legacy plaintext PII rows to AES-GCM encrypted at rest
+      const needsEncrypt =
+        (u.email && !String(u.email).startsWith('enc:v1:')) ||
+        (u.name && !String(u.name).startsWith('enc:v1:')) ||
+        (u.picture && !String(u.picture).startsWith('enc:v1:'));
+      if (needsEncrypt) {
+        const picture = await decryptPii(u.picture, env);
+        await env.DB.prepare('UPDATE users SET email = ?, name = ?, picture = ? WHERE sub = ?')
+          .bind(
+            await encryptPii(email, env),
+            await encryptPii(name, env),
+            await encryptPii(picture, env),
+            u.sub
+          )
+          .run();
+      }
+      return {
+        name: name || 'Parent',
+        email: email || '',
+        isPro: Boolean(u.is_pro),
+        proSource: u.pro_source || null,
+        createdAt: u.created_at,
+        updatedAt: u.updated_at
+      };
+    })
+  );
 
   const payload = {
     days,
@@ -164,7 +214,8 @@ export async function onRequestGet({ request, env }) {
     byLang: byLang?.results || [],
     dailyTrend: dailyTrend?.results || [],
     funnel: funnel || { proViews: 0, proUnlocks: 0, googleSignins: 0 },
-    accounts: userCounts || { totalUsers: 0, proUsers: 0 }
+    accounts: userCounts || { totalUsers: 0, proUsers: 0 },
+    users
   };
 
   if (url.searchParams.get('format') === 'json') {
@@ -172,8 +223,7 @@ export async function onRequestGet({ request, env }) {
       status: 200,
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'X-Robots-Tag': 'noindex, nofollow',
-        'Cache-Control': 'no-store'
+        ...SECURITY_HEADERS
       }
     });
   }
@@ -197,8 +247,19 @@ export async function onRequestGet({ request, env }) {
       .join('') || '<li>No data yet</li>';
   const trendHtml =
     payload.dailyTrend
-      .map((d) => `<tr><td>${d.day}</td><td>${d.sessions}</td><td>${d.views}</td><td>${d.plays}</td></tr>`)
+      .map((d) => `<tr><td>${escapeHtml(d.day)}</td><td>${d.sessions}</td><td>${d.views}</td><td>${d.plays}</td></tr>`)
       .join('') || '<tr><td colspan="4">No data yet</td></tr>';
+
+  const fmtDate = (iso) => (iso ? escapeHtml(String(iso).slice(0, 16).replace('T', ' ')) : '—');
+  const usersHtml =
+    payload.users
+      .map(
+        (u) =>
+          `<tr><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email)}</td><td>${
+            u.isPro ? `<span class="badge pro">Pro${u.proSource ? ` (${escapeHtml(u.proSource)})` : ''}</span>` : '<span class="badge">Free</span>'
+          }</td><td>${fmtDate(u.createdAt)}</td><td>${fmtDate(u.updatedAt)}</td></tr>`
+      )
+      .join('') || '<tr><td colspan="5">No signed-up users yet</td></tr>';
 
   const keySuffix = keyValid ? `&key=${encodeURIComponent(providedKey)}` : '';
   const html = `<!doctype html>
@@ -227,13 +288,16 @@ export async function onRequestGet({ request, env }) {
     table{width:100%;border-collapse:collapse}
     th,td{padding:8px 10px;border-bottom:1px solid #334155;text-align:left;font-size:13px}
     th{color:#94a3b8}
+    .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#334155;color:#cbd5e1}
+    .badge.pro{background:#f59e0b;color:#0f172a}
+    .enc-note{font-size:12px;color:#34d399;font-weight:600}
   </style>
 </head>
 <body>
   <div class="top">
     <div>
       <h1>Owner Usage Stats (${days}d)</h1>
-      <small style="color:#94a3b8">${isOwnerGoogle ? `Signed in: ${sessionUser.email}` : 'Authenticated via Admin Key'}</small>
+      <small style="color:#94a3b8">${isOwnerGoogle ? `Signed in: ${escapeHtml(sessionUser.email)}` : 'Authenticated via Admin Key'}</small>
     </div>
     <div class="pills">
       <a href="/ops-k9m4x?days=7${keySuffix}" class="${days === 7 ? 'active' : ''}">7d</a>
@@ -253,6 +317,13 @@ export async function onRequestGet({ request, env }) {
 
   <div class="panel"><h2>Popular Games</h2>${actHtml}</div>
   <div class="panel"><h2>Devices &amp; Languages</h2><ul>${devHtml}${langHtml}</ul></div>
+  <div class="panel">
+    <div class="top" style="margin-bottom:10px">
+      <h2 style="margin:0">Signed-Up Users (${payload.users.length})</h2>
+      <span class="enc-note">AES-256-GCM Encrypted at Rest</span>
+    </div>
+    <table><tr><th>Name</th><th>Email</th><th>Plan</th><th>Signed Up</th><th>Last Seen</th></tr>${usersHtml}</table>
+  </div>
   <div class="panel"><h2>Last 14 Days</h2><table><tr><th>Date</th><th>Sessions</th><th>Views</th><th>Plays</th></tr>${trendHtml}</table></div>
 </body>
 </html>`;
@@ -261,8 +332,8 @@ export async function onRequestGet({ request, env }) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'X-Robots-Tag': 'noindex, nofollow',
-      'Cache-Control': 'no-store'
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'",
+      ...SECURITY_HEADERS
     }
   });
 }
