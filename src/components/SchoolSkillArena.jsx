@@ -15,6 +15,11 @@ import { SKILL_ARENA_CONFIG, generateSkillQuestion } from '../data/schoolSkillDa
 import { playSound, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { tr } from '../utils/i18n';
+import {
+  getKidMissionComplete,
+  getKidCoachHeading,
+  speakPersonalText
+} from '../utils/personalize';
 
 const MISSION_LENGTH = 5;
 const BONUS_STARS = 5;
@@ -55,6 +60,7 @@ export default function SchoolSkillArena({
   lang,
   soundEnabled,
   gender = 'boy',
+  kidName = '',
   onEarnStar,
   onSwitchActivity
 }) {
@@ -144,8 +150,11 @@ export default function SchoolSkillArena({
         triggerConfetti({ x: 0.5, y: 0.6 });
         onEarnStar(BONUS_STARS);
         setSessionStars((s) => s + BONUS_STARS);
-        if (soundEnabled && isHe) {
-          schedule(() => playPhraseAudio('crazy_correct', gender), 200);
+        if (soundEnabled) {
+          schedule(() => {
+            if (kidName) speakPersonalText(getKidMissionComplete(kidName, lang, gender), lang);
+            else if (isHe) playPhraseAudio('crazy_correct', gender);
+          }, 200);
         }
         schedule(() => setMissionComplete(true), 950);
       } else {
@@ -271,12 +280,7 @@ export default function SchoolSkillArena({
               🏆
             </div>
             <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
-              {tr(
-                lang,
-                gender === 'girl' ? 'אַלּוּפָה! סִיַּמְתְּ אֶת הַמְּשִׂימָה! 🎉' : 'אַלּוּף! סִיַּמְתָּ אֶת הַמְּשִׂימָה! 🎉',
-                'Mission Complete! Great Job! 🎉',
-                '¡Misión cumplida! ¡Excelente! 🎉'
-              )}
+              {getKidMissionComplete(kidName, lang, gender)}
             </h3>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <div className="px-5 py-2.5 bg-amber-200 border-2 border-amber-400 rounded-2xl font-black text-amber-950 text-base flex items-center gap-2">
@@ -314,7 +318,7 @@ export default function SchoolSkillArena({
                 <span>{tr(lang, 'עוֹצְרִים לְרֶגַע וְלוֹמְדִים יַחַד!', 'Quick Learning Break!', '¡Pausa para aprender!')}</span>
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                {tr(lang, 'בּוֹאוּ נִלְמַד אֶת הַתְּשׁוּבָה הַזֹּאת בְּיַחַד:', 'Let’s learn this one together:', 'Aprendamos esta juntos:')}
+                {getKidCoachHeading(kidName, lang, gender)}
               </h3>
             </div>
 

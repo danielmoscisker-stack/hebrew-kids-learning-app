@@ -3,6 +3,7 @@ import { RefreshCw, Volume2 } from 'lucide-react';
 import { playSound, speakLetterName, playWordAudio, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { tr } from '../utils/i18n';
+import { getKidGameWin, speakPersonalText } from '../utils/personalize';
 
 const AGE4_PAIRS = [
   { id: 'alef', left: 'א', right: '🍉', wordEn: 'Watermelon', wordHe: 'אַבַטִּיחַ', wordEs: 'Sandía', isLetter: true },
@@ -113,7 +114,7 @@ function buildDeck(ageMode, deckKind) {
   };
 }
 
-export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnStar, ageMode = 4 }) {
+export default function MemoryGame({ lang, soundEnabled, gender = 'boy', kidName = '', onEarnStar, ageMode = 4 }) {
   const isHe = lang === 'he';
   const [deckKind, setDeckKind] = useState(ageMode === 9 ? 'math' : ageMode === 7 ? 'math' : 'letters');
   const [board, setBoard] = useState(() => buildDeck(ageMode, ageMode >= 7 ? 'math' : 'letters'));
@@ -173,9 +174,10 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
         if (isLastMatch) {
           playSound('win');
           triggerConfetti();
-          if (soundEnabled && isHe) {
+          if (soundEnabled) {
             praiseTimeoutRef.current = setTimeout(() => {
-              playPhraseAudio('great_job', gender);
+              if (kidName) speakPersonalText(getKidGameWin(kidName, lang, gender), lang);
+              else if (isHe) playPhraseAudio('great_job', gender);
             }, 450);
           }
         } else {
@@ -391,7 +393,7 @@ export default function MemoryGame({ lang, soundEnabled, gender = 'boy', onEarnS
 
         {isGameComplete && (
           <div className="mb-4 px-5 py-3 bg-emerald-100 border-2 border-emerald-400 rounded-2xl font-black text-emerald-900 text-center animate-pop-in">
-            🎉 {tr(lang, 'כָּל הַכָּבוֹד! מָצָאתָ אֶת כָּל הַזּוּגוֹת!', 'Amazing! You matched every pair!', '¡Increíble! ¡Encontraste todas las parejas!')}
+            🎉 {getKidGameWin(kidName, lang, gender)}
           </div>
         )}
 

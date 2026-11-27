@@ -19,6 +19,12 @@ import { AGE_TOPICS, generateMathArenaProblem } from '../data/mathArenaGenerator
 import { playSound, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { tr } from '../utils/i18n';
+import {
+  getKidMissionComplete,
+  getKidPraise,
+  getKidCoachHeading,
+  speakPersonalText
+} from '../utils/personalize';
 
 /** Masks the final answer in hintMath so the detailed explanation guides without spoiling */
 function maskFinalAnswer(hintMath, answer) {
@@ -394,6 +400,7 @@ export default function IsraelMathArena({
   lang,
   soundEnabled,
   gender = 'boy',
+  kidName = '',
   onEarnStar,
   fixedAge = null,
   selectedAge = null,
@@ -518,8 +525,11 @@ export default function IsraelMathArena({
       triggerConfetti({ x: 0.5, y: 0.6 });
       onEarnStar(BONUS_STARS);
       setSessionStars((s) => s + BONUS_STARS);
-      if (soundEnabled && isHe) {
-        schedule(() => playPhraseAudio('crazy_correct', gender), 220);
+      if (soundEnabled) {
+        schedule(() => {
+          if (kidName) speakPersonalText(getKidMissionComplete(kidName, lang, gender), lang);
+          else if (isHe) playPhraseAudio('crazy_correct', gender);
+        }, 220);
       }
       schedule(() => {
         setMissionComplete(true);
@@ -527,14 +537,17 @@ export default function IsraelMathArena({
     } else {
       playSound('star');
       triggerConfetti({ x: 0.5, y: 0.65 });
-      if (soundEnabled && isHe && (nextCompleted === 2 || nextCompleted === 4)) {
-        schedule(() => playPhraseAudio('great_job', gender), 180);
+      if (soundEnabled && (nextCompleted === 2 || nextCompleted === 4)) {
+        schedule(() => {
+          if (kidName) speakPersonalText(getKidPraise(kidName, lang, gender), lang);
+          else if (isHe) playPhraseAudio('great_job', gender);
+        }, 180);
       }
       schedule(() => {
         loadNextQuestion(age, topic, false);
       }, 1250);
     }
-  }, [missionStep, hadWrongThisQ, onEarnStar, soundEnabled, isHe, gender, schedule, loadNextQuestion, age, topic]);
+  }, [missionStep, hadWrongThisQ, onEarnStar, soundEnabled, isHe, gender, kidName, lang, schedule, loadNextQuestion, age, topic]);
 
   const handleWrongAnswer = useCallback(
     (choiceVal = null) => {
@@ -868,12 +881,7 @@ export default function IsraelMathArena({
 
             <div>
               <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
-                {tr(
-                  lang,
-                  gender === 'girl' ? 'כָּל הַכָּבוֹד! סִיַּמְתְּ אֶת הַמְּשִׂימָה! 🎉' : 'כָּל הַכָּבוֹד! סִיַּמְתָּ אֶת הַמְּשִׂימָה! 🎉',
-                  'Mission Complete! You crushed it! 🎉',
-                  '¡Misión cumplida! ¡Lo lograste! 🎉'
-                )}
+                {getKidMissionComplete(kidName, lang, gender)}
               </h3>
               <p className="text-sm sm:text-base font-bold text-slate-600 mt-1">
                 {tr(
@@ -936,12 +944,7 @@ export default function IsraelMathArena({
                 <span>{tr(lang, 'עוֹצְרִים לְרֶגַע וְלוֹמְדִים יַחַד!', 'Quick Learning Break!', '¡Pausa para aprender juntos!')}</span>
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                {tr(
-                  lang,
-                  'בּוֹאוּ נִרְאֶה יַחַד אֵיךְ פּוֹתְרִים אֶת זֶה בְּקַלּוּת!',
-                  'Let’s learn the easy trick for this one together!',
-                  '¡Veamos juntos el truco fácil para resolverlo!'
-                )}
+                {getKidCoachHeading(kidName, lang, gender)}
               </h3>
             </div>
 

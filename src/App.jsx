@@ -63,6 +63,7 @@ import {
   enterBrowserFullscreen,
   exitBrowserFullscreen
 } from './utils/fullscreenLock';
+import { getKidWelcome, speakPersonalText } from './utils/personalize';
 
 const APP_BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
 
@@ -661,13 +662,16 @@ export default function App() {
         setCurrentTab('home');
       }
       applyProfileState(target);
+      if (soundEnabled && target.name) {
+        setTimeout(() => speakPersonalText(getKidWelcome(target.name, lang, target.gender), lang), 180);
+      }
       try {
         sessionStorage.setItem('hk_profile_picked', target.id);
       } catch {
         // ignore
       }
     },
-    [profiles, activeProfileId, applyProfileState]
+    [profiles, activeProfileId, applyProfileState, soundEnabled, lang]
   );
 
   const handleSaveProfile = useCallback(
@@ -708,13 +712,16 @@ export default function App() {
       setGender(created.gender);
       setKidAge(created.age);
       setNeedsGenderPick(false);
+      if (soundEnabled && created.name) {
+        setTimeout(() => speakPersonalText(getKidWelcome(created.name, lang, created.gender), lang), 220);
+      }
       try {
         sessionStorage.setItem('hk_profile_picked', created.id);
       } catch {
         // ignore
       }
     },
-    [activeProfileId, profiles.length, stars, dailyStars, streakDays]
+    [activeProfileId, profiles.length, stars, dailyStars, streakDays, soundEnabled, lang]
   );
 
   const handleDeleteProfile = useCallback(
@@ -1031,6 +1038,7 @@ export default function App() {
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             isFocusLocked={quizFocusLocked}
             onFocusLockChange={setQuizFocusLocked}
@@ -1058,6 +1066,7 @@ export default function App() {
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             fixedAge="7"
             onChangeAge={handleChangeAge}
@@ -1070,6 +1079,7 @@ export default function App() {
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             fixedAge="9"
             onChangeAge={handleChangeAge}
@@ -1083,6 +1093,7 @@ export default function App() {
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             onSwitchActivity={setCurrentTab}
           />
@@ -1093,6 +1104,8 @@ export default function App() {
             ageMode={7}
             lang={lang}
             soundEnabled={soundEnabled}
+            gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             onSwitchActivity={setCurrentTab}
           />
@@ -1104,6 +1117,7 @@ export default function App() {
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             onSwitchActivity={setCurrentTab}
           />
@@ -1115,6 +1129,7 @@ export default function App() {
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             onSwitchActivity={setCurrentTab}
           />
@@ -1125,6 +1140,8 @@ export default function App() {
             ageMode={9}
             lang={lang}
             soundEnabled={soundEnabled}
+            gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             onSwitchActivity={setCurrentTab}
           />
@@ -1136,6 +1153,7 @@ export default function App() {
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
+            kidName={activeProfile?.name || ''}
             onEarnStar={handleEarnStar}
             onSwitchActivity={setCurrentTab}
           />
@@ -1144,13 +1162,13 @@ export default function App() {
           <LetterTracer lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'memory' && (
-          <MemoryGame key="mem-4" ageMode={4} lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+          <MemoryGame key="mem-4" ageMode={4} lang={lang} soundEnabled={soundEnabled} gender={gender} kidName={activeProfile?.name || ''} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'memory_age7' && (
-          <MemoryGame key="mem-7" ageMode={7} lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+          <MemoryGame key="mem-7" ageMode={7} lang={lang} soundEnabled={soundEnabled} gender={gender} kidName={activeProfile?.name || ''} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'memory_age9' && (
-          <MemoryGame key="mem-9" ageMode={9} lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+          <MemoryGame key="mem-9" ageMode={9} lang={lang} soundEnabled={soundEnabled} gender={gender} kidName={activeProfile?.name || ''} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'stickers' && (
           <StickerPlayground lang={lang} soundEnabled={soundEnabled} gender={gender} stars={stars} />

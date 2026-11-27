@@ -21,6 +21,7 @@ import {
 import { playSound } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { tr } from '../utils/i18n';
+import { getKidPraise } from '../utils/personalize';
 
 function speakEnglish(text, rate = 0.88) {
   if (!text) return;
@@ -54,6 +55,8 @@ export default function EnglishLearnStudio({
   ageMode = 7,
   lang,
   soundEnabled,
+  gender = 'boy',
+  kidName = '',
   onEarnStar,
   onSwitchActivity
 }) {
@@ -640,7 +643,9 @@ export default function EnglishLearnStudio({
               <div className="flex items-center gap-2 text-emerald-700 font-black text-lg">
                 <CheckCircle2 className="w-6 h-6" />
                 <span>
-                  {tr(lang, `מְעוּלֶּה! ${currentSpell.word} ⭐`, `Awesome! ${currentSpell.word} ⭐`, `¡Genial! ${currentSpell.word} ⭐`)}
+                  {kidName
+                    ? `${getKidPraise(kidName, lang, gender)} ${currentSpell.word} ⭐`
+                    : tr(lang, `מְעוּלֶּה! ${currentSpell.word} ⭐`, `Awesome! ${currentSpell.word} ⭐`, `¡Genial! ${currentSpell.word} ⭐`)}
                 </span>
               </div>
               <button
@@ -772,7 +777,11 @@ export default function EnglishLearnStudio({
             <div className="flex flex-col items-center gap-3 animate-pop-in">
               <div className="flex items-center gap-2 text-emerald-700 font-black text-lg">
                 <BookOpen className="w-6 h-6" />
-                <span>{tr(lang, 'מִשְׁפָּט מֻשְׁלָם! +2 כּוֹכָבִים ⭐', 'Perfect Sentence! +2 Stars ⭐', '¡Frase perfecta! +2 Estrellas ⭐')}</span>
+                <span>
+                  {kidName
+                    ? `${getKidPraise(kidName, lang, gender)} +2 ⭐`
+                    : tr(lang, 'מִשְׁפָּט מֻשְׁלָם! +2 כּוֹכָבִים ⭐', 'Perfect Sentence! +2 Stars ⭐', '¡Frase perfecta! +2 Estrellas ⭐')}
+                </span>
               </div>
               <button
                 type="button"

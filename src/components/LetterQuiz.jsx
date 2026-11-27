@@ -37,6 +37,7 @@ export default function LetterQuiz({
   lang,
   soundEnabled,
   gender = 'boy',
+  kidName = '',
   onEarnStar,
   isFocusLocked = false,
   onFocusLockChange,
@@ -861,9 +862,15 @@ export default function LetterQuiz({
                   <span>
                     {tr(
                       lang,
-                      'רֶגַע שֶׁל לְמִידָה! בּוֹאוּ נַכִּיר אֶת הָאוֹת הַזֹּאת:',
-                      'Quick Learning Break! Let’s learn this letter:',
-                      '¡Pausa para aprender esta letra juntos!'
+                      kidName
+                        ? `${kidName}, רֶגַע שֶׁל לְמִידָה! בּוֹאוּ נַכִּיר אֶת הָאוֹת הַזֹּאת:`
+                        : 'רֶגַע שֶׁל לְמִידָה! בּוֹאוּ נַכִּיר אֶת הָאוֹת הַזֹּאת:',
+                      kidName
+                        ? `${kidName}, quick learning break! Let’s learn this letter:`
+                        : 'Quick Learning Break! Let’s learn this letter:',
+                      kidName
+                        ? `${kidName}, ¡pausa para aprender esta letra juntos!`
+                        : '¡Pausa para aprender esta letra juntos!'
                     )}
                   </span>
                 </div>
