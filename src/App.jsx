@@ -20,7 +20,7 @@ import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
 import { fetchServerConfig, fetchCurrentSession, pushCloudProgress } from './utils/cloudSync';
-import { trackEvent } from './utils/analytics';
+import { trackEvent, getAcquisitionInfo } from './utils/analytics';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -176,15 +176,48 @@ export default function App() {
 
   const { isTouch } = useDeviceType();
 
-  // Track initial page_view & activity_start events (privacy-safe, zero cookies)
+  // Track initial page_view & acquisition source (privacy-safe, zero cookies)
   useEffect(() => {
-    trackEvent('page_view', { isTouch, lang });
+    const acq = getAcquisitionInfo();
+    trackEvent('page_view', { isTouch, lang, ...acq });
   }, []);
 
+  // Track activity_start & active time spent per activity/session
   useEffect(() => {
     if (currentTab !== 'home') {
       trackEvent('activity_start', { activityId: currentTab, isTouch, lang });
     }
+
+    let activeStart = document.visibilityState === 'visible' ? Date.now() : null;
+    const flushTime = () => {
+      if (!activeStart) return;
+      const secs = Math.round((Date.now() - activeStart) / 1000);
+      activeStart = document.visibilityState === 'visible' ? Date.now() : null;
+      if (secs >= 2) {
+        trackEvent('session_time', {
+          activityId: currentTab,
+          isTouch,
+          lang,
+          durationSec: secs
+        });
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        flushTime();
+      } else if (!activeStart) {
+        activeStart = Date.now();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flushTime);
+    return () => {
+      flushTime();
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flushTime);
+    };
   }, [currentTab, isTouch, lang]);
 
   // Android native integration: back button returns to Home Hub, StatusBar & SplashScreen setup

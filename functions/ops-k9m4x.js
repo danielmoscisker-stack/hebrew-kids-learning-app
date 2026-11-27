@@ -120,59 +120,106 @@ export async function onRequestGet({ request, env }) {
   const sinceIso = new Date(Date.now() - days * 86400000).toISOString();
   const last24hIso = new Date(Date.now() - 86400000).toISOString();
 
-  const [totals, todayRow, byActivity, byDevice, byLang, dailyTrend, funnel, userCounts, rawUsers] =
-    await Promise.all([
-      env.DB.prepare(
-        `SELECT
+  const [
+    totals,
+    todayRow,
+    byActivity,
+    byDevice,
+    byLang,
+    dailyTrend,
+    funnel,
+    userCounts,
+    rawUsers,
+    timeStats,
+    timeByActivity,
+    byReferrer,
+    searchTerms,
+    byCountry
+  ] = await Promise.all([
+    env.DB.prepare(
+      `SELECT
            COUNT(CASE WHEN event_type = 'page_view' THEN 1 END) AS pageViews,
            COUNT(CASE WHEN event_type = 'activity_start' THEN 1 END) AS gamePlays,
            COUNT(CASE WHEN event_type = 'star_earned' THEN 1 END) AS starsEvents,
            COUNT(DISTINCT session_id) AS uniqueSessions
          FROM analytics_events WHERE created_at >= ?`
-      ).bind(sinceIso).first(),
-      env.DB.prepare(
-        `SELECT
+    ).bind(sinceIso).first(),
+    env.DB.prepare(
+      `SELECT
            COUNT(CASE WHEN event_type = 'page_view' THEN 1 END) AS pageViews24h,
            COUNT(DISTINCT session_id) AS uniqueSessions24h
          FROM analytics_events WHERE created_at >= ?`
-      ).bind(last24hIso).first(),
-      env.DB.prepare(
-        `SELECT activity_id AS id, COUNT(*) AS count
+    ).bind(last24hIso).first(),
+    env.DB.prepare(
+      `SELECT activity_id AS id, COUNT(*) AS count
          FROM analytics_events
          WHERE event_type = 'activity_start' AND activity_id IS NOT NULL AND created_at >= ?
          GROUP BY activity_id ORDER BY count DESC`
-      ).bind(sinceIso).all(),
-      env.DB.prepare(
-        `SELECT device_type AS device, COUNT(DISTINCT session_id) AS sessions, COUNT(*) AS events
+    ).bind(sinceIso).all(),
+    env.DB.prepare(
+      `SELECT device_type AS device, COUNT(DISTINCT session_id) AS sessions, COUNT(*) AS events
          FROM analytics_events WHERE created_at >= ? GROUP BY device_type`
-      ).bind(sinceIso).all(),
-      env.DB.prepare(
-        `SELECT lang, COUNT(DISTINCT session_id) AS sessions
+    ).bind(sinceIso).all(),
+    env.DB.prepare(
+      `SELECT lang, COUNT(DISTINCT session_id) AS sessions
          FROM analytics_events WHERE created_at >= ? GROUP BY lang`
-      ).bind(sinceIso).all(),
-      env.DB.prepare(
-        `SELECT substr(created_at, 1, 10) AS day,
+    ).bind(sinceIso).all(),
+    env.DB.prepare(
+      `SELECT substr(created_at, 1, 10) AS day,
                 COUNT(CASE WHEN event_type = 'page_view' THEN 1 END) AS views,
                 COUNT(CASE WHEN event_type = 'activity_start' THEN 1 END) AS plays,
                 COUNT(DISTINCT session_id) AS sessions
          FROM analytics_events WHERE created_at >= ?
          GROUP BY substr(created_at, 1, 10) ORDER BY day ASC`
-      ).bind(new Date(Date.now() - 14 * 86400000).toISOString()).all(),
-      env.DB.prepare(
-        `SELECT
+    ).bind(new Date(Date.now() - 14 * 86400000).toISOString()).all(),
+    env.DB.prepare(
+      `SELECT
            COUNT(CASE WHEN event_type = 'pro_modal' THEN 1 END) AS proViews,
            COUNT(CASE WHEN event_type = 'pro_unlock' THEN 1 END) AS proUnlocks,
            COUNT(CASE WHEN event_type = 'google_signin' THEN 1 END) AS googleSignins
          FROM analytics_events WHERE created_at >= ?`
-      ).bind(sinceIso).first(),
-      env.DB.prepare(
-        `SELECT COUNT(*) AS totalUsers, COUNT(CASE WHEN is_pro = 1 THEN 1 END) AS proUsers FROM users`
-      ).first(),
-      env.DB.prepare(
-        `SELECT sub, email, name, picture, is_pro, pro_source, created_at, updated_at
+    ).bind(sinceIso).first(),
+    env.DB.prepare(
+      `SELECT COUNT(*) AS totalUsers, COUNT(CASE WHEN is_pro = 1 THEN 1 END) AS proUsers FROM users`
+    ).first(),
+    env.DB.prepare(
+      `SELECT sub, email, name, picture, is_pro, pro_source, created_at, updated_at
          FROM users ORDER BY created_at DESC`
-      ).all()
-    ]);
+    ).all(),
+    env.DB.prepare(
+      `SELECT COALESCE(SUM(duration_sec), 0) AS totalSec,
+              COUNT(DISTINCT CASE WHEN duration_sec IS NOT NULL THEN session_id END) AS timedSessions
+         FROM analytics_events
+         WHERE event_type = 'session_time' AND duration_sec IS NOT NULL AND created_at >= ?`
+    ).bind(sinceIso).first(),
+    env.DB.prepare(
+      `SELECT activity_id AS id, COALESCE(SUM(duration_sec), 0) AS totalSec, COUNT(DISTINCT session_id) AS sessions
+         FROM analytics_events
+         WHERE event_type = 'session_time' AND duration_sec IS NOT NULL AND activity_id IS NOT NULL AND created_at >= ?
+         GROUP BY activity_id ORDER BY totalSec DESC`
+    ).bind(sinceIso).all(),
+    env.DB.prepare(
+      `SELECT COALESCE(NULLIF(referrer, ''), 'Direct / Bookmark') AS source,
+              COUNT(*) AS visits,
+              COUNT(DISTINCT session_id) AS sessions
+         FROM analytics_events
+         WHERE event_type = 'page_view' AND created_at >= ?
+         GROUP BY source ORDER BY visits DESC LIMIT 20`
+    ).bind(sinceIso).all(),
+    env.DB.prepare(
+      `SELECT search_term AS term, COUNT(*) AS count
+         FROM analytics_events
+         WHERE search_term IS NOT NULL AND search_term != '' AND created_at >= ?
+         GROUP BY search_term ORDER BY count DESC LIMIT 25`
+    ).bind(sinceIso).all(),
+    env.DB.prepare(
+      `SELECT COALESCE(NULLIF(country, ''), 'Unknown') AS country,
+              COUNT(DISTINCT session_id) AS sessions
+         FROM analytics_events
+         WHERE event_type = 'page_view' AND created_at >= ?
+         GROUP BY country ORDER BY sessions DESC LIMIT 15`
+    ).bind(sinceIso).all()
+  ]);
 
   const users = await Promise.all(
     (rawUsers?.results || []).map(async (u) => {
@@ -205,10 +252,19 @@ export async function onRequestGet({ request, env }) {
     })
   );
 
+  const totalSec = Number(timeStats?.totalSec || 0);
+  const timedSessions = Number(timeStats?.timedSessions || 0);
+  const avgSessionSec = timedSessions > 0 ? Math.round(totalSec / timedSessions) : 0;
+
   const payload = {
     days,
     totals: totals || { pageViews: 0, gamePlays: 0, starsEvents: 0, uniqueSessions: 0 },
     last24h: todayRow || { pageViews24h: 0, uniqueSessions24h: 0 },
+    timeSpent: { totalSec, timedSessions, avgSessionSec },
+    timeByActivity: timeByActivity?.results || [],
+    byReferrer: byReferrer?.results || [],
+    searchTerms: searchTerms?.results || [],
+    byCountry: byCountry?.results || [],
     byActivity: byActivity?.results || [],
     byDevice: byDevice?.results || [],
     byLang: byLang?.results || [],
@@ -228,14 +284,55 @@ export async function onRequestGet({ request, env }) {
     });
   }
 
+  const fmtDur = (sec) => {
+    const s = Math.max(0, Math.round(Number(sec) || 0));
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    if (m < 60) return `${m}m ${rem}s`;
+    const h = Math.floor(m / 60);
+    return `${h}h ${m % 60}m`;
+  };
+
   const maxAct = Math.max(1, ...payload.byActivity.map((a) => a.count));
+  const timeMap = new Map(payload.timeByActivity.map((t) => [t.id, t]));
   const actHtml =
     payload.byActivity
       .map((a) => {
         const w = Math.max(6, Math.round((a.count / maxAct) * 100));
-        return `<div class="bar-row"><span class="lbl">${a.id}</span><div class="bar-bg"><div class="bar" style="width:${w}%"></div></div><span class="val">${a.count}</span></div>`;
+        const t = timeMap.get(a.id);
+        const timeTag = t ? ` · ${fmtDur(t.totalSec)}` : '';
+        return `<div class="bar-row"><span class="lbl">${escapeHtml(a.id)}</span><div class="bar-bg"><div class="bar" style="width:${w}%"></div></div><span class="val" style="width:auto;min-width:75px">${a.count}${timeTag}</span></div>`;
       })
       .join('') || '<p style="color:#94a3b8">No game plays recorded yet.</p>';
+
+  const maxRef = Math.max(1, ...payload.byReferrer.map((r) => r.visits));
+  const refHtml =
+    payload.byReferrer
+      .map((r) => {
+        const w = Math.max(6, Math.round((r.visits / maxRef) * 100));
+        return `<div class="bar-row"><span class="lbl">${escapeHtml(r.source)}</span><div class="bar-bg"><div class="bar" style="width:${w}%;background:linear-gradient(90deg,#10b981,#06b6d4)"></div></div><span class="val" style="width:auto;min-width:85px">${r.visits} (${r.sessions}s)</span></div>`;
+      })
+      .join('') || '<p style="color:#94a3b8">No traffic source data yet.</p>';
+
+  const searchHtml =
+    payload.searchTerms
+      .map((s) => `<tr><td>${escapeHtml(s.term)}</td><td><strong>${s.count}</strong></td></tr>`)
+      .join('') || '<tr><td colspan="2" style="color:#94a3b8">No search query parameters captured yet.</td></tr>';
+
+  const countryHtml =
+    payload.byCountry
+      .map((c) => `<li><strong>${escapeHtml(c.country)}</strong>: ${c.sessions} sessions</li>`)
+      .join('') || '<li>No country data yet</li>';
+
+  const avgGamesPerSession =
+    payload.totals.uniqueSessions > 0
+      ? (payload.totals.gamePlays / payload.totals.uniqueSessions).toFixed(1)
+      : '0.0';
+  const proConv =
+    payload.funnel.proViews > 0
+      ? `${Math.round((payload.funnel.proUnlocks / payload.funnel.proViews) * 100)}%`
+      : '0%';
 
   const devHtml =
     payload.byDevice
@@ -310,13 +407,20 @@ export async function onRequestGet({ request, env }) {
   <div class="grid">
     <div class="card"><div>Unique Sessions</div><div class="num">${payload.totals.uniqueSessions}</div><small>24h: ${payload.last24h.uniqueSessions24h}</small></div>
     <div class="card"><div>Page Views</div><div class="num">${payload.totals.pageViews}</div><small>24h: ${payload.last24h.pageViews24h}</small></div>
-    <div class="card"><div>Games Played</div><div class="num">${payload.totals.gamePlays}</div><small>Star wins: ${payload.totals.starsEvents}</small></div>
+    <div class="card"><div>Avg Time Spent</div><div class="num">${fmtDur(payload.timeSpent.avgSessionSec)}</div><small>Total: ${fmtDur(payload.timeSpent.totalSec)}</small></div>
+    <div class="card"><div>Games Played</div><div class="num">${payload.totals.gamePlays}</div><small>${avgGamesPerSession} / session · ⭐ ${payload.totals.starsEvents}</small></div>
     <div class="card"><div>Google Parents</div><div class="num">${payload.accounts.totalUsers}</div><small>Sign-ins: ${payload.funnel.googleSignins}</small></div>
-    <div class="card"><div>Pro Users</div><div class="num">${payload.accounts.proUsers}</div><small>Modal views: ${payload.funnel.proViews}</small></div>
+    <div class="card"><div>Pro Users</div><div class="num">${payload.accounts.proUsers}</div><small>Conv: ${proConv} (${payload.funnel.proViews} views)</small></div>
   </div>
 
-  <div class="panel"><h2>Popular Games</h2>${actHtml}</div>
-  <div class="panel"><h2>Devices &amp; Languages</h2><ul>${devHtml}${langHtml}</ul></div>
+  <div class="panel"><h2>How People Find the Site (Referrers &amp; Campaigns)</h2>${refHtml}</div>
+  <div class="panel">
+    <h2>Search Engine Queries</h2>
+    <p style="font-size:12px;color:#94a3b8;margin:0 0 10px">Note: Google, Bing, and DuckDuckGo hide exact search keywords from browser referrers for privacy. Queries sent via <code>utm_term</code> or non-stripped referrers appear below; use Google Search Console for full Google search keyword impressions &amp; clicks.</p>
+    <table><tr><th>Search Term</th><th>Visits</th></tr>${searchHtml}</table>
+  </div>
+  <div class="panel"><h2>Popular Games &amp; Time Spent</h2>${actHtml}</div>
+  <div class="panel"><h2>Devices, Languages &amp; Countries</h2><ul>${devHtml}${langHtml}${countryHtml}</ul></div>
   <div class="panel">
     <div class="top" style="margin-bottom:10px">
       <h2 style="margin:0">Signed-Up Users (${payload.users.length})</h2>

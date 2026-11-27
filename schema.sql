@@ -34,6 +34,11 @@ CREATE TABLE IF NOT EXISTS analytics_events (
   device_type TEXT,
   lang TEXT,
   session_id TEXT,
+  referrer TEXT,
+  search_term TEXT,
+  utm_source TEXT,
+  duration_sec INTEGER,
+  country TEXT,
   created_at TEXT NOT NULL
 );
 
