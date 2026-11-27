@@ -1,6 +1,6 @@
 # Android & Google Play Publishing Guide
 
-This project is pre-configured with Capacitor 8 (`com.learningapp.hebrewkids`) and complies with Google Play's **Designed for Families** requirements (100% offline audio & fonts, Parental Gate for settings, zero ads, zero tracking).
+This project is pre-configured with Capacitor 8 (`com.learningapp.hebrewkids`) and follows Google Play's **Designed for Families** requirements (100% offline audio & fonts, arithmetic Parental Gate before settings/purchases, zero ads, zero third-party ad trackers).
 
 ## 1. Prerequisites (One-Time on Build Machine)
 - Install **JDK 21** (required by Android Gradle / `compileSdk = 36`)
@@ -26,9 +26,19 @@ cd android
 ```
 Output AAB: `android/app/build/outputs/bundle/release/app-release.aab`
 
-## 4. Google Play Console Checklist
+## 4. Google Play Console Store Listing & Data Safety
 - **Target audience:** Ages 5 and under (Families)
-- **Ads:** No
-- **Data safety:** No user data collected or shared
-- **Privacy Policy URL:** Host `PRIVACY_POLICY.md` (e.g. via your GitHub repo or Cloudflare URL `/privacy` if added)
+- **Ads:** No ("My app does not contain ads")
+- **Privacy Policy URL:** `https://kids.moscisker.info/privacy.html`
+- **Data Safety:**
+  - *Is data collected?* Optional for parents only (Google Sign-In inside the Parental Gate to back up child progress to Cloudflare D1; children never log in).
+  - *Data types (when parent signs in):* Name, Email address, User IDs (strictly for App Functionality / Account & Cloud Sync, encrypted in transit, not shared with third parties).
 - **App Icon (512x512):** `public/icon-512.png`
+- **Feature Graphic (1024x500) & Screenshots:** Capture 2–4 phone/tablet screenshots from `https://kids.moscisker.info/` (or Android emulator).
+
+## 5. Optional Web Environment Variables (Cloudflare Pages)
+In Cloudflare Dashboard → **Pages → hebrew-kids → Settings → Variables and Secrets**, you can optionally add:
+- `GOOGLE_CLIENT_ID` — Enables the **Sign in with Google** button inside Parent Zone (add `https://kids.moscisker.info` to Authorized JavaScript Origins in Google Cloud Console).
+- `STRIPE_PAYMENT_LINK` — Enables the web checkout button inside the Parental-Gated Pro Upgrade modal (automatically hidden inside Android native builds per Google Play policy).
+- `PRO_PRICE_LABEL` — Display price label (defaults to `$4.99`).
+- **Default Family Promo Code (already seeded in D1):** `FAMILY4KIDS`

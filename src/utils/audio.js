@@ -193,6 +193,8 @@ const GENDERED_PHRASES = new Set([
   'tracing_success',
   'inst_memory',
   'inst_stickers',
+  'inst_opening_sound',
+  'inst_math_play',
   'welcome_home'
 ]);
 

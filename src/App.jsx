@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import HomeHub from './components/HomeHub';
 import KidCursor from './components/KidCursor';
 import ParentModal from './components/ParentModal';
+import ProUpgradeModal from './components/ProUpgradeModal';
 import AlphabetCards from './components/AlphabetCards';
 import LetterQuiz from './components/LetterQuiz';
 import ReadingTrain from './components/ReadingTrain';
@@ -13,14 +14,30 @@ import NumbersWorld from './components/NumbersWorld';
 import LetterTracer from './components/LetterTracer';
 import MemoryGame from './components/MemoryGame';
 import StickerPlayground from './components/StickerPlayground';
+import OpeningSoundGame from './components/OpeningSoundGame';
+import MathPlay from './components/MathPlay';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
+import { fetchServerConfig, fetchCurrentSession, pushCloudProgress } from './utils/cloudSync';
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('home');
   const [lang, setLang] = useState('he');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showParentModal, setShowParentModal] = useState(false);
+  const [showProModal, setShowProModal] = useState(false);
+  const [serverConfig, setServerConfig] = useState(null);
+  const [user, setUser] = useState(null);
+
+  const [isPro, setIsPro] = useState(() => {
+    try {
+      return localStorage.getItem('kids_pro_unlocked') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [needsGenderPick, setNeedsGenderPick] = useState(() => {
     try {
@@ -30,7 +47,6 @@ export default function App() {
     }
   });
 
-  // Kid gender: 'boy' (זָכָר) or 'girl' (נְקֵבָה)
   const [gender, setGender] = useState(() => {
     try {
       return localStorage.getItem('kid_gender') || 'boy';
@@ -48,25 +64,113 @@ export default function App() {
     }
   });
 
+  const [stars, setStars] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kids_stars_total');
+      return saved ? parseInt(saved, 10) : 5;
+    } catch {
+      return 5;
+    }
+  });
+
+  const [streakDays, setStreakDays] = useState(() => {
+    try {
+      const today = todayStr();
+      const last = localStorage.getItem('kids_last_played');
+      let streak = parseInt(localStorage.getItem('kids_streak_days') || '1', 10);
+      if (last && last !== today) {
+        const diffDays = Math.round((new Date(today) - new Date(last)) / 86400000);
+        streak = diffDays === 1 ? streak + 1 : 1;
+      }
+      localStorage.setItem('kids_last_played', today);
+      localStorage.setItem('kids_streak_days', String(streak));
+      return streak;
+    } catch {
+      return 1;
+    }
+  });
+
+  const [dailyStars, setDailyStars] = useState(() => {
+    try {
+      const today = todayStr();
+      if (localStorage.getItem('kids_daily_date') === today) {
+        return parseInt(localStorage.getItem('kids_daily_stars') || '0', 10);
+      }
+      localStorage.setItem('kids_daily_date', today);
+      localStorage.setItem('kids_daily_stars', '0');
+      return 0;
+    } catch {
+      return 0;
+    }
+  });
+
   useEffect(() => {
     try {
       localStorage.setItem('kid_gender', gender);
-    } catch (e) {
-      console.warn('Could not save kid gender', e);
+    } catch {
+      // ignore
     }
   }, [gender]);
 
   useEffect(() => {
     try {
       localStorage.setItem('kid_cursor_enabled', String(kidCursorEnabled));
-    } catch (e) {
-      console.warn('Could not save cursor setting', e);
+    } catch {
+      // ignore
     }
   }, [kidCursorEnabled]);
 
   useEffect(() => {
+    try {
+      localStorage.setItem('kids_pro_unlocked', String(isPro));
+    } catch {
+      // ignore
+    }
+  }, [isPro]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kids_stars_total', String(stars));
+      localStorage.setItem('kids_daily_stars', String(dailyStars));
+    } catch {
+      // ignore
+    }
+  }, [stars, dailyStars]);
+
+  useEffect(() => {
     setMuted(!soundEnabled);
   }, [soundEnabled]);
+
+  // Load optional Cloudflare config + session on startup (non-blocking)
+  useEffect(() => {
+    fetchServerConfig().then((cfg) => cfg && setServerConfig(cfg));
+    fetchCurrentSession().then((sess) => {
+      if (!sess) return;
+      if (sess.isPro) setIsPro(true);
+      if (sess.user) setUser(sess.user);
+      if (sess.progress) {
+        setStars((prev) => Math.max(prev, sess.progress.stars || 0));
+        if (sess.progress.streakDays) setStreakDays((prev) => Math.max(prev, sess.progress.streakDays));
+        if (sess.progress.gender) setGender(sess.progress.gender);
+      }
+    });
+  }, []);
+
+  // Debounced cloud progress backup when signed in
+  useEffect(() => {
+    if (!user) return;
+    const t = setTimeout(() => {
+      pushCloudProgress({
+        stars,
+        gender,
+        lang,
+        streakDays,
+        lastPlayed: todayStr(),
+        data: {}
+      });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [user, stars, gender, lang, streakDays]);
 
   const { isTouch } = useDeviceType();
 
@@ -113,7 +217,9 @@ export default function App() {
       numbers: isTouch ? 'inst_numbers_touch' : 'inst_numbers_mouse',
       tracing: isTouch ? 'inst_tracing_touch' : 'inst_tracing_mouse',
       memory: 'inst_memory',
-      stickers: 'inst_stickers'
+      stickers: 'inst_stickers',
+      opening_sound: 'inst_opening_sound',
+      math_play: 'inst_math_play'
     };
 
     const instKey = tabInstructions[currentTab];
@@ -125,26 +231,9 @@ export default function App() {
     }
   }, [currentTab, soundEnabled, gender, isTouch]);
 
-  // Load / persist star score
-  const [stars, setStars] = useState(() => {
-    try {
-      const saved = localStorage.getItem('kids_stars_total');
-      return saved ? parseInt(saved, 10) : 5;
-    } catch {
-      return 5;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('kids_stars_total', stars.toString());
-    } catch (e) {
-      console.warn('Could not save stars', e);
-    }
-  }, [stars]);
-
   const handleEarnStar = (amount = 1) => {
     setStars((prev) => prev + amount);
+    setDailyStars((prev) => prev + amount);
   };
 
   const handlePickGender = (picked) => {
@@ -155,6 +244,16 @@ export default function App() {
       setTimeout(() => playPhraseAudio('welcome_home', picked), 150);
     }
   };
+
+  const handleAuthSuccess = useCallback((result) => {
+    if (result?.user) {
+      setUser(result.user);
+      if (result.user.isPro) setIsPro(true);
+    }
+    if (result?.progress) {
+      setStars((prev) => Math.max(prev, result.progress.stars || 0));
+    }
+  }, []);
 
   const isHe = lang === 'he';
 
@@ -168,10 +267,8 @@ export default function App() {
       className="min-h-screen flex flex-col font-['Fredoka','Rubik','Varela_Round',sans-serif] pb-[env(safe-area-inset-bottom)]"
       dir={isHe ? 'rtl' : 'ltr'}
     >
-      {/* Big playful cursor when played on a computer */}
       <KidCursor enabled={kidCursorEnabled} />
 
-      {/* Clean Kid-First Header */}
       <Navbar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -184,7 +281,6 @@ export default function App() {
         onOpenParentGate={() => setShowParentModal(true)}
       />
 
-      {/* Main Content Area */}
       <main className="flex-1 pb-12">
         {currentTab === 'home' && (
           <HomeHub
@@ -192,104 +288,56 @@ export default function App() {
             soundEnabled={soundEnabled}
             gender={gender}
             stars={stars}
+            streakDays={streakDays}
+            dailyStars={dailyStars}
+            isPro={isPro}
+            user={user}
             onSelectActivity={(id) => setCurrentTab(id)}
+            onOpenPro={() => setShowProModal(true)}
+            onOpenParentGate={() => setShowParentModal(true)}
             needsGenderPick={needsGenderPick}
             onPickGender={handlePickGender}
           />
         )}
 
         {currentTab === 'letters' && (
-          <AlphabetCards
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <AlphabetCards lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'quiz' && (
-          <LetterQuiz
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <LetterQuiz lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'train' && (
-          <ReadingTrain
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <ReadingTrain lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'detective' && (
-          <PupikDetective
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <PupikDetective lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'vowels' && (
-          <VowelsWorld
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <VowelsWorld lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'first_words' && (
-          <FirstWords
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <FirstWords lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'numbers' && (
-          <NumbersWorld
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <NumbersWorld lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'tracing' && (
-          <LetterTracer
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <LetterTracer lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'memory' && (
-          <MemoryGame
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            onEarnStar={handleEarnStar}
-          />
+          <MemoryGame lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-
         {currentTab === 'stickers' && (
-          <StickerPlayground
-            lang={lang}
-            soundEnabled={soundEnabled}
-            gender={gender}
-            stars={stars}
-          />
+          <StickerPlayground lang={lang} soundEnabled={soundEnabled} gender={gender} stars={stars} />
+        )}
+        {currentTab === 'opening_sound' && (
+          <OpeningSoundGame lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+        )}
+        {currentTab === 'math_play' && (
+          <MathPlay lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
       </main>
 
-      {/* Parent Gate & Settings Modal */}
       <ParentModal
         open={showParentModal}
         onClose={() => setShowParentModal(false)}
@@ -297,7 +345,26 @@ export default function App() {
         setLang={setLang}
         kidCursorEnabled={kidCursorEnabled}
         setKidCursorEnabled={setKidCursorEnabled}
-        onResetStars={() => setStars(5)}
+        onResetStars={() => {
+          setStars(5);
+          setDailyStars(0);
+        }}
+        user={user}
+        onAuthSuccess={handleAuthSuccess}
+        onSignOut={() => setUser(null)}
+        isPro={isPro}
+        onOpenPro={() => setShowProModal(true)}
+        serverConfig={serverConfig}
+      />
+
+      <ProUpgradeModal
+        open={showProModal}
+        onClose={() => setShowProModal(false)}
+        lang={lang}
+        isPro={isPro}
+        onUnlockPro={() => setIsPro(true)}
+        serverConfig={serverConfig}
+        user={user}
       />
     </div>
   );

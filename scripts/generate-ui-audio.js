@@ -25,7 +25,9 @@ export const TILES = [
   { id: 'numbers', he: 'מִסְפָּרִים', en: 'Numbers' },
   { id: 'tracing', he: 'צִיּוּר וּכְתִיבָה', en: 'Drawing and writing' },
   { id: 'memory', he: 'מִשְׂחַק זִכָּרוֹן', en: 'Memory game' },
-  { id: 'stickers', he: 'הַמַּדְבֵּקוֹת שֶׁלִּי', en: 'My stickers' }
+  { id: 'stickers', he: 'הַמַּדְבֵּקוֹת שֶׁלִּי', en: 'My stickers' },
+  { id: 'opening_sound', he: 'הַקּוֹל הַפּוֹתֵחַ', en: 'Opening sound' },
+  { id: 'math_play', he: 'חֶשְׁבּוֹן רִאשׁוֹן', en: 'First math' }
 ];
 
 const jobs = [];
@@ -42,6 +44,10 @@ add('phrases', 'welcome_home_boy.mp3', 'שָׁלוֹם! בּוֹא נְשַׂח�
 add('phrases', 'welcome_home_girl.mp3', 'שָׁלוֹם! בּוֹאִי נְשַׂחֵק וְנִלְמַד. בַּחֲרִי מִשְׂחָק!');
 add('phrases', 'who_plays.mp3', 'מִי מְשַׂחֵק הַיּוֹם? יֶלֶד אוֹ יַלְדָּה?');
 add('phrases', 'parents_only.mp3', 'הָאֵזוֹר הַזֶּה מִיּוֹעָד לַהוֹרִים');
+add('phrases', 'inst_opening_sound_boy.mp3', 'הַקְשֵׁב לַמִּלָּה וּבְחַר בְּאֵיזוֹ אוֹת הִיא מַתְחִילָה');
+add('phrases', 'inst_opening_sound_girl.mp3', 'הַקְשִׁיבִי לַמִּלָּה וּבַחֲרִי בְּאֵיזוֹ אוֹת הִיא מַתְחִילָה');
+add('phrases', 'inst_math_play_boy.mp3', 'סְפֹר אֶת כָּל הַפֵּרוֹת יַחַד וּבְחַר אֶת הַמִּסְפָּר הַנָּכוֹן');
+add('phrases', 'inst_math_play_girl.mp3', 'סִפְרִי אֶת כָּל הַפֵּרוֹת יַחַד וּבַחֲרִי אֶת הַמִּסְפָּר הַנָּכוֹן');
 
 // --- Pronunciation fixes (always regenerated)
 // Chaf: spelled phonetically so the voice says "CHAF" (not "KAF")

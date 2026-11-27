@@ -17,10 +17,26 @@ const ALL_STICKERS = [
 
 export default function StickerPlayground({ lang, soundEnabled, gender = 'boy', stars }) {
   const isHe = lang === 'he';
-  const [placedStickers, setPlacedStickers] = useState([
-    { id: 1, emoji: '🎈', x: 20, y: 30, scale: 1 },
-    { id: 2, emoji: '🧸', x: 60, y: 40, scale: 1 }
-  ]);
+  const [placedStickers, setPlacedStickers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kids_placed_stickers');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return [
+      { id: 1, emoji: '🎈', x: 20, y: 30, scale: 1 },
+      { id: 2, emoji: '🧸', x: 60, y: 40, scale: 1 }
+    ];
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('kids_placed_stickers', JSON.stringify(placedStickers));
+    } catch {
+      // ignore
+    }
+  }, [placedStickers]);
 
   const handleAddSticker = (sticker) => {
     if (stars < sticker.starsNeeded) {

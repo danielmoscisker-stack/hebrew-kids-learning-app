@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud } from 'lucide-react';
 import { playSound, playAudioFile } from '../utils/audio';
 import { useDeviceType } from '../utils/useDeviceType';
+import { loadGoogleIdentityScript, signInWithGoogleCredential, signOutSession } from '../utils/cloudSync';
 
 /**
- * Parental Gate + Settings / Pedagogy Guide Modal.
- * Follows Google Play "Designed for Families" & Apple Kids Category standards:
- * a simple arithmetic check keeps 4-year-olds from leaving Hebrew or changing settings.
+ * Parental Gate + Settings / Optional Google Sign-In / Pedagogy Guide Modal.
  */
 export default function ParentModal({
   open,
@@ -15,18 +14,27 @@ export default function ParentModal({
   setLang,
   kidCursorEnabled,
   setKidCursorEnabled,
-  onResetStars
+  onResetStars,
+  user,
+  onAuthSuccess,
+  onSignOut,
+  isPro,
+  onOpenPro,
+  serverConfig
 }) {
   const isHe = lang === 'he';
   const { isTouch } = useDeviceType();
   const [unlocked, setUnlocked] = useState(false);
-  const [challenge, setChallenge] = useState({ a: 4, b: 3, options: [6, 7, 8, 9] });
+  const [challenge, setChallenge] = useState({ a: 4, b: 3, ans: 7, options: [6, 7, 8, 9] });
   const [wrong, setWrong] = useState(false);
+  const [authStatus, setAuthStatus] = useState(null);
+  const googleBtnRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       setUnlocked(false);
       setWrong(false);
+      setAuthStatus(null);
       const a = 3 + Math.floor(Math.random() * 5);
       const b = 2 + Math.floor(Math.random() * 4);
       const ans = a + b;
@@ -38,6 +46,40 @@ export default function ParentModal({
       playAudioFile('/audio/phrases/parents_only.mp3');
     }
   }, [open]);
+
+  // Render Google Sign-In button inside unlocked Parent Zone when GOOGLE_CLIENT_ID is configured
+  useEffect(() => {
+    if (!open || !unlocked || user || !serverConfig?.googleClientId) return;
+    let cancelled = false;
+    loadGoogleIdentityScript().then((loaded) => {
+      if (cancelled || !loaded || !googleBtnRef.current || !window.google?.accounts?.id) return;
+      window.google.accounts.id.initialize({
+        client_id: serverConfig.googleClientId,
+        callback: async (response) => {
+          try {
+            setAuthStatus(isHe ? 'מתחבר...' : 'Signing in...');
+            const result = await signInWithGoogleCredential(response.credential);
+            playSound('star');
+            onAuthSuccess(result);
+            setAuthStatus(null);
+          } catch (err) {
+            setAuthStatus(err.message || 'Sign-in failed');
+          }
+        }
+      });
+      googleBtnRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        text: 'signin_with',
+        width: 260
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, unlocked, user, serverConfig, isHe, onAuthSuccess]);
 
   if (!open) return null;
 
@@ -57,19 +99,11 @@ export default function ParentModal({
       <div className="bg-white rounded-3xl max-w-xl w-full p-6 md:p-7 shadow-2xl border-4 border-amber-300 max-h-[90vh] overflow-y-auto animate-pop-in">
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
           <div className="flex items-center gap-2">
-            {unlocked ? (
-              <Sparkles className="w-6 h-6 text-pink-500" />
-            ) : (
-              <Lock className="w-6 h-6 text-indigo-600" />
-            )}
+            {unlocked ? <Sparkles className="w-6 h-6 text-pink-500" /> : <Lock className="w-6 h-6 text-indigo-600" />}
             <h3 className="text-xl font-black text-slate-800">
               {unlocked
-                ? isHe
-                  ? 'אֵזוֹר הוֹרִים וְגַנָּנוֹת'
-                  : 'Parents & Educators'
-                : isHe
-                  ? 'אֵזוֹר הוֹרִים בִּלְבַד'
-                  : 'For Parents Only'}
+                ? isHe ? 'אֵזוֹר הוֹרִים וְגַנָּנוֹת' : 'Parents & Educators'
+                : isHe ? 'אֵזוֹר הוֹרִים בִּלְבַד' : 'For Parents Only'}
             </h3>
           </div>
           <button
@@ -111,15 +145,62 @@ export default function ParentModal({
                 </button>
               ))}
             </div>
-            {wrong && (
-              <p className="text-sm font-bold text-rose-600">
-                {isHe ? 'נַסּוּ שׁוּב :)' : 'Try again :)'}
-              </p>
-            )}
+            {wrong && <p className="text-sm font-bold text-rose-600">{isHe ? 'נַסּוּ שׁוּב :)' : 'Try again :)'}</p>}
           </div>
         ) : (
           <div className="space-y-4 text-sm text-slate-700">
-            {/* Settings Row */}
+            {/* Optional Google Cloud Sync Section */}
+            <div className="p-4 bg-sky-50 border-2 border-sky-200 rounded-2xl flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 font-black text-sky-950">
+                  <Cloud className="w-5 h-5 text-sky-600" />
+                  <span>{isHe ? 'שְׁמִירַת הִתְקַדְּמוּת בֶּעָנָן (אוֹפְּצְיוֹנָלִי)' : 'Cloud Progress Backup (Optional)'}</span>
+                </div>
+              </div>
+
+              {user ? (
+                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-sky-200">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {user.picture && (
+                      <img src={user.picture} alt="" className="w-9 h-9 rounded-full border border-sky-300" />
+                    )}
+                    <div className="truncate">
+                      <div className="font-black text-slate-800 truncate">{user.name}</div>
+                      <div className="text-xs text-slate-500 truncate">{user.email}</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await signOutSession();
+                      onSignOut();
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-xl font-bold text-xs cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>{isHe ? 'הִתְנַתְּקוּת' : 'Sign Out'}</span>
+                  </button>
+                </div>
+              ) : serverConfig?.googleClientId ? (
+                <div className="flex flex-col items-center gap-2 pt-1">
+                  <p className="text-xs text-sky-900 text-center">
+                    {isHe
+                      ? 'הַיְּלָדִים מְשַׂחֲקִים בְּלִי הִתְחַבְּרוּת. הוֹרִים יְכוֹלִים לְהִתְחַבֵּר עִם Google כְּדֵי לְסַנְכְּרֵן כּוֹכָבִים וְ-PRO בֵּין מַכְשִׁירִים:'
+                      : 'Kids never need to log in. Parents can optionally sign in with Google to sync stars & Pro across devices:'}
+                  </p>
+                  <div ref={googleBtnRef} />
+                  {authStatus && <span className="text-xs font-bold text-indigo-700">{authStatus}</span>}
+                </div>
+              ) : (
+                <p className="text-xs text-sky-900">
+                  {isHe
+                    ? 'הִתְחַבְּרוּת Google מוּכָנָה בַּשָּׁרָת — הוֹסִיפוּ GOOGLE_CLIENT_ID בְּהַגְדָּרוֹת Cloudflare Pages כְּדֵי לְהַפְעִיל אֶת הַכַּפְתּוֹר.'
+                    : 'Google Sign-In backend is ready — set GOOGLE_CLIENT_ID in Cloudflare Pages environment variables to enable the button.'}
+                </p>
+              )}
+            </div>
+
+            {/* Settings + Pro Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
@@ -130,6 +211,22 @@ export default function ParentModal({
                 <span>{isHe ? 'Switch to English 🇬🇧' : 'הַחֲלֵף לְעִבְרִית 🇮🇱'}</span>
               </button>
 
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenPro();
+                }}
+                className={`flex items-center justify-center gap-2 px-4 py-3 font-black rounded-2xl border-2 btn-press-3d cursor-pointer ${
+                  isPro
+                    ? 'bg-emerald-100 border-emerald-400 text-emerald-950'
+                    : 'bg-amber-300 hover:bg-amber-400 border-amber-500 text-amber-950'
+                }`}
+              >
+                <Crown className="w-5 h-5" />
+                <span>{isPro ? (isHe ? 'גִּרְסַת PRO פְּעִילָה ✓' : 'Pro Active ✓') : isHe ? 'שִׁדְרוּג לְגִרְסָה מְלֵאָה' : 'Upgrade to Pro'}</span>
+              </button>
+
               {!isTouch && (
                 <button
                   type="button"
@@ -137,7 +234,7 @@ export default function ParentModal({
                     playSound('pop');
                     setKidCursorEnabled(!kidCursorEnabled);
                   }}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 font-black rounded-2xl border-2 btn-press-3d cursor-pointer ${
+                  className={`sm:col-span-2 flex items-center justify-center gap-2 px-4 py-3 font-black rounded-2xl border-2 btn-press-3d cursor-pointer ${
                     kidCursorEnabled
                       ? 'bg-amber-100 border-amber-400 text-amber-950'
                       : 'bg-slate-100 border-slate-300 text-slate-700'
@@ -171,8 +268,8 @@ export default function ParentModal({
               <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
               <p className="text-xs md:text-sm text-emerald-950 font-medium">
                 {isHe
-                  ? 'פְּרָטִיּוּת מְלֵאָה לִילָדִים: 100% אופליין, ללא פרסומות, ללא מעקב וללא איסוף מידע אישי. ההתקדמות נשמרת מקומית על המכשיר בלבד.'
-                  : '100% Kid-Safe & Private: Runs completely offline with zero ads, zero analytics, and zero personal data collection. Progress stays locally on this device.'}
+                  ? 'פְּרָטִיּוּת מְלֵאָה לִילָדִים: 100% אופליין, ללא פרסומות וללא מעקב. התחברות Google היא אופציונלית להורים בלבד.'
+                  : '100% Kid-Safe: Runs offline with zero ads and zero tracking. Google Sign-In is optional for parents only.'}
               </p>
             </div>
 
