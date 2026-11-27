@@ -20,6 +20,7 @@ import MathPlay from './components/MathPlay';
 import IsraelMathArena from './components/IsraelMathArena';
 import SchoolSkillArena from './components/SchoolSkillArena';
 import EnglishLearnStudio from './components/EnglishLearnStudio';
+import StarShop from './components/StarShop';
 import PlayTimeLockOverlay from './components/PlayTimeLockOverlay';
 import FullscreenUnlockModal from './components/FullscreenUnlockModal';
 import AccessibilityMenu from './components/AccessibilityMenu';
@@ -64,6 +65,15 @@ import {
   exitBrowserFullscreen
 } from './utils/fullscreenLock';
 import { getKidWelcome, speakPersonalText } from './utils/personalize';
+import { getThemeBgClass } from './data/starShopData';
+import {
+  getShopKey,
+  createDefaultShopEntry,
+  normalizeShopEntry,
+  loadLocalShopMap,
+  saveLocalShopMap,
+  mergeShopMaps
+} from './utils/starShop';
 
 const APP_BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
 
@@ -133,6 +143,11 @@ export default function App() {
   const activeLockKey = getLockKey(activeProfileId);
   const activePinRecord = kidLocksMap[activeLockKey] || null;
   const activeBiometricRecord = biometricsMap[activeLockKey] || null;
+
+  const [starShopMap, setStarShopMap] = useState(() => loadLocalShopMap());
+  const activeShopKey = getShopKey(activeProfileId);
+  const activeShopEntry = starShopMap[activeShopKey] || createDefaultShopEntry();
+  const activeThemeBgClass = getThemeBgClass(activeShopEntry.equippedTheme);
 
   const [kidAge, setKidAge] = useState(() => {
     const localList = loadLocalProfiles();
@@ -333,6 +348,10 @@ export default function App() {
     saveLocalBiometrics(biometricsMap);
   }, [biometricsMap]);
 
+  useEffect(() => {
+    saveLocalShopMap(starShopMap);
+  }, [starShopMap]);
+
   // Browser Fullscreen Lock guards: re-lock overlay if Esc/gesture exits fullscreen, block accidental Back/close
   useEffect(() => {
     if (!fullscreenLockActive) return undefined;
@@ -439,6 +458,9 @@ export default function App() {
         if (d.kidLocks && typeof d.kidLocks === 'object') {
           setKidLocksMap((prev) => mergeLocksMaps(prev, d.kidLocks));
         }
+        if (d.starShop && typeof d.starShop === 'object') {
+          setStarShopMap((prev) => mergeShopMaps(prev, d.starShop));
+        }
 
         const cloudProfiles = sanitizeProfilesList(d.profiles);
         if (cloudProfiles.length > 0) {
@@ -494,7 +516,8 @@ export default function App() {
           profiles,
           activeProfileId,
           playLimits: playLimitsRef.current,
-          kidLocks: kidLocksMap
+          kidLocks: kidLocksMap,
+          starShop: starShopMap
         }
       });
     }, 900);
@@ -513,7 +536,8 @@ export default function App() {
     playLimitsSyncNonce,
     usageCloudBucket,
     playLimitState.isLocked,
-    kidLocksMap
+    kidLocksMap,
+    starShopMap
   ]);
 
   const { isTouch } = useDeviceType();
@@ -880,6 +904,90 @@ export default function App() {
     setFullscreenEscaped(false);
   }, []);
 
+  const handleBuyShopItem = useCallback(
+    (item) => {
+      if (!item || stars < item.price) return;
+      const nextStars = Math.max(0, stars - item.price);
+      setStars(nextStars);
+      if (activeProfileId) {
+        setProfiles((prev) =>
+          prev.map((p) =>
+            p.id === activeProfileId
+              ? {
+                  ...p,
+                  stars: nextStars,
+                  avatar: item.category === 'avatars' ? item.icon : p.avatar
+                }
+              : p
+          )
+        );
+      }
+
+      setStarShopMap((prev) => {
+        const cur = normalizeShopEntry(prev[activeShopKey]);
+        const ownedIds = cur.ownedIds.includes(item.id) ? cur.ownedIds : [...cur.ownedIds, item.id];
+        return {
+          ...prev,
+          [activeShopKey]: normalizeShopEntry({
+            ...cur,
+            ownedIds,
+            equippedAvatar: item.category === 'avatars' ? item.icon : cur.equippedAvatar,
+            equippedTheme: item.category === 'themes' ? item.id : cur.equippedTheme,
+            equippedPet: item.category === 'pets' ? item.id : cur.equippedPet,
+            equippedBadge: item.category === 'badges' ? item.id : cur.equippedBadge,
+            wishlistId: cur.wishlistId === item.id ? null : cur.wishlistId
+          })
+        };
+      });
+      trackEvent('shop_purchase', { itemId: item.id, category: item.category, price: item.price, lang });
+    },
+    [stars, activeProfileId, activeShopKey, lang]
+  );
+
+  const handleEquipShopItem = useCallback(
+    (item) => {
+      if (!item) return;
+      if (item.category === 'avatars' && activeProfileId) {
+        setProfiles((prev) =>
+          prev.map((p) => (p.id === activeProfileId ? { ...p, avatar: item.icon } : p))
+        );
+      }
+      setStarShopMap((prev) => {
+        const cur = normalizeShopEntry(prev[activeShopKey]);
+        if (!cur.ownedIds.includes(item.id)) return prev;
+        return {
+          ...prev,
+          [activeShopKey]: normalizeShopEntry({
+            ...cur,
+            equippedAvatar: item.category === 'avatars' ? item.icon : cur.equippedAvatar,
+            equippedTheme: item.category === 'themes' ? item.id : cur.equippedTheme,
+            equippedPet:
+              item.category === 'pets' ? (cur.equippedPet === item.id ? null : item.id) : cur.equippedPet,
+            equippedBadge:
+              item.category === 'badges' ? (cur.equippedBadge === item.id ? null : item.id) : cur.equippedBadge
+          })
+        };
+      });
+    },
+    [activeProfileId, activeShopKey]
+  );
+
+  const handleSetWishlist = useCallback(
+    (itemId) => {
+      setStarShopMap((prev) => {
+        const cur = normalizeShopEntry(prev[activeShopKey]);
+        return {
+          ...prev,
+          [activeShopKey]: {
+            ...cur,
+            wishlistId: itemId || null
+          }
+        };
+      });
+    },
+    [activeShopKey]
+  );
+
   const handleAuthSuccess = useCallback((result) => {
     cloudHydratedRef.current = true;
     trackEvent('google_signin', { isTouch, lang });
@@ -897,6 +1005,9 @@ export default function App() {
       }
       if (d.kidLocks && typeof d.kidLocks === 'object') {
         setKidLocksMap((prev) => mergeLocksMaps(prev, d.kidLocks));
+      }
+      if (d.starShop && typeof d.starShop === 'object') {
+        setStarShopMap((prev) => mergeShopMaps(prev, d.starShop));
       }
 
       const cloudProfiles = sanitizeProfilesList(d.profiles);
@@ -945,7 +1056,7 @@ export default function App() {
         isQuizTab
           ? 'h-[100dvh] overflow-hidden overscroll-none'
           : 'min-h-screen pb-[env(safe-area-inset-bottom)]'
-      } flex flex-col font-['Fredoka','Rubik','Varela_Round',sans-serif]`}
+      } ${activeThemeBgClass} flex flex-col font-['Fredoka','Rubik','Varela_Round',sans-serif] transition-colors duration-500`}
       dir={isHe ? 'rtl' : 'ltr'}
     >
       <KidCursor enabled={kidCursorEnabled} size={kidCursorSize} />
@@ -1005,6 +1116,8 @@ export default function App() {
             }}
             streakDays={streakDays}
             dailyStars={dailyStars}
+            stars={stars}
+            shopEntry={activeShopEntry}
             isPro={isPro}
             user={user}
             onSelectActivity={(id) => setCurrentTab(id)}
@@ -1169,6 +1282,20 @@ export default function App() {
         )}
         {currentTab === 'memory_age9' && (
           <MemoryGame key="mem-9" ageMode={9} lang={lang} soundEnabled={soundEnabled} gender={gender} kidName={activeProfile?.name || ''} onEarnStar={handleEarnStar} />
+        )}
+        {currentTab === 'shop' && (
+          <StarShop
+            lang={lang}
+            soundEnabled={soundEnabled}
+            kidName={activeProfile?.name || ''}
+            stars={stars}
+            activeAvatar={activeProfile?.avatar || activeShopEntry.equippedAvatar || (gender === 'girl' ? '👧' : '👦')}
+            shopEntry={activeShopEntry}
+            onBuyItem={handleBuyShopItem}
+            onEquipItem={handleEquipShopItem}
+            onSetWishlist={handleSetWishlist}
+            onGoPlay={() => setCurrentTab('home')}
+          />
         )}
         {currentTab === 'stickers' && (
           <StickerPlayground lang={lang} soundEnabled={soundEnabled} gender={gender} stars={stars} />

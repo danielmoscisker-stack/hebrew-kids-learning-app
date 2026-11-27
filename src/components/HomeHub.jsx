@@ -1,8 +1,9 @@
 import React, { useRef } from 'react';
-import { Volume2, Sparkles, Crown, Flame, Cloud, Lock, Users } from 'lucide-react';
+import { Volume2, Sparkles, Crown, Flame, Cloud, Lock, Users, ShoppingBag, Target } from 'lucide-react';
 import { playSound, playAudioFile, playPhraseAudio, speakText } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
+import { SHOP_ITEMS, getShopItemById } from '../data/starShopData';
 
 export const ACTIVITY_TILES = [
   /* ===================== AGE 4 (PRESCHOOL) ===================== */
@@ -275,6 +276,24 @@ export const ACTIVITY_TILES = [
 
   /* ===================== ALL AGES REWARDS ===================== */
   {
+    id: 'shop',
+    ages: [4, 7, 9],
+    icon: '🛍️',
+    badge: 'חֲנוּת ⭐',
+    badgeEn: 'Shop ⭐',
+    badgeEs: 'Tienda ⭐',
+    titleHe: 'חֲנוּת הַכּוֹכָבִים',
+    titleEn: 'Star Shop',
+    titleEs: 'Tienda de Estrellas',
+    descHe: 'קְנֵה דְּמוּיוֹת, חַיּוֹת מַחְמָד וְעוֹלָמוֹת',
+    descEn: 'Buy Avatars, Pets & Worlds',
+    descEs: 'Compra avatares, mascotas y temas',
+    gradient: 'from-amber-300 via-yellow-200 to-orange-300',
+    border: 'border-amber-500',
+    text: 'text-amber-950',
+    useSpeechFallback: true
+  },
+  {
     id: 'stickers',
     ages: [4, 7, 9],
     icon: '🎪',
@@ -384,6 +403,8 @@ export default function HomeHub({
   onOpenProfilePicker,
   streakDays = 1,
   dailyStars = 0,
+  stars = 0,
+  shopEntry = null,
   isPro = false,
   user = null,
   onSelectActivity,
@@ -395,6 +416,20 @@ export default function HomeHub({
   const isHe = lang === 'he';
   const { isTouch } = useDeviceType();
   const lastSpokenTileRef = useRef({ id: null, time: 0 });
+
+  const equippedPet = shopEntry?.equippedPet ? getShopItemById(shopEntry.equippedPet) : null;
+  const equippedBadge = shopEntry?.equippedBadge ? getShopItemById(shopEntry.equippedBadge) : null;
+  const ownedSet = new Set(shopEntry?.ownedIds || ['theme_classic']);
+  const wishlistGoal = shopEntry?.wishlistId ? getShopItemById(shopEntry.wishlistId) : null;
+  const nextShopGoal =
+    wishlistGoal ||
+    [...SHOP_ITEMS]
+      .filter((i) => !ownedSet.has(i.id))
+      .sort((a, b) => a.price - b.price)[0] ||
+    null;
+  const goalMissing = nextShopGoal ? Math.max(0, nextShopGoal.price - stars) : 0;
+  const goalPct = nextShopGoal ? Math.min(100, Math.round((stars / Math.max(1, nextShopGoal.price)) * 100)) : 100;
+  const canBuyGoalNow = nextShopGoal ? stars >= nextShopGoal.price : false;
 
   const speakTile = (tileId, e = null) => {
     if (e && e.stopPropagation) e.stopPropagation();
@@ -494,8 +529,22 @@ export default function HomeHub({
               {activeProfile?.avatar || (gender === 'girl' ? '👧' : '👦')}
             </button>
             <div>
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center justify-center md:justify-start gap-2">
+              <h2 className="text-2xl md:text-3xl font-black tracking-tight flex flex-wrap items-center justify-center md:justify-start gap-2">
                 <span>{greetingText}</span>
+                {equippedPet && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/25 border border-white/50 text-base animate-bounce-gentle"
+                    title={tr(lang, equippedPet.nameHe, equippedPet.nameEn, equippedPet.nameEs)}
+                  >
+                    <span>{equippedPet.icon}</span>
+                  </span>
+                )}
+                {equippedBadge && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-300 text-amber-950 border border-white text-xs font-black shadow-xs">
+                    <span>{equippedBadge.icon}</span>
+                    <span>{tr(lang, equippedBadge.nameHe, equippedBadge.nameEn, equippedBadge.nameEs)}</span>
+                  </span>
+                )}
                 <Sparkles className="w-6 h-6 text-amber-300 animate-pulse flex-shrink-0" />
               </h2>
               <p className="text-white/90 text-sm md:text-base font-bold mt-1">
@@ -587,6 +636,70 @@ export default function HomeHub({
             </button>
           </div>
         </div>
+
+        {/* Star Shop Dream Goal Motivation Bar */}
+        {nextShopGoal && (
+          <button
+            type="button"
+            onClick={() => {
+              playSound('star');
+              onSelectActivity('shop');
+            }}
+            className={`w-full rounded-2xl p-3 border-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-start transition btn-press-3d cursor-pointer ${
+              canBuyGoalNow
+                ? 'bg-emerald-400/95 hover:bg-emerald-400 border-white text-emerald-950 shadow-lg'
+                : 'bg-white/15 hover:bg-white/25 border-white/40 text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3 w-full sm:flex-1">
+              <div className="w-11 h-11 rounded-2xl bg-white/90 flex items-center justify-center text-2xl shadow-sm flex-shrink-0">
+                {nextShopGoal.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap text-xs sm:text-sm font-black">
+                  <Target className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    {canBuyGoalNow
+                      ? tr(
+                          lang,
+                          `🎉 יֵשׁ לְךָ מַסְפִּיק כּוֹכָבִים לִקְנוֹת אֶת "${nextShopGoal.nameHe}"!`,
+                          `🎉 You can buy "${nextShopGoal.nameEn}" right now!`,
+                          `🎉 ¡Ya puedes comprar "${nextShopGoal.nameEs}"!`
+                        )
+                      : tr(
+                          lang,
+                          `יַעַד בַּחֲנוּת: ${nextShopGoal.nameHe} — עוֹד ${goalMissing} ⭐ בִּלְבַד!`,
+                          `Shop Goal: ${nextShopGoal.nameEn} — Only ${goalMissing} more ⭐!`,
+                          `Meta de tienda: ${nextShopGoal.nameEs} — ¡Solo faltan ${goalMissing} ⭐!`
+                        )}
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-black/20 rounded-full overflow-hidden mt-1.5">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      canBuyGoalNow ? 'bg-white' : 'bg-amber-300'
+                    }`}
+                    style={{ width: `${goalPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <span
+              className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 flex-shrink-0 ${
+                canBuyGoalNow
+                  ? 'bg-white text-emerald-900 shadow-sm'
+                  : 'bg-amber-300 text-amber-950'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>
+                {canBuyGoalNow
+                  ? tr(lang, 'קְנֵה עַכְשָׁו! ✨', 'Buy Now! ✨', '¡Comprar! ✨')
+                  : tr(lang, 'לַחֲנוּת הַכּוֹכָבִים', 'Star Shop', 'Tienda ⭐')}
+              </span>
+            </span>
+          </button>
+        )}
 
         {/* Prominent 3-Way Age Switcher (Age 4 / Age 7 / Age 9) */}
         <div className="bg-black/15 p-1.5 rounded-2xl grid grid-cols-3 gap-2">

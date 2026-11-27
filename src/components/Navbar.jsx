@@ -181,15 +181,15 @@ export default function Navbar({
             </button>
           )}
 
-          {/* Star Counter */}
+          {/* Star Counter → Opens Star Shop */}
           <button
             type="button"
             onClick={() => {
               playSound('star');
-              setCurrentTab('stickers');
+              setCurrentTab('shop');
             }}
             className="flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 px-3 min-h-[48px] rounded-2xl btn-press-3d cursor-pointer"
-            title={tr(lang, 'הַמַּדְבֵּקוֹת שֶׁלִּי', 'My Stickers', 'Mis Pegatinas')}
+            title={tr(lang, 'חֲנוּת הַכּוֹכָבִים ⭐', 'Star Shop ⭐', 'Tienda de Estrellas ⭐')}
           >
             <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
             <bdi className="font-black text-amber-900 text-base">{stars}</bdi>
