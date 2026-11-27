@@ -16,7 +16,6 @@ import MemoryGame from './components/MemoryGame';
 import StickerPlayground from './components/StickerPlayground';
 import OpeningSoundGame from './components/OpeningSoundGame';
 import MathPlay from './components/MathPlay';
-import StatsDashboard from './components/StatsDashboard';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
@@ -180,13 +179,10 @@ export default function App() {
   // Track initial page_view & activity_start events (privacy-safe, zero cookies)
   useEffect(() => {
     trackEvent('page_view', { isTouch, lang });
-    if (window.location.hash === '#stats') {
-      setShowParentModal(true);
-    }
   }, []);
 
   useEffect(() => {
-    if (currentTab !== 'home' && currentTab !== 'stats') {
+    if (currentTab !== 'home') {
       trackEvent('activity_start', { activityId: currentTab, isTouch, lang });
     }
   }, [currentTab, isTouch, lang]);
@@ -366,9 +362,6 @@ export default function App() {
         {currentTab === 'math_play' && (
           <MathPlay lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-        {currentTab === 'stats' && (
-          <StatsDashboard lang={lang} onBack={() => setCurrentTab('home')} />
-        )}
       </main>
 
       <ParentModal
@@ -390,7 +383,6 @@ export default function App() {
           trackEvent('pro_modal', { isTouch, lang });
           setShowProModal(true);
         }}
-        onOpenStats={() => setCurrentTab('stats')}
         serverConfig={serverConfig}
       />
 
