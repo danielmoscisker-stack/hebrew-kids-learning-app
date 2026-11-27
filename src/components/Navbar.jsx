@@ -27,9 +27,9 @@ export default function Navbar({
 
   const ageSubtitle =
     kidAge === 9
-      ? tr(lang, 'גִּיל 9 • חֶשְׁבּוֹן כִּתָּה ג׳–ד׳', 'Age 9 • Grades 3–4 Math', 'Edad 9 • Mates Grados 3–4')
+      ? tr(lang, 'גִּיל 9 • כִּתָּה ג׳–ד׳ • חֶשְׁבּוֹן, לָשׁוֹן וְאַנְגְּלִית', 'Age 9 • Grades 3–4 • Math, Hebrew & English', 'Edad 9 • Grados 3–4 • Mates, Hebreo e Inglés')
       : kidAge === 7
-        ? tr(lang, 'גִּיל 7 • חֶשְׁבּוֹן כִּתָּה א׳–ב׳', 'Age 7 • Grades 1–2 Math', 'Edad 7 • Mates Grados 1–2')
+        ? tr(lang, 'גִּיל 7 • כִּתָּה א׳–ב׳ • חֶשְׁבּוֹן, עִבְרִית וְאַנְגְּלִית', 'Age 7 • Grades 1–2 • Math, Hebrew & English', 'Edad 7 • Grados 1–2 • Mates, Hebreo e Inglés')
         : tr(lang, 'גִּיל 4 • הַכְנָסָה כֵּיפִית לַקְּרִיאָה', 'Age 4 • Fun Early Learning', 'Edad 4 • Aprendizaje Divertido');
 
   const profileAvatar = activeProfile?.avatar || (gender === 'girl' ? '👧' : '👦');

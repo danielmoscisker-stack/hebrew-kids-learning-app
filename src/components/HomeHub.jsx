@@ -1,12 +1,14 @@
 import React, { useRef } from 'react';
-import { Volume2, Sparkles, Crown, Flame, Cloud, Lock, Users, ArrowRight } from 'lucide-react';
+import { Volume2, Sparkles, Crown, Flame, Cloud, Lock, Users } from 'lucide-react';
 import { playSound, playAudioFile, playPhraseAudio, speakText } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
 
 export const ACTIVITY_TILES = [
+  /* ===================== AGE 4 (PRESCHOOL) ===================== */
   {
     id: 'letters',
+    ages: [4],
     icon: '🔤',
     badge: 'א בּ ג',
     titleHe: 'אוֹתִיּוֹת',
@@ -21,6 +23,7 @@ export const ACTIVITY_TILES = [
   },
   {
     id: 'quiz',
+    ages: [4],
     icon: '🎯',
     badge: '?',
     titleHe: 'אֵיזוֹ אוֹת זֹאת?',
@@ -35,6 +38,7 @@ export const ACTIVITY_TILES = [
   },
   {
     id: 'train',
+    ages: [4],
     icon: '🚂',
     badge: 'א←ב',
     titleHe: 'רַכֶּבֶת הַקְּרִיאָה',
@@ -49,6 +53,7 @@ export const ACTIVITY_TILES = [
   },
   {
     id: 'detective',
+    ages: [4],
     icon: '🕵️‍♂️',
     badge: 'בּ / ב',
     titleHe: 'בַּלָּשׁ הַפּוּפִּיק',
@@ -63,6 +68,7 @@ export const ACTIVITY_TILES = [
   },
   {
     id: 'numbers',
+    ages: [4],
     icon: '🔢',
     badge: '123',
     titleHe: 'מִסְפָּרִים 1–10',
@@ -76,7 +82,25 @@ export const ACTIVITY_TILES = [
     text: 'text-lime-950'
   },
   {
+    id: 'memory',
+    ages: [4],
+    icon: '🃏',
+    badge: '⭐',
+    titleHe: 'מִשְׂחַק זִכָּרוֹן',
+    titleEn: 'Memory Game',
+    titleEs: 'Juego de Memoria',
+    descHe: 'מוֹצְאִים זוּגוֹת',
+    descEn: 'Match Pairs',
+    descEs: 'Encuentra las parejas',
+    gradient: 'from-pink-300 via-rose-200 to-amber-200',
+    border: 'border-pink-500',
+    text: 'text-pink-950'
+  },
+
+  /* ===================== AGE 7 (GRADES 1–2 / כִּתָּה א׳–ב׳) ===================== */
+  {
     id: 'math_age7',
+    ages: [7],
     icon: '🧮',
     badge: 'גִּיל 7',
     titleHe: 'חֶשְׁבּוֹן גִּיל 7',
@@ -91,7 +115,58 @@ export const ACTIVITY_TILES = [
     useSpeechFallback: true
   },
   {
+    id: 'hebrew_age7',
+    ages: [7],
+    icon: '📖',
+    badge: 'מנצפ״ך',
+    titleHe: 'עִבְרִית וּכְתִיב',
+    titleEn: 'Hebrew & Spelling',
+    titleEs: 'Hebreo y Ortografía',
+    descHe: 'סוֹפִיּוֹת, אוֹת חֲסֵרָה וּמִשְׁפָּטִים',
+    descEn: 'Final Letters & Sentences',
+    descEs: 'Letras finales y frases',
+    gradient: 'from-emerald-300 via-teal-300 to-cyan-300',
+    border: 'border-emerald-500',
+    text: 'text-emerald-950',
+    useSpeechFallback: true
+  },
+  {
+    id: 'english_age7',
+    ages: [7],
+    icon: '🇬🇧',
+    badge: 'ABC',
+    titleHe: 'אַנְגְּלִית רִאשׁוֹנָה',
+    titleEn: 'First English',
+    titleEs: 'Primer Inglés',
+    descHe: 'חַיּוֹת, צְבָעִים וּמִלִּים עִם קוֹל',
+    descEn: 'Words, Colors & Animals',
+    descEs: 'Palabras, colores y animales',
+    gradient: 'from-sky-300 via-indigo-200 to-blue-300',
+    border: 'border-indigo-500',
+    text: 'text-indigo-950',
+    useSpeechFallback: true
+  },
+  {
+    id: 'memory_age7',
+    ages: [7],
+    icon: '🃏',
+    badge: '8 כרטיסים',
+    titleHe: 'זִכָּרוֹן חֶשְׁבּוֹן וּמִלִּים',
+    titleEn: 'Math & Word Memory',
+    titleEs: 'Memoria Mates',
+    descHe: 'הַתְאָמַת תַּרְגִּילִים וּמִלִּים',
+    descEn: 'Match Equations & Words',
+    descEs: 'Empareja sumas y palabras',
+    gradient: 'from-amber-200 via-orange-200 to-rose-200',
+    border: 'border-orange-500',
+    text: 'text-orange-950',
+    useSpeechFallback: true
+  },
+
+  /* ===================== AGE 9 (GRADES 3–4 / כִּתָּה ג׳–ד׳) ===================== */
+  {
     id: 'math_age9',
+    ages: [9],
     icon: '🚀',
     badge: 'גִּיל 9',
     titleHe: 'חֶשְׁבּוֹן גִּיל 9',
@@ -106,21 +181,58 @@ export const ACTIVITY_TILES = [
     useSpeechFallback: true
   },
   {
-    id: 'memory',
-    icon: '🃏',
-    badge: '⭐',
-    titleHe: 'מִשְׂחַק זִכָּרוֹן',
-    titleEn: 'Memory Game',
-    titleEs: 'Juego de Memoria',
-    descHe: 'מוֹצְאִים זוּגוֹת',
-    descEn: 'Match Pairs',
-    descEs: 'Encuentra las parejas',
-    gradient: 'from-pink-300 via-rose-200 to-amber-200',
-    border: 'border-pink-500',
-    text: 'text-pink-950'
+    id: 'hebrew_age9',
+    ages: [9],
+    icon: '📚',
+    badge: 'שָׁרָשִׁים',
+    titleHe: 'עִבְרִית וְלָשׁוֹן',
+    titleEn: 'Hebrew Grammar',
+    titleEs: 'Gramática Hebrea',
+    descHe: 'שָׁרָשִׁים, הֲפָכִים, כְּתִיב וּזְמַנִּים',
+    descEn: 'Roots, Synonyms & Tenses',
+    descEs: 'Raíces, sinónimos y tiempos',
+    gradient: 'from-purple-300 via-fuchsia-300 to-pink-300',
+    border: 'border-purple-500',
+    text: 'text-purple-950',
+    useSpeechFallback: true
   },
   {
+    id: 'english_age9',
+    ages: [9],
+    icon: '🌍',
+    badge: 'is / has',
+    titleHe: 'אַנְגְּלִית כִּתָּה ג׳–ד׳',
+    titleEn: 'English Builder',
+    titleEs: 'Inglés Avanzado',
+    descHe: 'דִּקְדּוּק, אוֹצַר מִלִּים וַהֲפָכִים',
+    descEn: 'Grammar, Vocab & Plurals',
+    descEs: 'Gramática y vocabulario',
+    gradient: 'from-rose-300 via-pink-300 to-indigo-300',
+    border: 'border-rose-500',
+    text: 'text-rose-950',
+    useSpeechFallback: true
+  },
+  {
+    id: 'memory_age9',
+    ages: [9],
+    icon: '🃏',
+    badge: '12 כרטיסים',
+    titleHe: 'זִכָּרוֹן כֶּפֶל וְאַנְגְּלִית',
+    titleEn: 'Pro Memory Match',
+    titleEs: 'Memoria Pro',
+    descHe: 'לוּחַ הַכֶּפֶל וְאוֹצַר מִלִּים',
+    descEn: 'Times Tables & Vocab Pairs',
+    descEs: 'Tablas y vocabulario',
+    gradient: 'from-teal-300 via-cyan-300 to-sky-300',
+    border: 'border-teal-500',
+    text: 'text-teal-950',
+    useSpeechFallback: true
+  },
+
+  /* ===================== ALL AGES REWARDS ===================== */
+  {
     id: 'stickers',
+    ages: [4, 7, 9],
     icon: '🎪',
     badge: '🏆',
     titleHe: 'הַמַּדְבֵּקוֹת שֶׁלִּי',
@@ -133,8 +245,11 @@ export const ACTIVITY_TILES = [
     border: 'border-fuchsia-500',
     text: 'text-fuchsia-950'
   },
+
+  /* ===================== AGE 4 PRO PRESCHOOL GAMES ===================== */
   {
     id: 'vowels',
+    ages: [4],
     icon: '🎵',
     badge: 'אָ אִ אוֹ',
     titleHe: 'עוֹלַם הַנִּקּוּד',
@@ -150,6 +265,7 @@ export const ACTIVITY_TILES = [
   },
   {
     id: 'first_words',
+    ages: [4],
     icon: '📖',
     badge: 'אַבָּא',
     titleHe: 'מִלִּים רִאשׁוֹנוֹת',
@@ -165,6 +281,7 @@ export const ACTIVITY_TILES = [
   },
   {
     id: 'tracing',
+    ages: [4],
     icon: '🎨',
     badge: '✍️',
     titleHe: 'צִיּוּר וּכְתִיבָה',
@@ -180,6 +297,7 @@ export const ACTIVITY_TILES = [
   },
   {
     id: 'opening_sound',
+    ages: [4],
     icon: '🔊',
     badge: 'א?',
     titleHe: 'הַקּוֹל הַפּוֹתֵחַ',
@@ -195,6 +313,7 @@ export const ACTIVITY_TILES = [
   },
   {
     id: 'math_play',
+    ages: [4],
     icon: '🍎',
     badge: '1+2',
     titleHe: 'חֶשְׁבּוֹן רִאשׁוֹן',
@@ -267,21 +386,8 @@ export default function HomeHub({
   const dailyGoal = 5;
   const dailyPct = Math.min(100, Math.round((dailyStars / dailyGoal) * 100));
 
-  // Prioritize the matching age's Math app first when Age 7 or 9 is selected
-  const orderedTiles =
-    kidAge === 9
-      ? [
-          ...ACTIVITY_TILES.filter((t) => t.id === 'math_age9'),
-          ...ACTIVITY_TILES.filter((t) => t.id === 'math_age7'),
-          ...ACTIVITY_TILES.filter((t) => t.id !== 'math_age9' && t.id !== 'math_age7')
-        ]
-      : kidAge === 7
-        ? [
-            ...ACTIVITY_TILES.filter((t) => t.id === 'math_age7'),
-            ...ACTIVITY_TILES.filter((t) => t.id === 'math_age9'),
-            ...ACTIVITY_TILES.filter((t) => t.id !== 'math_age7' && t.id !== 'math_age9')
-          ]
-        : ACTIVITY_TILES;
+  // Show ONLY games crafted for the selected age (4, 7, or 9)
+  const visibleTiles = ACTIVITY_TILES.filter((t) => !t.ages || t.ages.includes(kidAge));
 
   const greetingText = activeProfile?.name
     ? tr(
@@ -409,7 +515,7 @@ export default function HomeHub({
               <span>{tr(lang, '🔊 שְׁמַע', '🔊 Listen', '🔊 Escuchar')}</span>
             </button>
 
-            {!isPro && (
+            {!isPro && kidAge === 4 && (
               <button
                 type="button"
                 onClick={() => {
@@ -441,9 +547,9 @@ export default function HomeHub({
         {/* Prominent 3-Way Age Switcher (Age 4 / Age 7 / Age 9) */}
         <div className="bg-black/15 p-1.5 rounded-2xl grid grid-cols-3 gap-2">
           {[
-            { age: 4, icon: '🧸', titleHe: 'גִּיל 4', subHe: 'אָלֶף-בֵּית וְגַן', titleEn: 'Age 4', subEn: 'Alef-Bet & 1–10', titleEs: 'Edad 4', subEs: 'Alef-Bet y 1–10' },
-            { age: 7, icon: '🧒', titleHe: 'גִּיל 7', subHe: 'חֶשְׁבּוֹן כִּתָּה א׳–ב׳', titleEn: 'Age 7', subEn: 'Grades 1–2 Math', titleEs: 'Edad 7', subEs: 'Mates Grados 1–2' },
-            { age: 9, icon: '🚀', titleHe: 'גִּיל 9', subHe: 'חֶשְׁבּוֹן כִּתָּה ג׳–ד׳', titleEn: 'Age 9', subEn: 'Grades 3–4 Math', titleEs: 'Edad 9', subEs: 'Mates Grados 3–4' }
+            { age: 4, icon: '🧸', titleHe: 'גִּיל 4', subHe: 'גַּן • אָלֶף-בֵּית', titleEn: 'Age 4', subEn: 'Preschool', titleEs: 'Edad 4', subEs: 'Preescolar' },
+            { age: 7, icon: '🧒', titleHe: 'גִּיל 7', subHe: 'כִּתָּה א׳–ב׳', titleEn: 'Age 7', subEn: 'Grades 1–2', titleEs: 'Edad 7', subEs: 'Grados 1–2' },
+            { age: 9, icon: '🚀', titleHe: 'גִּיל 9', subHe: 'כִּתָּה ג׳–ד׳', titleEn: 'Age 9', subEn: 'Grades 3–4', titleEs: 'Edad 9', subEs: 'Grados 3–4' }
           ].map((opt) => {
             const active = kidAge === opt.age;
             return (
@@ -476,59 +582,9 @@ export default function HomeHub({
         </div>
       </div>
 
-      {/* Featured Math Launch Banner when Age 7 or Age 9 is selected */}
-      {kidAge >= 7 && (
-        <button
-          type="button"
-          onClick={() => {
-            playSound('star');
-            onSelectActivity(kidAge === 9 ? 'math_age9' : 'math_age7');
-          }}
-          className={`w-full rounded-3xl p-5 sm:p-6 text-white shadow-xl border-4 border-white flex flex-col sm:flex-row items-center justify-between gap-4 btn-press-3d cursor-pointer text-center sm:text-start animate-pop-in ${
-            kidAge === 9
-              ? 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600'
-              : 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600'
-          }`}
-        >
-          <div className="flex items-center gap-4">
-            <span className="text-5xl sm:text-6xl drop-shadow-sm">{kidAge === 9 ? '🚀' : '🧮'}</span>
-            <div>
-              <span className="inline-block text-[11px] font-black bg-amber-300 text-amber-950 px-2.5 py-0.5 rounded-full mb-1">
-                {tr(lang, 'חִנָּם • מֻתְאָם לַגִּיל שֶׁלְּךָ!', 'FREE • MATCHED TO YOUR AGE!', 'GRATIS • PARA TU EDAD')}
-              </span>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-black leading-tight">
-                {kidAge === 9
-                  ? tr(lang, 'חֶשְׁבּוֹן גִּיל 9 • כִּתָּה ג׳–ד׳', 'Israel Math Arena • Age 9 (Grades 3–4)', 'Arena de Mates • Edad 9 (Grados 3–4)')
-                  : tr(lang, 'חֶשְׁבּוֹן גִּיל 7 • כִּתָּה א׳–ב׳', 'Israel Math Arena • Age 7 (Grades 1–2)', 'Arena de Mates • Edad 7 (Grados 1–2)')}
-              </h3>
-              <p className="text-white/90 text-xs sm:text-sm font-bold mt-0.5">
-                {kidAge === 9
-                  ? tr(
-                      lang,
-                      'לוּחַ הַכֶּפֶל וְחִלּוּק, סֵדֶר פְּעֻלּוֹת, שְׁבָרִים, עֹדֶף בְּ-₪ וְהֶקֵּף — מְשִׂימוֹת 5 כּוֹכָבִים!',
-                      'Times & Division, Mental to 1,000, Order of Ops, Fractions, Shekels & Perimeter!',
-                      'Tablas, división, cálculo hasta 1,000, fracciones, cambio en ₪ y perímetro.'
-                    )
-                  : tr(
-                      lang,
-                      'חִבּוּר וְחִסּוּר עַד 100, מִסְפָּר חָסֵר, כֶּפֶל רִאשׁוֹן, הַשְׁוָאָה < = > וּבְעָיוֹת בְּ-₪!',
-                      'Add & Sub to 100, Missing Numbers, Starter Multiplication, Comparisons & Shekel Stories!',
-                      'Sumas y restas hasta 100, números faltantes, multiplicación inicial y problemas en ₪.'
-                    )}
-              </p>
-            </div>
-          </div>
-
-          <div className="px-6 py-3 bg-white text-indigo-950 font-black text-base sm:text-lg rounded-2xl shadow-lg flex items-center gap-2 flex-shrink-0">
-            <span>{tr(lang, 'הַתְחֵל לְשַׂחֵק!', 'Play Now!', '¡Jugar ahora!')}</span>
-            <ArrowRight className={`w-5 h-5 ${isHe ? 'rotate-180' : ''}`} />
-          </div>
-        </button>
-      )}
-
-      {/* Big Joyful Activity Tiles Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {orderedTiles.map((tile) => {
+      {/* Big Joyful Age-Specific Activity Tiles Grid */}
+      <div className={`grid gap-4 ${kidAge >= 7 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'}`}>
+        {visibleTiles.map((tile) => {
           const locked = Boolean(tile.isProFeature && !isPro);
           const titleText = tr(lang, tile.titleHe, tile.titleEn, tile.titleEs);
           const descText = tr(lang, tile.descHe, tile.descEn, tile.descEs);

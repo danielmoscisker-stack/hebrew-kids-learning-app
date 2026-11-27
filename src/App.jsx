@@ -18,6 +18,7 @@ import StickerPlayground from './components/StickerPlayground';
 import OpeningSoundGame from './components/OpeningSoundGame';
 import MathPlay from './components/MathPlay';
 import IsraelMathArena from './components/IsraelMathArena';
+import SchoolSkillArena from './components/SchoolSkillArena';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
@@ -485,6 +486,9 @@ export default function App() {
     (profileId) => {
       const target = profiles.find((p) => p.id === profileId);
       if (!target) return;
+      if (target.id !== activeProfileId) {
+        setCurrentTab('home');
+      }
       applyProfileState(target);
       try {
         sessionStorage.setItem('hk_profile_picked', target.id);
@@ -492,7 +496,7 @@ export default function App() {
         // ignore
       }
     },
-    [profiles, applyProfileState]
+    [profiles, activeProfileId, applyProfileState]
   );
 
   const handleSaveProfile = useCallback(
@@ -738,11 +742,61 @@ export default function App() {
             onSwitchActivity={setCurrentTab}
           />
         )}
+        {currentTab === 'hebrew_age7' && (
+          <SchoolSkillArena
+            key={`hebrew-7-${activeProfileId || 'guest'}`}
+            arenaId="hebrew_age7"
+            lang={lang}
+            soundEnabled={soundEnabled}
+            gender={gender}
+            onEarnStar={handleEarnStar}
+            onSwitchActivity={setCurrentTab}
+          />
+        )}
+        {currentTab === 'english_age7' && (
+          <SchoolSkillArena
+            key={`english-7-${activeProfileId || 'guest'}`}
+            arenaId="english_age7"
+            lang={lang}
+            soundEnabled={soundEnabled}
+            gender={gender}
+            onEarnStar={handleEarnStar}
+            onSwitchActivity={setCurrentTab}
+          />
+        )}
+        {currentTab === 'hebrew_age9' && (
+          <SchoolSkillArena
+            key={`hebrew-9-${activeProfileId || 'guest'}`}
+            arenaId="hebrew_age9"
+            lang={lang}
+            soundEnabled={soundEnabled}
+            gender={gender}
+            onEarnStar={handleEarnStar}
+            onSwitchActivity={setCurrentTab}
+          />
+        )}
+        {currentTab === 'english_age9' && (
+          <SchoolSkillArena
+            key={`english-9-${activeProfileId || 'guest'}`}
+            arenaId="english_age9"
+            lang={lang}
+            soundEnabled={soundEnabled}
+            gender={gender}
+            onEarnStar={handleEarnStar}
+            onSwitchActivity={setCurrentTab}
+          />
+        )}
         {currentTab === 'tracing' && (
           <LetterTracer lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'memory' && (
-          <MemoryGame lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+          <MemoryGame key="mem-4" ageMode={4} lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+        )}
+        {currentTab === 'memory_age7' && (
+          <MemoryGame key="mem-7" ageMode={7} lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+        )}
+        {currentTab === 'memory_age9' && (
+          <MemoryGame key="mem-9" ageMode={9} lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'stickers' && (
           <StickerPlayground lang={lang} soundEnabled={soundEnabled} gender={gender} stars={stars} />
