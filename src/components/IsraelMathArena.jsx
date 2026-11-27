@@ -205,12 +205,14 @@ export default function IsraelMathArena({
   soundEnabled,
   gender = 'boy',
   onEarnStar,
+  fixedAge = null,
   selectedAge = null,
   onChangeAge
 }) {
   const isHe = lang === 'he';
+  const lockedAge = fixedAge === '7' || fixedAge === '9' ? fixedAge : null;
 
-  const [age, setAge] = useState(() => getInitialArenaAge(selectedAge));
+  const [age, setAge] = useState(() => lockedAge || getInitialArenaAge(selectedAge));
   const [topic, setTopic] = useState('mix');
   const [inputMode, setInputMode] = useState('choices'); // 'choices' | 'keypad'
 
@@ -221,7 +223,9 @@ export default function IsraelMathArena({
   const [hadWrongThisQ, setHadWrongThisQ] = useState(false);
 
   // Current question state
-  const [problem, setProblem] = useState(() => generateMathArenaProblem(getInitialArenaAge(selectedAge), 'mix'));
+  const [problem, setProblem] = useState(() =>
+    generateMathArenaProblem(lockedAge || getInitialArenaAge(selectedAge), 'mix')
+  );
   const [wrongChoices, setWrongChoices] = useState([]);
   const [keypadValue, setKeypadValue] = useState('');
   const [keypadWrongFlash, setKeypadWrongFlash] = useState(false);
@@ -414,7 +418,7 @@ export default function IsraelMathArena({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-5 flex flex-col gap-4" dir={isHe ? 'rtl' : 'ltr'}>
-      {/* Big Top Age 7 / Age 9 Switcher */}
+      {/* Top Banner (Dedicated to Age 7 or Age 9 when fixedAge is set) */}
       <div
         className={`rounded-3xl p-4 sm:p-5 text-white shadow-xl border-4 border-white transition-colors duration-300 ${
           isAge9
@@ -422,19 +426,32 @@ export default function IsraelMathArena({
             : 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600'
         }`}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${lockedAge ? '' : 'mb-3.5'}`}>
           <div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2">
-              <span>🧮</span>
-              <span>{tr(lang, 'חֶשְׁבּוֹן גִּיל 7 וְ-9', 'Israel Math Arena', 'Arena de Mates (7 y 9)')}</span>
+              <span>{isAge9 ? '🚀' : '🧮'}</span>
+              <span>
+                {lockedAge === '9'
+                  ? tr(lang, 'חֶשְׁבּוֹן גִּיל 9 • כִּתָּה ג׳–ד׳', 'Math • Age 9 (Grades 3–4)', 'Mates • Edad 9 (Grados 3–4)')
+                  : lockedAge === '7'
+                    ? tr(lang, 'חֶשְׁבּוֹן גִּיל 7 • כִּתָּה א׳–ב׳', 'Math • Age 7 (Grades 1–2)', 'Mates • Edad 7 (Grados 1–2)')
+                    : tr(lang, 'חֶשְׁבּוֹן גִּיל 7 וְ-9', 'Israel Math Arena', 'Arena de Mates (7 y 9)')}
+              </span>
             </h2>
             <p className="text-white/90 text-xs sm:text-sm font-bold mt-0.5">
-              {tr(
-                lang,
-                'מֻתְאָם לְתָכְנִית הַלִּמּוּדִים בְּיִשְׂרָאֵל • מְשִׂימוֹת 5 כּוֹכָבִים עִם טְרִיקִים!',
-                'Israeli school curriculum • 5-star math missions with smart school tricks!',
-                'Currículo escolar israelí • ¡Misiones de 5 estrellas con trucos fáciles!'
-              )}
+              {isAge9
+                ? tr(
+                    lang,
+                    'לוּחַ הַכֶּפֶל וְחִלּוּק, חִשּׁוּב עַד 1,000, סֵדֶר פְּעֻלּוֹת, שְׁבָרִים, עֹדֶף ₪ וְהֶקֵּף!',
+                    'Times & Division, Mental to 1,000, Order of Ops, Fractions, Shekel Change & Perimeter!',
+                    'Tablas, división, cálculo hasta 1,000, orden de operaciones, fracciones y perímetro.'
+                  )
+                : tr(
+                    lang,
+                    'חִבּוּר וְחִסּוּר עַד 100, מִסְפָּר חָסֵר, כֶּפֶל רִאשׁוֹן, הַשְׁוָאָה < = > וּבְעָיוֹת בְּ-₪!',
+                    'Add & Sub to 100, Missing Numbers, Starter Multiplication, Comparisons & Shekel Stories!',
+                    'Sumas y restas hasta 100, número faltante, multiplicación inicial y problemas en ₪.'
+                  )}
             </p>
           </div>
 
@@ -450,48 +467,50 @@ export default function IsraelMathArena({
           </div>
         </div>
 
-        {/* Giant 2-Button Age Switcher */}
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 bg-black/15 p-1.5 rounded-2xl">
-          <button
-            type="button"
-            onClick={() => handleAgeSwitch('7')}
-            className={`py-3 px-3 sm:px-4 rounded-xl font-black transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 cursor-pointer ${
-              age === '7'
-                ? 'bg-white text-sky-900 shadow-lg scale-[1.01]'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            <span className="text-2xl">🧒</span>
-            <div className="flex flex-col items-center sm:items-start leading-tight">
-              <span className="text-base sm:text-lg font-black">
-                {tr(lang, 'גִּיל 7', 'Age 7', 'Edad 7')}
-              </span>
-              <span className={`text-[11px] sm:text-xs font-bold ${age === '7' ? 'text-sky-600' : 'text-white/80'}`}>
-                {tr(lang, 'כִּתָּה א׳–ב׳', 'Grades 1–2', 'Grados 1–2')}
-              </span>
-            </div>
-          </button>
+        {/* Giant 2-Button Age Switcher (only shown if not locked to a dedicated age page) */}
+        {!lockedAge && (
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 bg-black/15 p-1.5 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => handleAgeSwitch('7')}
+              className={`py-3 px-3 sm:px-4 rounded-xl font-black transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 cursor-pointer ${
+                age === '7'
+                  ? 'bg-white text-sky-900 shadow-lg scale-[1.01]'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              <span className="text-2xl">🧒</span>
+              <div className="flex flex-col items-center sm:items-start leading-tight">
+                <span className="text-base sm:text-lg font-black">
+                  {tr(lang, 'גִּיל 7', 'Age 7', 'Edad 7')}
+                </span>
+                <span className={`text-[11px] sm:text-xs font-bold ${age === '7' ? 'text-sky-600' : 'text-white/80'}`}>
+                  {tr(lang, 'כִּתָּה א׳–ב׳', 'Grades 1–2', 'Grados 1–2')}
+                </span>
+              </div>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => handleAgeSwitch('9')}
-            className={`py-3 px-3 sm:px-4 rounded-xl font-black transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 cursor-pointer ${
-              age === '9'
-                ? 'bg-white text-indigo-900 shadow-lg scale-[1.01]'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            <span className="text-2xl">🚀</span>
-            <div className="flex flex-col items-center sm:items-start leading-tight">
-              <span className="text-base sm:text-lg font-black">
-                {tr(lang, 'גִּיל 9', 'Age 9', 'Edad 9')}
-              </span>
-              <span className={`text-[11px] sm:text-xs font-bold ${age === '9' ? 'text-indigo-600' : 'text-white/80'}`}>
-                {tr(lang, 'כִּתָּה ג׳–ד׳', 'Grades 3–4', 'Grados 3–4')}
-              </span>
-            </div>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => handleAgeSwitch('9')}
+              className={`py-3 px-3 sm:px-4 rounded-xl font-black transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 cursor-pointer ${
+                age === '9'
+                  ? 'bg-white text-indigo-900 shadow-lg scale-[1.01]'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              <span className="text-2xl">🚀</span>
+              <div className="flex flex-col items-center sm:items-start leading-tight">
+                <span className="text-base sm:text-lg font-black">
+                  {tr(lang, 'גִּיל 9', 'Age 9', 'Edad 9')}
+                </span>
+                <span className={`text-[11px] sm:text-xs font-bold ${age === '9' ? 'text-indigo-600' : 'text-white/80'}`}>
+                  {tr(lang, 'כִּתָּה ג׳–ד׳', 'Grades 3–4', 'Grados 3–4')}
+                </span>
+              </div>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Topic Selector Pills */}

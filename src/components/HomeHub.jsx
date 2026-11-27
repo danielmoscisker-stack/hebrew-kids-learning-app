@@ -76,16 +76,31 @@ export const ACTIVITY_TILES = [
     text: 'text-lime-950'
   },
   {
-    id: 'math_arena',
+    id: 'math_age7',
     icon: '🧮',
-    badge: '7 / 9',
-    titleHe: 'חֶשְׁבּוֹן גִּיל 7 וְ-9',
-    titleEn: 'Israel Math Arena',
-    titleEs: 'Arena de Mates (7 y 9)',
-    descHe: 'כִּתּוֹת א׳–ד׳ • מְשִׂימוֹת כּוֹכָבִים',
-    descEn: 'Grades 1–4 • Star Missions',
-    descEs: 'Grados 1–4 • Misiones',
-    gradient: 'from-cyan-300 via-sky-300 to-indigo-300',
+    badge: 'גִּיל 7',
+    titleHe: 'חֶשְׁבּוֹן גִּיל 7',
+    titleEn: 'Math • Age 7',
+    titleEs: 'Mates • Edad 7',
+    descHe: 'כִּתָּה א׳–ב׳ • חִבּוּר, כֶּפֶל וְ-₪',
+    descEn: 'Grades 1–2 • Add, × & ₪',
+    descEs: 'Grados 1–2 • Sumas, × y ₪',
+    gradient: 'from-cyan-300 via-sky-300 to-blue-300',
+    border: 'border-sky-500',
+    text: 'text-sky-950',
+    useSpeechFallback: true
+  },
+  {
+    id: 'math_age9',
+    icon: '🚀',
+    badge: 'גִּיל 9',
+    titleHe: 'חֶשְׁבּוֹן גִּיל 9',
+    titleEn: 'Math • Age 9',
+    titleEs: 'Mates • Edad 9',
+    descHe: 'כִּתָּה ג׳–ד׳ • כֶּפֶל, שְׁבָרִים וְהֶקֵּף',
+    descEn: 'Grades 3–4 • ×/÷, Fractions & ₪',
+    descEs: 'Grados 3–4 • Tablas y Fracciones',
+    gradient: 'from-indigo-300 via-violet-300 to-fuchsia-300',
     border: 'border-indigo-500',
     text: 'text-indigo-950',
     useSpeechFallback: true
@@ -252,14 +267,21 @@ export default function HomeHub({
   const dailyGoal = 5;
   const dailyPct = Math.min(100, Math.round((dailyStars / dailyGoal) * 100));
 
-  // Put Israel Math Arena first when Age 7 or 9 is selected
+  // Prioritize the matching age's Math app first when Age 7 or 9 is selected
   const orderedTiles =
-    kidAge >= 7
+    kidAge === 9
       ? [
-          ...ACTIVITY_TILES.filter((t) => t.id === 'math_arena'),
-          ...ACTIVITY_TILES.filter((t) => t.id !== 'math_arena')
+          ...ACTIVITY_TILES.filter((t) => t.id === 'math_age9'),
+          ...ACTIVITY_TILES.filter((t) => t.id === 'math_age7'),
+          ...ACTIVITY_TILES.filter((t) => t.id !== 'math_age9' && t.id !== 'math_age7')
         ]
-      : ACTIVITY_TILES;
+      : kidAge === 7
+        ? [
+            ...ACTIVITY_TILES.filter((t) => t.id === 'math_age7'),
+            ...ACTIVITY_TILES.filter((t) => t.id === 'math_age9'),
+            ...ACTIVITY_TILES.filter((t) => t.id !== 'math_age7' && t.id !== 'math_age9')
+          ]
+        : ACTIVITY_TILES;
 
   const greetingText = activeProfile?.name
     ? tr(
@@ -454,13 +476,13 @@ export default function HomeHub({
         </div>
       </div>
 
-      {/* Featured Math Arena Launch Banner when Age 7 or Age 9 is selected */}
+      {/* Featured Math Launch Banner when Age 7 or Age 9 is selected */}
       {kidAge >= 7 && (
         <button
           type="button"
           onClick={() => {
             playSound('star');
-            onSelectActivity('math_arena');
+            onSelectActivity(kidAge === 9 ? 'math_age9' : 'math_age7');
           }}
           className={`w-full rounded-3xl p-5 sm:p-6 text-white shadow-xl border-4 border-white flex flex-col sm:flex-row items-center justify-between gap-4 btn-press-3d cursor-pointer text-center sm:text-start animate-pop-in ${
             kidAge === 9

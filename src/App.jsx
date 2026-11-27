@@ -710,14 +710,25 @@ export default function App() {
         {currentTab === 'numbers' && (
           <NumbersWorld lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
-        {currentTab === 'math_arena' && (
+        {currentTab === 'math_age7' && (
           <IsraelMathArena
-            key={activeProfileId || 'guest'}
+            key={`math-7-${activeProfileId || 'guest'}`}
             lang={lang}
             soundEnabled={soundEnabled}
             gender={gender}
             onEarnStar={handleEarnStar}
-            selectedAge={kidAge}
+            fixedAge="7"
+            onChangeAge={handleChangeAge}
+          />
+        )}
+        {currentTab === 'math_age9' && (
+          <IsraelMathArena
+            key={`math-9-${activeProfileId || 'guest'}`}
+            lang={lang}
+            soundEnabled={soundEnabled}
+            gender={gender}
+            onEarnStar={handleEarnStar}
+            fixedAge="9"
             onChangeAge={handleChangeAge}
           />
         )}
