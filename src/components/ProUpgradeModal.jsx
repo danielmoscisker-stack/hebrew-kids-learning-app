@@ -205,7 +205,7 @@ export default function ProUpgradeModal({
                   {tr(lang, 'מָה כָּלוּל בְּמַנּוּי PRO?', 'What’s included in Pro:', '¿Qué incluye Pro?')}
                 </span>
                 <span className="px-2.5 py-0.5 bg-amber-400 text-slate-950 rounded-full text-xs font-black">
-                  {tr(lang, `${priceLabel} / חוֹדֶשׁ`, `${priceLabel} / month`, `${priceLabel} / mes`)}
+                  {tr(lang, `חֹדֶשׁ חִנָּם, וְאַז ${priceLabel}/חוֹדֶשׁ`, `1 Month Free, then ${priceLabel}/mo`, `1 mes gratis, luego ${priceLabel}/mes`)}
                 </span>
               </div>
               <ul className="space-y-1.5 text-xs md:text-sm font-bold text-slate-700">
@@ -247,9 +247,9 @@ export default function ProUpgradeModal({
                   <span>
                     {tr(
                       lang,
-                      `הַרְשָׁמָה בְּ-Google Play (${priceLabel} / חוֹדֶשׁ)`,
-                      `Subscribe on Google Play (${priceLabel} / mo)`,
-                      `Suscribirse en Google Play (${priceLabel} / mes)`
+                      `הַתְחֵל חֹדֶשׁ חִנָּם בְּ-Google Play (אַחַר כָּךְ ${priceLabel} / חוֹדֶשׁ)`,
+                      `Start 1-Month Free Trial (then ${priceLabel}/mo)`,
+                      `Comenzar 1 mes gratis (luego ${priceLabel}/mes)`
                     )}
                   </span>
                 </button>
@@ -270,9 +270,9 @@ export default function ProUpgradeModal({
                   <span>
                     {tr(
                       lang,
-                      `הַתַּשְׁלוּם מִתְבַּצֵּעַ אַךְ וְרַק דֶּרֶךְ חֲנוּת Google Play (${priceLabel} לְחוֹדֶשׁ). כְּדֵי לִפְתֹּחַ גַּם בַּמַּחְשֵׁב: הֵירָשְׁמוּ בָּאַפְּלִיקַצְיָה בְּ-Android וְהִתְחַבְּרוּ כָּאן עִם אוֹתוֹ חֶשְׁבּוֹן Google.`,
-                      `Subscriptions are available exclusively through Google Play (${priceLabel}/month). To unlock on desktop: subscribe in the Android app and sign in here with the same Google account.`,
-                      `Las suscripciones se realizan únicamente a través de Google Play (${priceLabel}/mes). Para desbloquear en PC: suscríbete en la app de Android e inicia sesión aquí con la misma cuenta de Google.`
+                      `הַתַּשְׁלוּם מִתְבַּצֵּעַ אַךְ וְרַק דֶּרֶךְ חֲנוּת Google Play — עִם חֹדֶשׁ נִסָּיוֹן חִנָּם וּלְאַחַר מִכֵּן ${priceLabel} לְחוֹדֶשׁ. כְּדֵי לִפְתֹּחַ גַּם בַּמַּחְשֵׁב: הֵירָשְׁמוּ בָּאַפְּלִיקַצְיָה בְּ-Android וְהִתְחַבְּרוּ כָּאן עִם אוֹתוֹ חֶשְׁבּוֹן Google.`,
+                      `Subscriptions are available exclusively through Google Play — with a 1-month free trial, then ${priceLabel}/month. To unlock on desktop: subscribe in the Android app and sign in here with the same Google account.`,
+                      `Las suscripciones se realizan únicamente en Google Play — con 1 mes de prueba gratis y luego ${priceLabel}/mes. Para desbloquear en PC: suscríbete en la app de Android e inicia sesión aquí con la misma cuenta de Google.`
                     )}
                   </span>
                 </div>
@@ -287,9 +287,9 @@ export default function ProUpgradeModal({
                   <span>
                     {tr(
                       lang,
-                      `לַחֲנוּת Google Play (${priceLabel} / חוֹדֶשׁ)`,
-                      `Subscribe via Google Play (${priceLabel} / mo)`,
-                      `Suscribirse en Google Play (${priceLabel} / mes)`
+                      `לַחֲנוּת Google Play — חֹדֶשׁ חִנָּם (${priceLabel}/חוֹדֶשׁ אַחַר כָּךְ)`,
+                      `Start 1-Month Free Trial on Google Play (then ${priceLabel}/mo)`,
+                      `Prueba 1 mes gratis en Google Play (luego ${priceLabel}/mes)`
                     )}
                   </span>
                   <ExternalLink className="w-4 h-4" />
@@ -310,9 +310,9 @@ export default function ProUpgradeModal({
             <p className="text-[11px] text-slate-500 text-center leading-relaxed">
               {tr(
                 lang,
-                'מנוי חודשי מתחדש דרך Google Play. ניתן לבטל בכל עת בהגדרות Google Play. המחיר עשוי להתעדכן בעתיד בהודעה מראש.',
-                'Monthly auto-renewing subscription via Google Play. Cancel anytime in Google Play settings. Price may change in the future with prior notice.',
-                'Suscripción mensual renovable vía Google Play. Cancela cuando quieras en Google Play. El precio puede actualizarse en el futuro con aviso previo.'
+                `חודש ניסיון חינם למנויים חדשים, ולאחר מכן ${priceLabel} לחודש בחיוב חודשי מתחדש דרך Google Play. ניתן לבטל בכל עת לפני סיום החודש ללא חיוב. המחיר עשוי להתעדכן בעתיד בהודעה מראש.`,
+                `1-month free trial for new subscribers, then ${priceLabel}/month auto-renewing via Google Play. Cancel anytime before the trial ends with no charge. Price may change in the future with prior notice.`,
+                `1 mes de prueba gratis para nuevos suscriptores y luego ${priceLabel}/mes con renovación automática vía Google Play. Cancela antes de que termine la prueba sin cargo. El precio puede actualizarse en el futuro con aviso previo.`
               )}
             </p>
 
