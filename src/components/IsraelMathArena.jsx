@@ -11,12 +11,50 @@ import {
   Sparkles,
   Flame,
   ArrowRight,
-  BookOpen
+  BookOpen,
+  Volume2
 } from 'lucide-react';
 import { AGE_TOPICS, generateMathArenaProblem } from '../data/mathArenaGenerator';
 import { playSound, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { tr } from '../utils/i18n';
+
+function stopMathSpeech() {
+  try {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function speakMathAloud(rawText, lang) {
+  if (!rawText) return;
+  try {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    let text = String(rawText)
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, ' ')
+      .replace(/₪/g, lang === 'he' ? ' שקלים ' : lang === 'es' ? ' shékels ' : ' shekels ')
+      .replace(/×/g, lang === 'he' ? ' כפול ' : lang === 'es' ? ' por ' : ' times ')
+      .replace(/÷/g, lang === 'he' ? ' חלקי ' : lang === 'es' ? ' entre ' : ' divided by ')
+      .replace(/−/g, lang === 'he' ? ' פחות ' : lang === 'es' ? ' menos ' : ' minus ')
+      .replace(/\+/g, lang === 'he' ? ' ועוד ' : lang === 'es' ? ' más ' : ' plus ')
+      .replace(/=/g, lang === 'he' ? ' שווה ' : lang === 'es' ? ' igual a ' : ' equals ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!text) return;
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = lang === 'he' ? 'he-IL' : lang === 'es' ? 'es-ES' : 'en-US';
+    utt.rate = 0.92;
+    window.speechSynthesis.speak(utt);
+  } catch {
+    // ignore
+  }
+}
 
 const MISSION_LENGTH = 5;
 const BONUS_STARS = 5;
@@ -299,6 +337,7 @@ export default function IsraelMathArena({
   const clearTimers = useCallback(() => {
     timeoutsRef.current.forEach((id) => clearTimeout(id));
     timeoutsRef.current = [];
+    stopMathSpeech();
   }, []);
 
   const schedule = useCallback((fn, ms) => {
@@ -840,6 +879,21 @@ export default function IsraelMathArena({
                   {problem.hintMath}
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  const hintText = tr(lang, problem.hint.he, problem.hint.en, problem.hint.es);
+                  const tipText = TOPIC_IMPROVE_TIPS[problem.topic]
+                    ? tr(lang, TOPIC_IMPROVE_TIPS[problem.topic].he, TOPIC_IMPROVE_TIPS[problem.topic].en, TOPIC_IMPROVE_TIPS[problem.topic].es)
+                    : '';
+                  speakMathAloud(`${hintText}. ${tipText}`, lang);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-amber-100 text-amber-900 border-2 border-amber-300 rounded-full font-black text-xs sm:text-sm shadow-2xs btn-press-3d cursor-pointer"
+              >
+                <Volume2 className="w-4 h-4 text-amber-700" />
+                <span>{tr(lang, '🔊 הַקְרֵא הֶסְבֵּר', '🔊 Read Explanation', '🔊 Leer explicación')}</span>
+              </button>
             </div>
 
             {/* Topic-wide "How to Improve" tip */}
@@ -894,18 +948,38 @@ export default function IsraelMathArena({
         ) : (
           /* ---------------- ACTIVE QUESTION STAGE ---------------- */
           <div className="flex flex-col items-center gap-5">
-            {/* Prompt or Word Problem Story */}
+            {/* Prompt or Word Problem Story + Read Aloud Option */}
             {problem.story ? (
-              <div className="w-full max-w-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-3xl p-4 sm:p-5 text-center shadow-2xs">
+              <div className="w-full max-w-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-3xl p-4 sm:p-5 text-center shadow-2xs flex flex-col items-center gap-3">
                 <p className="text-lg sm:text-xl md:text-2xl font-black text-slate-800 leading-relaxed">
                   {tr(lang, problem.story.he, problem.story.en, problem.story.es)}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => speakMathAloud(tr(lang, problem.story.he, problem.story.en, problem.story.es), lang)}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border-2 border-amber-300 rounded-full font-black text-xs sm:text-sm shadow-2xs btn-press-3d cursor-pointer"
+                >
+                  <Volume2 className="w-4 h-4 text-amber-700" />
+                  <span>{tr(lang, '🔊 הַקְרֵא שְׁאֵלָה', '🔊 Read Question', '🔊 Leer pregunta')}</span>
+                </button>
               </div>
             ) : (
               problem.prompt && (
-                <p className="text-sm sm:text-base font-extrabold text-slate-600 text-center">
-                  {tr(lang, problem.prompt.he, problem.prompt.en, problem.prompt.es)}
-                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <p className="text-sm sm:text-base font-extrabold text-slate-600 text-center">
+                    {tr(lang, problem.prompt.he, problem.prompt.en, problem.prompt.es)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => speakMathAloud(tr(lang, problem.prompt.he, problem.prompt.en, problem.prompt.es), lang)}
+                    aria-label={tr(lang, 'הַקְרֵא שְׁאֵלָה', 'Read Question', 'Leer pregunta')}
+                    title={tr(lang, 'הַקְרֵא שְׁאֵלָה', 'Read Question', 'Leer pregunta')}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-full font-black text-xs cursor-pointer"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span>{tr(lang, 'הַקְרֵא', 'Read', 'Leer')}</span>
+                  </button>
+                </div>
               )
             )}
 
@@ -985,6 +1059,14 @@ export default function IsraelMathArena({
                       {problem.hintMath}
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => speakMathAloud(tr(lang, problem.hint.he, problem.hint.en, problem.hint.es), lang)}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-full font-black text-xs cursor-pointer"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span>{tr(lang, '🔊 הַקְרֵא רֶמֶז', '🔊 Read Hint', '🔊 Leer pista')}</span>
+                  </button>
                 </div>
               )}
             </div>
