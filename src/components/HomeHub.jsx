@@ -76,6 +76,21 @@ export const ACTIVITY_TILES = [
     text: 'text-lime-950'
   },
   {
+    id: 'math_arena',
+    icon: '🧮',
+    badge: '7 / 9',
+    titleHe: 'חֶשְׁבּוֹן גִּיל 7 וְ-9',
+    titleEn: 'Israel Math Arena',
+    titleEs: 'Arena de Mates (7 y 9)',
+    descHe: 'כִּתּוֹת א׳–ד׳ • מְשִׂימוֹת כּוֹכָבִים',
+    descEn: 'Grades 1–4 • Star Missions',
+    descEs: 'Grados 1–4 • Misiones',
+    gradient: 'from-cyan-300 via-sky-300 to-indigo-300',
+    border: 'border-indigo-500',
+    text: 'text-indigo-950',
+    useSpeechFallback: true
+  },
+  {
     id: 'memory',
     icon: '🃏',
     badge: '⭐',
@@ -207,9 +222,23 @@ export default function HomeHub({
       return;
     }
     lastSpokenTileRef.current = { id: tileId, time: now };
+    const tile = ACTIVITY_TILES.find((t) => t.id === tileId);
     if (lang === 'es') {
-      const tile = ACTIVITY_TILES.find((t) => t.id === tileId);
       if (tile) speakText(tile.titleEs, 'es');
+      return;
+    }
+    if (tile?.useSpeechFallback) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utt = new SpeechSynthesisUtterance(isHe ? tile.titleHe : tile.titleEn);
+          utt.lang = isHe ? 'he-IL' : 'en-US';
+          utt.rate = 0.95;
+          window.speechSynthesis.speak(utt);
+        } catch {
+          // ignore speech errors
+        }
+      }
       return;
     }
     const prefix = isHe ? '' : 'en_';

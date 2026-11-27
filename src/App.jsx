@@ -16,6 +16,7 @@ import MemoryGame from './components/MemoryGame';
 import StickerPlayground from './components/StickerPlayground';
 import OpeningSoundGame from './components/OpeningSoundGame';
 import MathPlay from './components/MathPlay';
+import IsraelMathArena from './components/IsraelMathArena';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
@@ -38,6 +39,7 @@ export default function App() {
   const [showParentModal, setShowParentModal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
   const [proSkipGate, setProSkipGate] = useState(false);
+  const [quizFocusLocked, setQuizFocusLocked] = useState(false);
   const [serverConfig, setServerConfig] = useState(null);
   const [user, setUser] = useState(null);
 
@@ -338,6 +340,8 @@ export default function App() {
   }, []);
 
   const isHe = lang === 'he';
+  const isQuizTab = currentTab === 'quiz';
+  const hideChrome = isQuizTab && quizFocusLocked;
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -346,7 +350,11 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen flex flex-col font-['Fredoka','Rubik','Varela_Round',sans-serif] pb-[env(safe-area-inset-bottom)]"
+      className={`${
+        isQuizTab
+          ? 'h-[100dvh] overflow-hidden overscroll-none'
+          : 'min-h-screen pb-[env(safe-area-inset-bottom)]'
+      } flex flex-col font-['Fredoka','Rubik','Varela_Round',sans-serif]`}
       dir={isHe ? 'rtl' : 'ltr'}
     >
       <KidCursor enabled={kidCursorEnabled} size={kidCursorSize} />
@@ -359,19 +367,25 @@ export default function App() {
         {lang === 'he' ? 'דַּלֵּג לַתֹּכֶן הָרָאשִׁי' : lang === 'es' ? 'Saltar al contenido principal' : 'Skip to main content'}
       </a>
 
-      <Navbar
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        lang={lang}
-        stars={stars}
-        soundEnabled={soundEnabled}
-        setSoundEnabled={setSoundEnabled}
-        gender={gender}
-        setGender={setGender}
-        onOpenParentGate={() => setShowParentModal(true)}
-      />
+      {!hideChrome && (
+        <Navbar
+          currentTab={currentTab}
+          setCurrentTab={setCurrentTab}
+          lang={lang}
+          stars={stars}
+          soundEnabled={soundEnabled}
+          setSoundEnabled={setSoundEnabled}
+          gender={gender}
+          setGender={setGender}
+          onOpenParentGate={() => setShowParentModal(true)}
+        />
+      )}
 
-      <main id="main-content" tabIndex={-1} className="flex-1 pb-12 outline-none">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={isQuizTab ? 'flex-1 min-h-0 overflow-hidden pb-0 outline-none' : 'flex-1 pb-12 outline-none'}
+      >
         {currentTab === 'home' && (
           <HomeHub
             lang={lang}
@@ -398,7 +412,14 @@ export default function App() {
           <AlphabetCards lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'quiz' && (
-          <LetterQuiz lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+          <LetterQuiz
+            lang={lang}
+            soundEnabled={soundEnabled}
+            gender={gender}
+            onEarnStar={handleEarnStar}
+            isFocusLocked={quizFocusLocked}
+            onFocusLockChange={setQuizFocusLocked}
+          />
         )}
         {currentTab === 'train' && (
           <ReadingTrain lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
@@ -414,6 +435,9 @@ export default function App() {
         )}
         {currentTab === 'numbers' && (
           <NumbersWorld lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
+        )}
+        {currentTab === 'math_arena' && (
+          <IsraelMathArena lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
         )}
         {currentTab === 'tracing' && (
           <LetterTracer lang={lang} soundEnabled={soundEnabled} gender={gender} onEarnStar={handleEarnStar} />
@@ -475,11 +499,13 @@ export default function App() {
         user={user}
       />
 
-      <AccessibilityMenu
-        lang={lang}
-        kidCursorEnabled={kidCursorEnabled}
-        setKidCursorEnabled={setKidCursorEnabled}
-      />
+      {!hideChrome && (
+        <AccessibilityMenu
+          lang={lang}
+          kidCursorEnabled={kidCursorEnabled}
+          setKidCursorEnabled={setKidCursorEnabled}
+        />
+      )}
     </div>
   );
 }
