@@ -21,6 +21,7 @@ import IsraelMathArena from './components/IsraelMathArena';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
+import { useScreenWakeLock } from './utils/useScreenWakeLock';
 import { fetchServerConfig, fetchCurrentSession, pushCloudProgress } from './utils/cloudSync';
 import { trackEvent, getAcquisitionInfo } from './utils/analytics';
 import { tr } from './utils/i18n';
@@ -343,6 +344,8 @@ export default function App() {
   }, [user, stars, gender, lang, streakDays, kidCursorEnabled, kidCursorSize, kidAge, profiles, activeProfileId]);
 
   const { isTouch } = useDeviceType();
+  // Keep tablet/phone screens from dimming while thinking (releases after 3 minutes of inactivity)
+  useScreenWakeLock(3 * 60 * 1000);
 
   // Track initial page_view & acquisition source (privacy-safe, zero cookies)
   useEffect(() => {
