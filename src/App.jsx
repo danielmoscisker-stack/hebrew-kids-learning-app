@@ -26,7 +26,14 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('home');
-  const [lang, setLang] = useState('he');
+  const [lang, setLang] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hk_lang');
+      return saved === 'en' || saved === 'es' ? saved : 'he';
+    } catch {
+      return 'he';
+    }
+  });
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showParentModal, setShowParentModal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
@@ -57,14 +64,22 @@ export default function App() {
     }
   });
 
-  const [kidCursorEnabled, setKidCursorEnabled] = useState(() => {
+  const [kidCursorSize, setKidCursorSize] = useState(() => {
     try {
-      const saved = localStorage.getItem('kid_cursor_enabled');
-      return saved === null ? true : saved === 'true';
+      const savedSize = localStorage.getItem('kid_cursor_size');
+      if (savedSize === 'off' || savedSize === 'normal' || savedSize === 'large' || savedSize === 'huge') {
+        return savedSize;
+      }
+      const legacy = localStorage.getItem('kid_cursor_enabled');
+      return legacy === 'false' ? 'off' : 'large';
     } catch {
-      return true;
+      return 'large';
     }
   });
+  const kidCursorEnabled = kidCursorSize !== 'off';
+  const setKidCursorEnabled = useCallback((val) => {
+    setKidCursorSize(val ? 'large' : 'off');
+  }, []);
 
   const [stars, setStars] = useState(() => {
     try {
@@ -116,11 +131,20 @@ export default function App() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('kid_cursor_size', kidCursorSize);
       localStorage.setItem('kid_cursor_enabled', String(kidCursorEnabled));
     } catch {
       // ignore
     }
-  }, [kidCursorEnabled]);
+  }, [kidCursorSize, kidCursorEnabled]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('hk_lang', lang);
+    } catch {
+      // ignore
+    }
+  }, [lang]);
 
   useEffect(() => {
     try {
@@ -154,6 +178,10 @@ export default function App() {
         setStars((prev) => Math.max(prev, sess.progress.stars || 0));
         if (sess.progress.streakDays) setStreakDays((prev) => Math.max(prev, sess.progress.streakDays));
         if (sess.progress.gender) setGender(sess.progress.gender);
+        if (sess.progress.lang) setLang(sess.progress.lang);
+        const d = sess.progress.data || {};
+        if (d.kidCursorSize) setKidCursorSize(d.kidCursorSize);
+        else if (typeof d.kidCursorEnabled === 'boolean') setKidCursorSize(d.kidCursorEnabled ? 'large' : 'off');
       }
     });
   }, []);
@@ -168,11 +196,11 @@ export default function App() {
         lang,
         streakDays,
         lastPlayed: todayStr(),
-        data: {}
+        data: { kidCursorEnabled, kidCursorSize }
       });
     }, 1200);
     return () => clearTimeout(t);
-  }, [user, stars, gender, lang, streakDays]);
+  }, [user, stars, gender, lang, streakDays, kidCursorEnabled, kidCursorSize]);
 
   const { isTouch } = useDeviceType();
 
@@ -300,6 +328,11 @@ export default function App() {
     }
     if (result?.progress) {
       setStars((prev) => Math.max(prev, result.progress.stars || 0));
+      if (result.progress.gender) setGender(result.progress.gender);
+      if (result.progress.lang) setLang(result.progress.lang);
+      const d = result.progress.data || {};
+      if (d.kidCursorSize) setKidCursorSize(d.kidCursorSize);
+      else if (typeof d.kidCursorEnabled === 'boolean') setKidCursorSize(d.kidCursorEnabled ? 'large' : 'off');
     }
   }, []);
 
@@ -315,7 +348,7 @@ export default function App() {
       className="min-h-screen flex flex-col font-['Fredoka','Rubik','Varela_Round',sans-serif] pb-[env(safe-area-inset-bottom)]"
       dir={isHe ? 'rtl' : 'ltr'}
     >
-      <KidCursor enabled={kidCursorEnabled} />
+      <KidCursor enabled={kidCursorEnabled} size={kidCursorSize} />
 
       {/* Skip to Main Content link (IS 5568 / WCAG 2.1 AA) */}
       <a
@@ -404,6 +437,8 @@ export default function App() {
         setLang={setLang}
         kidCursorEnabled={kidCursorEnabled}
         setKidCursorEnabled={setKidCursorEnabled}
+        kidCursorSize={kidCursorSize}
+        setKidCursorSize={setKidCursorSize}
         onResetStars={() => {
           setStars(5);
           setDailyStars(0);
@@ -436,6 +471,8 @@ export default function App() {
         lang={lang}
         kidCursorEnabled={kidCursorEnabled}
         setKidCursorEnabled={setKidCursorEnabled}
+        kidCursorSize={kidCursorSize}
+        setKidCursorSize={setKidCursorSize}
       />
     </div>
   );

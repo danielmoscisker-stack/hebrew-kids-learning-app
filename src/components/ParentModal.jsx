@@ -15,6 +15,8 @@ export default function ParentModal({
   setLang,
   kidCursorEnabled,
   setKidCursorEnabled,
+  kidCursorSize = 'large',
+  setKidCursorSize,
   onResetStars,
   user,
   onAuthSuccess,
@@ -282,28 +284,43 @@ export default function ParentModal({
               </button>
 
               {!isTouch && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    playSound('pop');
-                    setKidCursorEnabled(!kidCursorEnabled);
-                  }}
-                  className={`sm:col-span-2 flex items-center justify-center gap-2 px-4 py-3 font-black rounded-2xl border-2 btn-press-3d cursor-pointer ${
-                    kidCursorEnabled
-                      ? 'bg-amber-100 border-amber-400 text-amber-950'
-                      : 'bg-slate-100 border-slate-300 text-slate-700'
-                  }`}
-                >
-                  <MousePointer2 className="w-5 h-5" />
-                  <span>
-                    {tr(
-                      lang,
-                      `סַמָּן עַכְבָּר גָּדוֹל: ${kidCursorEnabled ? 'פָּעִיל ⭐' : 'כָּבוּי'}`,
-                      `Big Kid Cursor: ${kidCursorEnabled ? 'ON ⭐' : 'OFF'}`,
-                      `Cursor Grande Infantil: ${kidCursorEnabled ? 'ACTIVO ⭐' : 'APAGADO'}`
-                    )}
-                  </span>
-                </button>
+                <div className="sm:col-span-2 p-3.5 bg-amber-50 rounded-2xl border-2 border-amber-300 flex flex-col gap-2">
+                  <div className="flex items-center gap-2 font-black text-amber-950 text-sm">
+                    <MousePointer2 className="w-4 h-4" />
+                    <span>
+                      {tr(lang, 'גֹּדֶל סַמָּן עַכְבָּר לִילָדִים:', 'Kid Mouse Cursor Size:', 'Tamaño del Cursor Infantil:')}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { id: 'off', he: 'כָּבוּי', en: 'Off', es: 'Apagado' },
+                      { id: 'normal', he: 'רָגִיל', en: 'Normal', es: 'Normal' },
+                      { id: 'large', he: 'גָּדוֹל ⭐', en: 'Big ⭐', es: 'Grande ⭐' },
+                      { id: 'huge', he: 'עֲנָק 🌟', en: 'Huge 🌟', es: 'Enorme 🌟' }
+                    ].map((opt) => {
+                      const active = kidCursorSize === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            playSound('pop');
+                            if (setKidCursorSize) setKidCursorSize(opt.id);
+                            else setKidCursorEnabled(opt.id !== 'off');
+                          }}
+                          aria-pressed={active}
+                          className={`px-2 py-2 rounded-xl font-black text-xs md:text-sm border-2 transition cursor-pointer ${
+                            active
+                              ? 'bg-amber-400 border-amber-600 text-slate-950 shadow-sm'
+                              : 'bg-white border-amber-200 text-slate-700 hover:bg-amber-100'
+                          }`}
+                        >
+                          {tr(lang, opt.he, opt.en, opt.es)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
 
