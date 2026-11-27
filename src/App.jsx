@@ -21,6 +21,7 @@ import IsraelMathArena from './components/IsraelMathArena';
 import SchoolSkillArena from './components/SchoolSkillArena';
 import EnglishLearnStudio from './components/EnglishLearnStudio';
 import PlayTimeLockOverlay from './components/PlayTimeLockOverlay';
+import FullscreenUnlockModal from './components/FullscreenUnlockModal';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
@@ -49,6 +50,19 @@ import {
   evaluatePlayLimit,
   localTodayStr
 } from './utils/playLimits';
+import {
+  getLockKey,
+  createPinRecord,
+  loadLocalLocks,
+  saveLocalLocks,
+  mergeLocksMaps,
+  loadLocalBiometrics,
+  saveLocalBiometrics,
+  registerBiometricForKid,
+  isCurrentlyFullscreen,
+  enterBrowserFullscreen,
+  exitBrowserFullscreen
+} from './utils/fullscreenLock';
 
 const APP_BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
 
@@ -108,6 +122,16 @@ export default function App() {
   const activeLimitKey = getKidLimitKey(activeProfileId);
   const activeLimitEntry = playLimitsMap[activeLimitKey] || createDefaultKidLimitEntry();
   const playLimitState = evaluatePlayLimit(activeLimitEntry);
+
+  const [kidLocksMap, setKidLocksMap] = useState(() => loadLocalLocks());
+  const [biometricsMap, setBiometricsMap] = useState(() => loadLocalBiometrics());
+  const [fullscreenLockActive, setFullscreenLockActive] = useState(false);
+  const [fullscreenEscaped, setFullscreenEscaped] = useState(false);
+  const [showFullscreenUnlock, setShowFullscreenUnlock] = useState(false);
+
+  const activeLockKey = getLockKey(activeProfileId);
+  const activePinRecord = kidLocksMap[activeLockKey] || null;
+  const activeBiometricRecord = biometricsMap[activeLockKey] || null;
 
   const [kidAge, setKidAge] = useState(() => {
     const localList = loadLocalProfiles();
@@ -300,6 +324,57 @@ export default function App() {
     saveLocalPlayLimits(playLimitsMap);
   }, [playLimitsMap]);
 
+  useEffect(() => {
+    saveLocalLocks(kidLocksMap);
+  }, [kidLocksMap]);
+
+  useEffect(() => {
+    saveLocalBiometrics(biometricsMap);
+  }, [biometricsMap]);
+
+  // Browser Fullscreen Lock guards: re-lock overlay if Esc/gesture exits fullscreen, block accidental Back/close
+  useEffect(() => {
+    if (!fullscreenLockActive) return undefined;
+
+    const onFullscreenChange = () => {
+      if (!isCurrentlyFullscreen()) {
+        setFullscreenEscaped(true);
+      }
+    };
+
+    const onBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    try {
+      window.history.pushState({ hkFullscreenLock: true }, '');
+    } catch {
+      // ignore
+    }
+
+    const onPopState = () => {
+      try {
+        window.history.pushState({ hkFullscreenLock: true }, '');
+      } catch {
+        // ignore
+      }
+      setShowFullscreenUnlock(true);
+    };
+
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener('popstate', onPopState);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, [fullscreenLockActive]);
+
   // Active play time counter: ticks 1s while visible, unlocked, and not paused in a parent/profile modal
   const timerPaused =
     !playLimitState.hasLimit ||
@@ -307,6 +382,8 @@ export default function App() {
     showParentModal ||
     showProfilePicker ||
     showProModal ||
+    fullscreenEscaped ||
+    showFullscreenUnlock ||
     needsGenderPick;
 
   useEffect(() => {
@@ -357,6 +434,9 @@ export default function App() {
         else if (typeof d.kidCursorEnabled === 'boolean') setKidCursorSize(d.kidCursorEnabled ? 'large' : 'off');
         if (d.playLimits && typeof d.playLimits === 'object') {
           setPlayLimitsMap((prev) => mergePlayLimitsMaps(prev, d.playLimits));
+        }
+        if (d.kidLocks && typeof d.kidLocks === 'object') {
+          setKidLocksMap((prev) => mergeLocksMaps(prev, d.kidLocks));
         }
 
         const cloudProfiles = sanitizeProfilesList(d.profiles);
@@ -412,7 +492,8 @@ export default function App() {
           kidAge,
           profiles,
           activeProfileId,
-          playLimits: playLimitsRef.current
+          playLimits: playLimitsRef.current,
+          kidLocks: kidLocksMap
         }
       });
     }, 900);
@@ -430,7 +511,8 @@ export default function App() {
     activeProfileId,
     playLimitsSyncNonce,
     usageCloudBucket,
-    playLimitState.isLocked
+    playLimitState.isLocked,
+    kidLocksMap
   ]);
 
   const { isTouch } = useDeviceType();
@@ -738,6 +820,59 @@ export default function App() {
     setPlayLimitsSyncNonce((n) => n + 1);
   }, [activeLimitKey]);
 
+  const handleSavePin = useCallback(
+    async (pin) => {
+      const record = await createPinRecord(pin);
+      setKidLocksMap((prev) => ({ ...prev, [activeLockKey]: record }));
+    },
+    [activeLockKey]
+  );
+
+  const handleClearPin = useCallback(() => {
+    setKidLocksMap((prev) => {
+      const next = { ...prev };
+      delete next[activeLockKey];
+      return next;
+    });
+  }, [activeLockKey]);
+
+  const handleEnableBiometric = useCallback(async () => {
+    const bio = await registerBiometricForKid(activeLockKey, activeProfile?.name || 'Parent');
+    setBiometricsMap((prev) => ({ ...prev, [activeLockKey]: bio }));
+  }, [activeLockKey, activeProfile?.name]);
+
+  const handleDisableBiometric = useCallback(() => {
+    setBiometricsMap((prev) => {
+      const next = { ...prev };
+      delete next[activeLockKey];
+      return next;
+    });
+  }, [activeLockKey]);
+
+  const handleEnterFullscreenLock = useCallback(async () => {
+    if (!activePinRecord && !activeBiometricRecord?.credIdB64) {
+      setParentModalUnlocked(false);
+      setShowParentModal(true);
+      return;
+    }
+    await enterBrowserFullscreen();
+    setFullscreenLockActive(true);
+    setFullscreenEscaped(false);
+    setShowFullscreenUnlock(false);
+  }, [activePinRecord, activeBiometricRecord?.credIdB64]);
+
+  const handleUnlockFullscreen = useCallback(async () => {
+    setFullscreenLockActive(false);
+    setFullscreenEscaped(false);
+    setShowFullscreenUnlock(false);
+    await exitBrowserFullscreen();
+  }, []);
+
+  const handleReturnToFullscreen = useCallback(async () => {
+    await enterBrowserFullscreen();
+    setFullscreenEscaped(false);
+  }, []);
+
   const handleAuthSuccess = useCallback((result) => {
     cloudHydratedRef.current = true;
     trackEvent('google_signin', { isTouch, lang });
@@ -752,6 +887,9 @@ export default function App() {
       else if (typeof d.kidCursorEnabled === 'boolean') setKidCursorSize(d.kidCursorEnabled ? 'large' : 'off');
       if (d.playLimits && typeof d.playLimits === 'object') {
         setPlayLimitsMap((prev) => mergePlayLimitsMaps(prev, d.playLimits));
+      }
+      if (d.kidLocks && typeof d.kidLocks === 'object') {
+        setKidLocksMap((prev) => mergeLocksMaps(prev, d.kidLocks));
       }
 
       const cloudProfiles = sanitizeProfilesList(d.profiles);
@@ -825,6 +963,9 @@ export default function App() {
           kidAge={kidAge}
           activeProfile={activeProfile}
           limitState={playLimitState}
+          fullscreenLockActive={fullscreenLockActive}
+          onEnterFullscreenLock={handleEnterFullscreenLock}
+          onRequestFullscreenUnlock={() => setShowFullscreenUnlock(true)}
           onOpenProfilePicker={() => setShowProfilePicker(true)}
           onOpenParentGate={() => {
             setParentModalUnlocked(false);
@@ -844,21 +985,38 @@ export default function App() {
             soundEnabled={soundEnabled}
             gender={gender}
             kidAge={kidAge}
-            onChangeAge={handleChangeAge}
+            onChangeAge={(nextAge) => {
+              if (fullscreenLockActive) setShowFullscreenUnlock(true);
+              else handleChangeAge(nextAge);
+            }}
             activeProfile={activeProfile}
             profilesCount={profiles.length}
-            onOpenProfilePicker={() => setShowProfilePicker(true)}
+            onOpenProfilePicker={() => {
+              if (fullscreenLockActive) setShowFullscreenUnlock(true);
+              else setShowProfilePicker(true);
+            }}
             streakDays={streakDays}
             dailyStars={dailyStars}
             isPro={isPro}
             user={user}
             onSelectActivity={(id) => setCurrentTab(id)}
             onOpenPro={() => {
+              if (fullscreenLockActive) {
+                setShowFullscreenUnlock(true);
+                return;
+              }
               trackEvent('pro_modal', { isTouch, lang });
               setProSkipGate(false);
               setShowProModal(true);
             }}
-            onOpenParentGate={() => setShowParentModal(true)}
+            onOpenParentGate={() => {
+              if (fullscreenLockActive) {
+                setShowFullscreenUnlock(true);
+              } else {
+                setParentModalUnlocked(false);
+                setShowParentModal(true);
+              }
+            }}
             needsGenderPick={needsGenderPick}
             onPickGender={handlePickGender}
           />
@@ -1053,6 +1211,20 @@ export default function App() {
         }}
       />
 
+      {(fullscreenEscaped || showFullscreenUnlock) && (
+        <FullscreenUnlockModal
+          key={`fs-unlock-${activeLockKey}-${fullscreenEscaped ? 'escaped' : 'unlock'}`}
+          mode={fullscreenEscaped ? 'escaped' : 'unlock'}
+          lang={lang}
+          activeProfile={activeProfile}
+          pinRecord={activePinRecord}
+          biometricRecord={activeBiometricRecord}
+          onUnlocked={handleUnlockFullscreen}
+          onReturnToFullscreen={handleReturnToFullscreen}
+          onCancel={() => setShowFullscreenUnlock(false)}
+        />
+      )}
+
       <ParentModal
         open={showParentModal}
         onClose={() => {
@@ -1094,6 +1266,14 @@ export default function App() {
         onResetSessionTimer={handleResetSessionTimer}
         onResetTodayUsage={handleResetTodayUsage}
         onGrantBonusMinutes={handleGrantBonusMinutes}
+        pinRecord={activePinRecord}
+        biometricRecord={activeBiometricRecord}
+        fullscreenLockActive={fullscreenLockActive}
+        onSavePin={handleSavePin}
+        onClearPin={handleClearPin}
+        onEnableBiometric={handleEnableBiometric}
+        onDisableBiometric={handleDisableBiometric}
+        onEnterFullscreenLock={handleEnterFullscreenLock}
         initialUnlocked={parentModalUnlocked}
       />
 

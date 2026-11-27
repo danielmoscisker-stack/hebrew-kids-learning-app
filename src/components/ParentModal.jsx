@@ -1,5 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud, Users, Clock, PlusCircle } from 'lucide-react';
+import {
+  X,
+  Lock,
+  Languages,
+  Sparkles,
+  ShieldCheck,
+  MousePointer2,
+  RotateCcw,
+  Crown,
+  LogOut,
+  Cloud,
+  Users,
+  Clock,
+  PlusCircle,
+  Maximize2,
+  Fingerprint,
+  KeyRound,
+  Trash2
+} from 'lucide-react';
 import { playSound, playAudioFile } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
@@ -11,9 +29,10 @@ import {
   formatUsedMinutes,
   generateParentGateChallenge
 } from '../utils/playLimits';
+import { isBiometricAvailable } from '../utils/fullscreenLock';
 
 /**
- * Parental Gate + Settings / Screen Time Limits / Optional Google Sign-In / Pedagogy Guide Modal.
+ * Parental Gate + Settings / Screen Time Limits / Fullscreen Kid Lock / Optional Google Sign-In Modal.
  */
 export default function ParentModal({
   open,
@@ -41,24 +60,50 @@ export default function ParentModal({
   onResetSessionTimer,
   onResetTodayUsage,
   onGrantBonusMinutes,
+  pinRecord = null,
+  biometricRecord = null,
+  fullscreenLockActive = false,
+  onSavePin,
+  onClearPin,
+  onEnableBiometric,
+  onDisableBiometric,
+  onEnterFullscreenLock,
   initialUnlocked = false
 }) {
   const isHe = lang === 'he';
   const { isTouch } = useDeviceType();
-  const hardGate = kidAge >= 7 || Boolean(limitState?.hasLimit);
+  const hardGate = kidAge >= 7 || Boolean(limitState?.hasLimit) || Boolean(pinRecord);
   const [unlocked, setUnlocked] = useState(Boolean(initialUnlocked));
   const [challenge, setChallenge] = useState(() => generateParentGateChallenge(hardGate));
   const [wrong, setWrong] = useState(false);
   const [authStatus, setAuthStatus] = useState(null);
   const [customDailyInput, setCustomDailyInput] = useState('');
   const [customSessionInput, setCustomSessionInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [pinMsg, setPinMsg] = useState('');
+  const [bioSupported, setBioSupported] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
+  const [bioMsg, setBioMsg] = useState('');
   const googleBtnRef = useRef(null);
+
+  useEffect(() => {
+    let alive = true;
+    isBiometricAvailable().then((avail) => {
+      if (alive) setBioSupported(avail);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (open) {
       setUnlocked(Boolean(initialUnlocked));
       setWrong(false);
       setAuthStatus(null);
+      setNewPinInput('');
+      setPinMsg('');
+      setBioMsg('');
       setCustomDailyInput(limitEntry?.dailyLimitMin ? String(limitEntry.dailyLimitMin) : '');
       setCustomSessionInput(limitEntry?.sessionLimitMin ? String(limitEntry.sessionLimitMin) : '');
       if (!initialUnlocked) {
@@ -404,6 +449,192 @@ export default function ParentModal({
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Fullscreen Kid Lock + Per-Profile PIN + Fingerprint / Face ID */}
+            {onSavePin && (
+              <div className="p-4 bg-indigo-50 border-2 border-indigo-300 rounded-2xl flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 font-black text-indigo-950 text-sm sm:text-base">
+                    <Maximize2 className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                    <span>
+                      {tr(lang, 'נְעִילַת מָסָךְ מָלֵא + PIN וְטְבִיעַת אֶצְבַּע / פָּנִים', 'Fullscreen Kid Lock + PIN & Biometrics', 'Pantalla Completa + PIN y Biometría')}
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-white border border-indigo-300 text-indigo-900 text-xs font-black">
+                    {activeProfile
+                      ? `${activeProfile.avatar || '👦'} ${activeProfile.name}`
+                      : tr(lang, `גִּיל ${kidAge}`, `Age ${kidAge}`, `Edad ${kidAge}`)}
+                  </span>
+                </div>
+
+                <p className="text-xs text-indigo-900 font-semibold leading-snug">
+                  {tr(
+                    lang,
+                    'נְעִילוּ אֶת הַדַּפְדְּפָן בְּמָסָךְ מָלֵא כָּךְ שֶׁרַק הוֹרֶה יָכוֹל לָצֵאת עִם קוֹד PIN שֶׁל הַפְּרוֹפִיל אוֹ טְבִיעַת אֶצְבַּע / Face ID.',
+                    'Lock the app in fullscreen so only a parent can exit using this profile’s PIN or Fingerprint / Face ID.',
+                    'Bloquea en pantalla completa para que solo un adulto salga con el PIN del perfil o Huella / Face ID.'
+                  )}
+                </p>
+
+                {/* Per-Profile PIN Setup */}
+                <div className="bg-white rounded-xl border border-indigo-200 p-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                      <KeyRound className="w-4 h-4 text-indigo-600" />
+                      <span>
+                        {pinRecord
+                          ? tr(lang, `קוֹד PIN מֻגְדָּר (${pinRecord.pinLength} סְפָרוֹת) ✓`, `Parent PIN active (${pinRecord.pinLength} digits) ✓`, `PIN activo (${pinRecord.pinLength} dígitos) ✓`)
+                          : tr(lang, 'הַגְדִּירוּ קוֹד PIN לְהוֹרִים (4–6 סְפָרוֹת):', 'Set a Parent PIN (4–6 digits):', 'Configura un PIN (4–6 dígitos):')}
+                      </span>
+                    </div>
+                    {pinRecord && onClearPin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('whoosh');
+                          onClearPin();
+                          setPinMsg(tr(lang, 'הַ-PIN הוּסַר', 'PIN removed', 'PIN eliminado'));
+                        }}
+                        className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{tr(lang, 'הָסֵר PIN', 'Remove PIN', 'Quitar PIN')}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={newPinInput}
+                      onChange={(e) => {
+                        setNewPinInput(e.target.value.replace(/\D/g, '').slice(0, 6));
+                        setPinMsg('');
+                      }}
+                      placeholder={pinRecord ? tr(lang, 'PIN חָדָשׁ (4–6 סְפָרוֹת)', 'New PIN (4–6 digits)', 'Nuevo PIN') : '1234'}
+                      className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border-2 border-indigo-200 font-black text-sm text-slate-900 tracking-widest text-center"
+                      dir="ltr"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const clean = newPinInput.replace(/\D/g, '');
+                        if (clean.length < 4 || clean.length > 6) {
+                          setPinMsg(tr(lang, 'הַזִּינוּ 4 עַד 6 סְפָרוֹת', 'Enter 4 to 6 digits', 'Introduce 4 a 6 dígitos'));
+                          return;
+                        }
+                        try {
+                          await onSavePin(clean);
+                          playSound('star');
+                          setNewPinInput('');
+                          setPinMsg(tr(lang, 'קוֹד הַ-PIN נִשְׁמַר לַפְּרוֹפִיל ✓', 'PIN saved for this profile ✓', 'PIN guardado ✓'));
+                        } catch {
+                          setPinMsg(tr(lang, 'שְׁגִיאָה בִּשְׁמִירַת הַ-PIN', 'Could not save PIN', 'Error al guardar PIN'));
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm btn-press-3d cursor-pointer"
+                    >
+                      {pinRecord ? tr(lang, 'עַדְכֵּן PIN', 'Update PIN', 'Actualizar') : tr(lang, 'שְׁמֹר PIN', 'Save PIN', 'Guardar PIN')}
+                    </button>
+                  </div>
+                  {pinMsg && <div className="text-xs font-bold text-indigo-700">{pinMsg}</div>}
+                </div>
+
+                {/* Fingerprint / Face ID Toggle (WebAuthn Platform Authenticator) */}
+                <div className="bg-white rounded-xl border border-indigo-200 p-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-xs font-black text-slate-800">
+                      <Fingerprint className="w-4 h-4 text-violet-600" />
+                      <span>{tr(lang, 'שִׁחְרוּר בְּטְבִיעַת אֶצְבַּע / זִהוּי פָּנִים (Face / Touch ID)', 'Fingerprint / Face ID Unlock', 'Desbloqueo con Huella / Face ID')}</span>
+                    </div>
+
+                    {biometricRecord?.credIdB64 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('pop');
+                          onDisableBiometric?.();
+                          setBioMsg(tr(lang, 'הַזִּהוּי הַבִּיּוֹמֶטְרִי כֻּבָּה בַּמַּכְשִׁיר הַזֶּה', 'Biometric unlock disabled on this device', 'Biometría desactivada'));
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-rose-50 border border-emerald-400 text-emerald-900 hover:text-rose-700 font-black text-xs cursor-pointer"
+                      >
+                        {tr(lang, 'פָּעִיל ✓ (כַּבֵּה)', 'Active ✓ (Disable)', 'Activo ✓ (Quitar)')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={!bioSupported || bioBusy}
+                        onClick={async () => {
+                          setBioBusy(true);
+                          setBioMsg('');
+                          try {
+                            await onEnableBiometric?.();
+                            playSound('star');
+                            setBioMsg(tr(lang, 'טְבִיעַת אֶצְבַּע / זִהוּי פָּנִים חֻבַּר בְּהַצְלָחָה ✓', 'Fingerprint / Face ID enabled ✓', 'Huella / Face ID activado ✓'));
+                          } catch {
+                            playSound('whoosh');
+                            setBioMsg(tr(lang, 'לֹא הֻשְׁלַם — וַדְּאוּ שֶׁטְּבִיעַת אֶצְבַּע אוֹ Face ID פְּעִילִים בַּמַּכְשִׁיר', 'Cancelled or unavailable — check device biometrics', 'Cancelado o no disponible'));
+                          } finally {
+                            setBioBusy(false);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl font-black text-xs transition ${
+                          bioSupported
+                            ? 'bg-violet-600 hover:bg-violet-700 text-white btn-press-3d cursor-pointer'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {bioBusy
+                          ? tr(lang, 'מְחַבֵּר...', 'Setting up...', 'Configurando...')
+                          : bioSupported
+                            ? tr(lang, 'הַפְעֵל טְבִיעַת אֶצְבַּע / פָּנִים', 'Enable Fingerprint / Face ID', 'Activar Huella / Face ID')
+                            : tr(lang, 'לֹא זָמִין בַּמַּכְשִׁיר', 'Not Available', 'No disponible')}
+                      </button>
+                    )}
+                  </div>
+                  {bioMsg && <div className="text-xs font-bold text-violet-700">{bioMsg}</div>}
+                </div>
+
+                {/* Launch Locked Fullscreen Now */}
+                {onEnterFullscreenLock && (
+                  <button
+                    type="button"
+                    disabled={!pinRecord && !biometricRecord?.credIdB64}
+                    onClick={() => {
+                      playSound('star');
+                      onClose();
+                      onEnterFullscreenLock();
+                    }}
+                    className={`w-full py-3 px-4 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition ${
+                      pinRecord || biometricRecord?.credIdB64
+                        ? 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md btn-press-3d cursor-pointer'
+                        : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                    <span>
+                      {fullscreenLockActive
+                        ? tr(lang, 'מָסָךְ מָלֵא נָעוּל כָּרֶגַע ✓', 'Fullscreen Kid Lock Active ✓', 'Pantalla Completa Activa ✓')
+                        : pinRecord || biometricRecord?.credIdB64
+                          ? tr(lang, 'הַפְעֵל מָסָךְ מָלֵא נָעוּל עַכְשָׁו 🔒', 'Start Locked Fullscreen Now 🔒', 'Activar Pantalla Completa 🔒')
+                          : tr(lang, 'הַגְדִּירוּ PIN אוֹ בִּיּוֹמֶטְרִי כְּדֵי לִנְעֹל מָסָךְ מָלֵא', 'Set a PIN or Biometric first to lock fullscreen', 'Configura un PIN primero')}
+                    </span>
+                  </button>
+                )}
+
+                <p className="text-[11px] text-indigo-800/80 font-semibold leading-snug">
+                  {tr(
+                    lang,
+                    '💡 טִיפּ לְטָאבְּלֶט: הַנְּעִילָה נוֹעֶלֶת אֶת הַדַּפְדְּפָן וְכַפְתּוֹרֵי הַיְּצִיאָה. כְּדֵי לִנְעֹל גַּם אֶת כַּפְתּוֹר הַבַּיִת שֶׁל הַמַּכְשִׁיר, מֻמְלָץ לְשַׁלֵּב עִם "גִּישָׁה מֻדְרֶכֶת" (iPad) אוֹ "הַצְמָדַת אֲפְּלִיקַצְיָה" (Android).',
+                    '💡 Tablet tip: This locks browser fullscreen & exit gestures with your PIN/biometrics. To also lock the device Home button, pair with iPad Guided Access or Android App Pinning.',
+                    '💡 Consejo tablet: bloquea el navegador con PIN/biometría. Para bloquear el botón Inicio del dispositivo, combínalo con Acceso Guiado (iPad) o Fijar App (Android).'
+                  )}
+                </p>
               </div>
             )}
 

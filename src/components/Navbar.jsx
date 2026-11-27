@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Volume2, VolumeX, Home, Lock, Sparkles, Clock } from 'lucide-react';
+import { Star, Volume2, VolumeX, Home, Lock, Sparkles, Clock, Maximize2, ShieldAlert } from 'lucide-react';
 import { playSound } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { formatMinutesSeconds } from '../utils/playLimits';
@@ -16,6 +16,9 @@ export default function Navbar({
   kidAge = 4,
   activeProfile = null,
   limitState = null,
+  fullscreenLockActive = false,
+  onEnterFullscreenLock,
+  onRequestFullscreenUnlock,
   onOpenProfilePicker,
   onOpenParentGate
 }) {
@@ -86,19 +89,24 @@ export default function Navbar({
 
         {/* Right / End Controls: Kid-friendly large 48px+ targets */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Active Kid Profile & Age Switcher Pill */}
+          {/* Active Kid Profile & Age Switcher Pill (guarded during Fullscreen Lock) */}
           <button
             type="button"
             onClick={() => {
               playSound('pop');
-              onOpenProfilePicker?.();
+              if (fullscreenLockActive) onRequestFullscreenUnlock?.();
+              else onOpenProfilePicker?.();
             }}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 min-h-[48px] rounded-2xl font-black text-xs md:text-sm border-2 btn-press-3d cursor-pointer max-w-[165px] sm:max-w-[220px] ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 min-h-[48px] rounded-2xl font-black text-xs md:text-sm border-2 btn-press-3d cursor-pointer max-w-[155px] sm:max-w-[210px] ${
               gender === 'boy'
                 ? 'bg-sky-100 hover:bg-sky-200 text-sky-950 border-sky-400'
                 : 'bg-pink-100 hover:bg-pink-200 text-pink-950 border-pink-400'
             }`}
-            title={tr(lang, 'הַחֲלֵף פְּרוֹפִיל יֶלֶד אוֹ גִּיל', 'Switch Kid Profile or Age', 'Cambiar perfil o edad')}
+            title={
+              fullscreenLockActive
+                ? tr(lang, 'מָסָךְ מָלֵא נָעוּל — שַׁחְרְרוּ כְּדֵי לְהַחֲלִיף פְּרוֹפִיל', 'Fullscreen Locked — unlock to switch profile', 'Desbloquea para cambiar perfil')
+                : tr(lang, 'הַחֲלֵף פְּרוֹפִיל יֶלֶד אוֹ גִּיל', 'Switch Kid Profile or Age', 'Cambiar perfil o edad')
+            }
           >
             <span className="text-xl flex-shrink-0">{profileAvatar}</span>
             <span className="truncate font-black">{profileLabel}</span>
@@ -113,7 +121,8 @@ export default function Navbar({
               type="button"
               onClick={() => {
                 playSound('pop');
-                onOpenParentGate();
+                if (fullscreenLockActive) onRequestFullscreenUnlock?.();
+                else onOpenParentGate();
               }}
               className={`flex items-center gap-1 px-2.5 min-h-[48px] rounded-2xl border-2 font-black text-xs sm:text-sm btn-press-3d cursor-pointer ${
                 limitState.activeRemainingSec <= 60
@@ -162,12 +171,47 @@ export default function Navbar({
             {soundEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
           </button>
 
-          {/* Parent Zone Lock (keeps 4yo safely in kids mode) */}
+          {/* Fullscreen Kid Lock Button */}
           <button
             type="button"
             onClick={() => {
               playSound('pop');
-              onOpenParentGate();
+              if (fullscreenLockActive) onRequestFullscreenUnlock?.();
+              else onEnterFullscreenLock?.();
+            }}
+            className={`h-12 rounded-2xl border-2 flex items-center justify-center gap-1.5 font-black text-xs btn-press-3d cursor-pointer ${
+              fullscreenLockActive
+                ? 'px-3 bg-indigo-600 hover:bg-indigo-700 border-indigo-800 text-white shadow-md'
+                : 'w-12 bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800'
+            }`}
+            aria-label={
+              fullscreenLockActive
+                ? tr(lang, 'מָסָךְ מָלֵא נָעוּל — שַׁחְרֵר עִם PIN', 'Fullscreen Locked — Exit with PIN', 'Pantalla bloqueada — Salir')
+                : tr(lang, 'מָסָךְ מָלֵא נָעוּל לִילָדִים', 'Locked Fullscreen Mode', 'Modo Pantalla Completa')
+            }
+            title={
+              fullscreenLockActive
+                ? tr(lang, 'מָסָךְ מָלֵא נָעוּל — לְחַץ לְשִׁחְרוּר הוֹרִים', 'Fullscreen Locked — Tap for Parent Unlock', 'Pantalla bloqueada — Desbloquear')
+                : tr(lang, 'מָסָךְ מָלֵא נָעוּל (PIN / בִּיּוֹמֶטְרִי)', 'Locked Fullscreen Mode (PIN / Biometrics)', 'Pantalla Completa Bloqueada')
+            }
+          >
+            {fullscreenLockActive ? (
+              <>
+                <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">{tr(lang, 'נָעוּל', 'Locked', 'Bloq.')}</span>
+              </>
+            ) : (
+              <Maximize2 className="w-5 h-5" />
+            )}
+          </button>
+
+          {/* Parent Zone Lock */}
+          <button
+            type="button"
+            onClick={() => {
+              playSound('pop');
+              if (fullscreenLockActive) onRequestFullscreenUnlock?.();
+              else onOpenParentGate();
             }}
             className="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-600 flex items-center justify-center btn-press-3d cursor-pointer"
             aria-label={tr(lang, 'אֵזוֹר הוֹרִים', 'Parent Zone', 'Zona de Padres')}
