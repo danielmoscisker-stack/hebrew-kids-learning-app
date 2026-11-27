@@ -1,7 +1,8 @@
 import React from 'react';
-import { Star, Volume2, VolumeX, Home, Lock, Sparkles } from 'lucide-react';
+import { Star, Volume2, VolumeX, Home, Lock, Sparkles, Clock } from 'lucide-react';
 import { playSound } from '../utils/audio';
 import { tr } from '../utils/i18n';
+import { formatMinutesSeconds } from '../utils/playLimits';
 import { ACTIVITY_TILES } from './HomeHub';
 
 export default function Navbar({
@@ -14,6 +15,7 @@ export default function Navbar({
   gender = 'boy',
   kidAge = 4,
   activeProfile = null,
+  limitState = null,
   onOpenProfilePicker,
   onOpenParentGate
 }) {
@@ -104,6 +106,28 @@ export default function Navbar({
               {tr(lang, `גִּיל ${kidAge}`, `${kidAge}y`, `${kidAge}a`)}
             </span>
           </button>
+
+          {/* Remaining Play Time Pill (shown when parent sets a daily or session limit) */}
+          {limitState?.hasLimit && !limitState.isLocked && limitState.activeRemainingSec !== null && (
+            <button
+              type="button"
+              onClick={() => {
+                playSound('pop');
+                onOpenParentGate();
+              }}
+              className={`flex items-center gap-1 px-2.5 min-h-[48px] rounded-2xl border-2 font-black text-xs sm:text-sm btn-press-3d cursor-pointer ${
+                limitState.activeRemainingSec <= 60
+                  ? 'bg-rose-100 border-rose-400 text-rose-800 animate-pulse'
+                  : limitState.activeRemainingSec <= 180
+                    ? 'bg-amber-100 border-amber-400 text-amber-900'
+                    : 'bg-violet-100 border-violet-300 text-violet-900'
+              }`}
+              title={tr(lang, 'זְמַן מִשְׂחָק שֶׁנּוֹתַר (הוֹרִים)', 'Remaining Play Time (Parents)', 'Tiempo restante (Padres)')}
+            >
+              <Clock className="w-4 h-4 flex-shrink-0" />
+              <bdi dir="ltr">{formatMinutesSeconds(limitState.activeRemainingSec)}</bdi>
+            </button>
+          )}
 
           {/* Star Counter */}
           <button

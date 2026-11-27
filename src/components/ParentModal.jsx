@@ -1,18 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud, Users } from 'lucide-react';
+import { X, Lock, Languages, Sparkles, ShieldCheck, MousePointer2, RotateCcw, Crown, LogOut, Cloud, Users, Clock, PlusCircle } from 'lucide-react';
 import { playSound, playAudioFile } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import { useDeviceType } from '../utils/useDeviceType';
 import { loadGoogleIdentityScript, signInWithGoogleCredential, signOutSession } from '../utils/cloudSync';
+import {
+  DAILY_PRESETS,
+  SESSION_PRESETS,
+  formatMinutesSeconds,
+  formatUsedMinutes,
+  generateParentGateChallenge
+} from '../utils/playLimits';
 
 /**
- * Parental Gate + Settings / Optional Google Sign-In / Pedagogy Guide Modal.
+ * Parental Gate + Settings / Screen Time Limits / Optional Google Sign-In / Pedagogy Guide Modal.
  */
 export default function ParentModal({
   open,
   onClose,
   lang,
   setLang,
+  kidAge = 4,
+  activeProfile = null,
   kidCursorEnabled,
   setKidCursorEnabled,
   kidCursorSize = 'large',
@@ -25,32 +34,39 @@ export default function ParentModal({
   onOpenPro,
   profilesCount = 0,
   onOpenProfilePicker,
-  serverConfig
+  serverConfig,
+  limitEntry = null,
+  limitState = null,
+  onUpdatePlayLimits,
+  onResetSessionTimer,
+  onResetTodayUsage,
+  onGrantBonusMinutes,
+  initialUnlocked = false
 }) {
   const isHe = lang === 'he';
   const { isTouch } = useDeviceType();
-  const [unlocked, setUnlocked] = useState(false);
-  const [challenge, setChallenge] = useState({ a: 4, b: 3, ans: 7, options: [6, 7, 8, 9] });
+  const hardGate = kidAge >= 7 || Boolean(limitState?.hasLimit);
+  const [unlocked, setUnlocked] = useState(Boolean(initialUnlocked));
+  const [challenge, setChallenge] = useState(() => generateParentGateChallenge(hardGate));
   const [wrong, setWrong] = useState(false);
   const [authStatus, setAuthStatus] = useState(null);
+  const [customDailyInput, setCustomDailyInput] = useState('');
+  const [customSessionInput, setCustomSessionInput] = useState('');
   const googleBtnRef = useRef(null);
 
   useEffect(() => {
     if (open) {
-      setUnlocked(false);
+      setUnlocked(Boolean(initialUnlocked));
       setWrong(false);
       setAuthStatus(null);
-      const a = 3 + Math.floor(Math.random() * 5);
-      const b = 2 + Math.floor(Math.random() * 4);
-      const ans = a + b;
-      const opts = new Set([ans]);
-      while (opts.size < 4) {
-        opts.add(ans + (Math.floor(Math.random() * 5) - 2) || ans + 3);
+      setCustomDailyInput(limitEntry?.dailyLimitMin ? String(limitEntry.dailyLimitMin) : '');
+      setCustomSessionInput(limitEntry?.sessionLimitMin ? String(limitEntry.sessionLimitMin) : '');
+      if (!initialUnlocked) {
+        setChallenge(generateParentGateChallenge(hardGate));
+        playAudioFile('/audio/phrases/parents_only.mp3');
       }
-      setChallenge({ a, b, ans, options: [...opts].sort(() => 0.5 - Math.random()) });
-      playAudioFile('/audio/phrases/parents_only.mp3');
     }
-  }, [open]);
+  }, [open, initialUnlocked, hardGate, limitEntry?.dailyLimitMin, limitEntry?.sessionLimitMin]);
 
   // Render Google Sign-In button inside unlocked Parent Zone when GOOGLE_CLIENT_ID is configured
   useEffect(() => {
@@ -149,7 +165,7 @@ export default function ParentModal({
               )}
             </p>
             <div className="text-4xl font-black text-indigo-700 bg-indigo-50 border-2 border-indigo-200 px-8 py-4 rounded-2xl" dir="ltr">
-              {challenge.a} + {challenge.b} = ?
+              {challenge.text}
             </div>
             <div className="grid grid-cols-4 gap-3 w-full max-w-xs">
               {challenge.options.map((opt) => (
@@ -163,11 +179,12 @@ export default function ParentModal({
                     } else {
                       playSound('whoosh');
                       setWrong(true);
+                      setChallenge(generateParentGateChallenge(hardGate));
                     }
                   }}
                   className="py-3 rounded-2xl bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-xl text-slate-900 btn-press-3d cursor-pointer"
                 >
-                  {opt}
+                  <bdi dir="ltr">{opt}</bdi>
                 </button>
               ))}
             </div>
@@ -175,6 +192,221 @@ export default function ParentModal({
           </div>
         ) : (
           <div className="space-y-4 text-sm text-slate-700">
+            {/* Play Time Limits (Per Day & Per Session) */}
+            {onUpdatePlayLimits && (
+              <div className="p-4 bg-violet-50 border-2 border-violet-300 rounded-2xl flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 font-black text-violet-950 text-sm sm:text-base">
+                    <Clock className="w-5 h-5 text-violet-600 flex-shrink-0" />
+                    <span>
+                      {tr(lang, 'הַגְבָּלַת זְמַן מִשְׂחָק (לְיוֹם / לְסֵשֶׁן)', 'Play Time Limits (Daily / Per Session)', 'Límites de Tiempo (Diario / Por Sesión)')}
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-white border border-violet-300 text-violet-900 text-xs font-black">
+                    {activeProfile
+                      ? `${activeProfile.avatar || '👦'} ${activeProfile.name} (${tr(lang, `גִּיל ${activeProfile.age}`, `Age ${activeProfile.age}`, `${activeProfile.age}a`)})`
+                      : tr(lang, `גִּיל ${kidAge}`, `Age ${kidAge}`, `Edad ${kidAge}`)}
+                  </span>
+                </div>
+
+                <p className="text-xs text-violet-900 font-semibold leading-snug">
+                  {tr(
+                    lang,
+                    'כְּשֶׁהַזְּמַן נִגְמָר, הָאֲפְּלִיקַצְיָה נִסְגֶּרֶת לַיֶּלֶד עַד לְיּוֹם לְמָחֳרָת אוֹ עַד שֶׁהוֹרֶה יִפְתַּח אוֹתָהּ.',
+                    'When time runs out, the app closes for the child until tomorrow or until an adult unlocks it.',
+                    'Cuando se acaba el tiempo, la aplicación se cierra hasta mañana o hasta que un adulto la desbloquee.'
+                  )}
+                </p>
+
+                {/* Live usage summary */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-white rounded-xl border border-violet-200 px-3 py-2">
+                    <div className="text-slate-500 font-bold">{tr(lang, 'שֻׂחַק הַיּוֹם:', 'Played today:', 'Jugado hoy:')}</div>
+                    <div className="font-black text-slate-900 text-sm mt-0.5">
+                      <bdi dir="ltr">
+                        {formatUsedMinutes(limitEntry?.dailyUsedSec || 0)}m
+                        {limitState?.dailyAllowanceSec ? ` / ${Math.round(limitState.dailyAllowanceSec / 60)}m` : ''}
+                      </bdi>
+                      {limitState?.dailyRemainingSec !== null && (
+                        <span className="text-violet-700 font-bold ms-1.5 text-xs">
+                          ({tr(lang, 'נִשְׁאַר', 'left', 'queda')} <bdi dir="ltr">{formatMinutesSeconds(limitState.dailyRemainingSec)}</bdi>)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-violet-200 px-3 py-2">
+                    <div className="text-slate-500 font-bold">{tr(lang, 'בַּסֵּשֶׁן הַזֶּה:', 'This session:', 'Esta sesión:')}</div>
+                    <div className="font-black text-slate-900 text-sm mt-0.5">
+                      <bdi dir="ltr">
+                        {formatUsedMinutes(limitEntry?.sessionUsedSec || 0)}m
+                        {limitState?.sessionAllowanceSec ? ` / ${Math.round(limitState.sessionAllowanceSec / 60)}m` : ''}
+                      </bdi>
+                      {limitState?.sessionRemainingSec !== null && (
+                        <span className="text-violet-700 font-bold ms-1.5 text-xs">
+                          ({tr(lang, 'נִשְׁאַר', 'left', 'queda')} <bdi dir="ltr">{formatMinutesSeconds(limitState.sessionRemainingSec)}</bdi>)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Daily Limit Presets + Custom */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black text-violet-950">
+                      {tr(lang, '📅 מִגְבָּלָה יוֹמִית (דַּקּוֹת בְּיוֹם):', '📅 Daily Limit (minutes/day):', '📅 Límite diario (min/día):')}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="300"
+                        inputMode="numeric"
+                        value={customDailyInput}
+                        onChange={(e) => setCustomDailyInput(e.target.value)}
+                        onBlur={() => {
+                          const val = customDailyInput.trim();
+                          onUpdatePlayLimits({
+                            dailyLimitMin: val ? Math.max(1, Math.min(300, parseInt(val, 10) || 1)) : null,
+                            sessionLimitMin: limitEntry?.sessionLimitMin ?? null
+                          });
+                        }}
+                        placeholder={tr(lang, 'מֻתְאָם', 'Custom', 'Otro')}
+                        aria-label={tr(lang, 'דַּקּוֹת לְיוֹם', 'Minutes per day', 'Minutos por día')}
+                        className="w-20 px-2 py-1 rounded-lg bg-white border border-violet-300 text-xs font-black text-slate-900 text-center"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {DAILY_PRESETS.map((mins) => {
+                      const active = (limitEntry?.dailyLimitMin ?? null) === mins;
+                      return (
+                        <button
+                          key={String(mins)}
+                          type="button"
+                          onClick={() => {
+                            playSound('pop');
+                            setCustomDailyInput(mins ? String(mins) : '');
+                            onUpdatePlayLimits({
+                              dailyLimitMin: mins,
+                              sessionLimitMin: limitEntry?.sessionLimitMin ?? null
+                            });
+                          }}
+                          className={`py-1.5 px-1 rounded-xl font-black text-xs border-2 transition cursor-pointer ${
+                            active
+                              ? 'bg-violet-600 text-white border-violet-700 shadow-sm'
+                              : 'bg-white text-slate-700 border-violet-200 hover:bg-violet-100'
+                          }`}
+                        >
+                          {mins === null ? tr(lang, 'לְלֹא', 'Off', 'No') : <bdi dir="ltr">{mins}m</bdi>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Session Limit Presets + Custom */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black text-violet-950">
+                      {tr(lang, '⏱️ מִגְבָּלָה לְסֵשֶׁן (דַּקּוֹת בְּרֶצֶף):', '⏱️ Per-Session Limit (minutes):', '⏱️ Límite por sesión (min):')}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="180"
+                        inputMode="numeric"
+                        value={customSessionInput}
+                        onChange={(e) => setCustomSessionInput(e.target.value)}
+                        onBlur={() => {
+                          const val = customSessionInput.trim();
+                          onUpdatePlayLimits({
+                            dailyLimitMin: limitEntry?.dailyLimitMin ?? null,
+                            sessionLimitMin: val ? Math.max(1, Math.min(180, parseInt(val, 10) || 1)) : null
+                          });
+                        }}
+                        placeholder={tr(lang, 'מֻתְאָם', 'Custom', 'Otro')}
+                        aria-label={tr(lang, 'דַּקּוֹת לְסֵשֶׁן', 'Minutes per session', 'Minutos por sesión')}
+                        className="w-20 px-2 py-1 rounded-lg bg-white border border-violet-300 text-xs font-black text-slate-900 text-center"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {SESSION_PRESETS.map((mins) => {
+                      const active = (limitEntry?.sessionLimitMin ?? null) === mins;
+                      return (
+                        <button
+                          key={String(mins)}
+                          type="button"
+                          onClick={() => {
+                            playSound('pop');
+                            setCustomSessionInput(mins ? String(mins) : '');
+                            onUpdatePlayLimits({
+                              dailyLimitMin: limitEntry?.dailyLimitMin ?? null,
+                              sessionLimitMin: mins
+                            });
+                          }}
+                          className={`py-1.5 px-1 rounded-xl font-black text-xs border-2 transition cursor-pointer ${
+                            active
+                              ? 'bg-violet-600 text-white border-violet-700 shadow-sm'
+                              : 'bg-white text-slate-700 border-violet-200 hover:bg-violet-100'
+                          }`}
+                        >
+                          {mins === null ? tr(lang, 'לְלֹא', 'Off', 'No') : <bdi dir="ltr">{mins}m</bdi>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick override buttons */}
+                {limitState?.hasLimit && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {onGrantBonusMinutes && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('star');
+                          onGrantBonusMinutes(10);
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs btn-press-3d cursor-pointer"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>{tr(lang, '+10 דַּקּוֹת בּוֹנוּס', '+10m Bonus', '+10m Extra')}</span>
+                      </button>
+                    )}
+                    {onResetSessionTimer && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('pop');
+                          onResetSessionTimer();
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-violet-100 border border-violet-300 text-violet-900 font-black text-xs cursor-pointer"
+                      >
+                        {tr(lang, 'אִפּוּס סֵשֶׁן', 'Reset Session', 'Reiniciar sesión')}
+                      </button>
+                    )}
+                    {onResetTodayUsage && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('pop');
+                          onResetTodayUsage();
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs cursor-pointer"
+                      >
+                        {tr(lang, 'אִפּוּס הַיּוֹם', 'Reset Today', 'Reiniciar hoy')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Optional Google Cloud Sync Section */}
             <div className="p-4 bg-sky-50 border-2 border-sky-200 rounded-2xl flex flex-col gap-2.5">
               <div className="flex items-center justify-between">

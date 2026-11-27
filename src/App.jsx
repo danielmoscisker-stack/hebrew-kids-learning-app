@@ -19,6 +19,7 @@ import OpeningSoundGame from './components/OpeningSoundGame';
 import MathPlay from './components/MathPlay';
 import IsraelMathArena from './components/IsraelMathArena';
 import SchoolSkillArena from './components/SchoolSkillArena';
+import PlayTimeLockOverlay from './components/PlayTimeLockOverlay';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import { playSound, playPhraseAudio, setMuted } from './utils/audio';
 import { useDeviceType } from './utils/useDeviceType';
@@ -37,6 +38,16 @@ import {
   saveLocalActiveProfileId,
   touchProfileForToday
 } from './utils/profiles';
+import {
+  getKidLimitKey,
+  createDefaultKidLimitEntry,
+  normalizeKidLimitEntry,
+  loadLocalPlayLimits,
+  saveLocalPlayLimits,
+  mergePlayLimitsMaps,
+  evaluatePlayLimit,
+  localTodayStr
+} from './utils/playLimits';
 
 const APP_BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
 
@@ -70,6 +81,7 @@ export default function App() {
   });
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showParentModal, setShowParentModal] = useState(false);
+  const [parentModalUnlocked, setParentModalUnlocked] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
   const [showProfilePicker, setShowProfilePicker] = useState(false);
   const [proSkipGate, setProSkipGate] = useState(false);
@@ -87,6 +99,14 @@ export default function App() {
   });
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId) || null;
+
+  const [playLimitsMap, setPlayLimitsMap] = useState(() => loadLocalPlayLimits());
+  const [playLimitsSyncNonce, setPlayLimitsSyncNonce] = useState(0);
+  const playLimitsRef = useRef(playLimitsMap);
+
+  const activeLimitKey = getKidLimitKey(activeProfileId);
+  const activeLimitEntry = playLimitsMap[activeLimitKey] || createDefaultKidLimitEntry();
+  const playLimitState = evaluatePlayLimit(activeLimitEntry);
 
   const [kidAge, setKidAge] = useState(() => {
     const localList = loadLocalProfiles();
@@ -274,6 +294,53 @@ export default function App() {
     setProfiles((prev) => prev.map((p) => (p.id === touched.id ? touched : p)));
   }, []);
 
+  useEffect(() => {
+    playLimitsRef.current = playLimitsMap;
+    saveLocalPlayLimits(playLimitsMap);
+  }, [playLimitsMap]);
+
+  // Active play time counter: ticks 1s while visible, unlocked, and not paused in a parent/profile modal
+  const timerPaused =
+    !playLimitState.hasLimit ||
+    playLimitState.isLocked ||
+    showParentModal ||
+    showProfilePicker ||
+    showProModal ||
+    needsGenderPick;
+
+  useEffect(() => {
+    if (timerPaused) return undefined;
+    const interval = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      const today = localTodayStr();
+      setPlayLimitsMap((prev) => {
+        const current = normalizeKidLimitEntry(prev[activeLimitKey], now);
+        const nextEntry = {
+          ...current,
+          dailyDate: today,
+          dailyUsedSec: (current.dailyUsedSec || 0) + 1,
+          sessionUsedSec: (current.sessionUsedSec || 0) + 1,
+          lastActiveAt: now
+        };
+        return { ...prev, [activeLimitKey]: nextEntry };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timerPaused, activeLimitKey]);
+
+  // Stop any playing speech audio immediately when play time expires
+  useEffect(() => {
+    if (!playLimitState.isLocked) return;
+    try {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    } catch {
+      // ignore
+    }
+  }, [playLimitState.isLocked]);
+
   // Load optional Cloudflare config + session on startup (non-blocking)
   useEffect(() => {
     fetchServerConfig().then((cfg) => cfg && setServerConfig(cfg));
@@ -287,6 +354,9 @@ export default function App() {
         const d = sess.progress.data || {};
         if (d.kidCursorSize) setKidCursorSize(d.kidCursorSize);
         else if (typeof d.kidCursorEnabled === 'boolean') setKidCursorSize(d.kidCursorEnabled ? 'large' : 'off');
+        if (d.playLimits && typeof d.playLimits === 'object') {
+          setPlayLimitsMap((prev) => mergePlayLimitsMaps(prev, d.playLimits));
+        }
 
         const cloudProfiles = sanitizeProfilesList(d.profiles);
         if (cloudProfiles.length > 0) {
@@ -322,6 +392,9 @@ export default function App() {
     });
   }, []);
 
+  // Bucketed usage checkpoint (every 30s) so cloud backup syncs play usage without firing every second
+  const usageCloudBucket = Math.floor((activeLimitEntry.dailyUsedSec || 0) / 30);
+
   // Debounced cloud progress backup when signed in
   useEffect(() => {
     if (!user || !cloudHydratedRef.current) return;
@@ -337,12 +410,27 @@ export default function App() {
           kidCursorSize,
           kidAge,
           profiles,
-          activeProfileId
+          activeProfileId,
+          playLimits: playLimitsRef.current
         }
       });
     }, 900);
     return () => clearTimeout(t);
-  }, [user, stars, gender, lang, streakDays, kidCursorEnabled, kidCursorSize, kidAge, profiles, activeProfileId]);
+  }, [
+    user,
+    stars,
+    gender,
+    lang,
+    streakDays,
+    kidCursorEnabled,
+    kidCursorSize,
+    kidAge,
+    profiles,
+    activeProfileId,
+    playLimitsSyncNonce,
+    usageCloudBucket,
+    playLimitState.isLocked
+  ]);
 
   const { isTouch } = useDeviceType();
   // Keep tablet/phone screens from dimming while thinking (releases after 3 minutes of inactivity)
@@ -570,6 +658,85 @@ export default function App() {
     }
   };
 
+  const handleUpdatePlayLimits = useCallback(
+    ({ dailyLimitMin, sessionLimitMin }) => {
+      const now = Date.now();
+      setPlayLimitsMap((prev) => {
+        const cur = normalizeKidLimitEntry(prev[activeLimitKey], now);
+        return {
+          ...prev,
+          [activeLimitKey]: {
+            ...cur,
+            dailyLimitMin: dailyLimitMin || null,
+            sessionLimitMin: sessionLimitMin || null,
+            dailyDate: localTodayStr(),
+            lastActiveAt: now
+          }
+        };
+      });
+      setPlayLimitsSyncNonce((n) => n + 1);
+    },
+    [activeLimitKey]
+  );
+
+  const handleGrantBonusMinutes = useCallback(
+    (mins) => {
+      const addSec = Math.max(1, Number(mins) || 5) * 60;
+      const now = Date.now();
+      setPlayLimitsMap((prev) => {
+        const cur = normalizeKidLimitEntry(prev[activeLimitKey], now);
+        return {
+          ...prev,
+          [activeLimitKey]: {
+            ...cur,
+            bonusDailySec: cur.dailyLimitMin ? (cur.bonusDailySec || 0) + addSec : cur.bonusDailySec || 0,
+            bonusSessionSec: cur.sessionLimitMin ? (cur.bonusSessionSec || 0) + addSec : cur.bonusSessionSec || 0,
+            lastActiveAt: now
+          }
+        };
+      });
+      setPlayLimitsSyncNonce((n) => n + 1);
+    },
+    [activeLimitKey]
+  );
+
+  const handleResetSessionTimer = useCallback(() => {
+    const now = Date.now();
+    setPlayLimitsMap((prev) => {
+      const cur = normalizeKidLimitEntry(prev[activeLimitKey], now);
+      return {
+        ...prev,
+        [activeLimitKey]: {
+          ...cur,
+          sessionUsedSec: 0,
+          bonusSessionSec: 0,
+          lastActiveAt: now
+        }
+      };
+    });
+    setPlayLimitsSyncNonce((n) => n + 1);
+  }, [activeLimitKey]);
+
+  const handleResetTodayUsage = useCallback(() => {
+    const now = Date.now();
+    setPlayLimitsMap((prev) => {
+      const cur = normalizeKidLimitEntry(prev[activeLimitKey], now);
+      return {
+        ...prev,
+        [activeLimitKey]: {
+          ...cur,
+          dailyDate: localTodayStr(),
+          dailyUsedSec: 0,
+          sessionUsedSec: 0,
+          bonusDailySec: 0,
+          bonusSessionSec: 0,
+          lastActiveAt: now
+        }
+      };
+    });
+    setPlayLimitsSyncNonce((n) => n + 1);
+  }, [activeLimitKey]);
+
   const handleAuthSuccess = useCallback((result) => {
     cloudHydratedRef.current = true;
     trackEvent('google_signin', { isTouch, lang });
@@ -582,6 +749,9 @@ export default function App() {
       const d = result.progress.data || {};
       if (d.kidCursorSize) setKidCursorSize(d.kidCursorSize);
       else if (typeof d.kidCursorEnabled === 'boolean') setKidCursorSize(d.kidCursorEnabled ? 'large' : 'off');
+      if (d.playLimits && typeof d.playLimits === 'object') {
+        setPlayLimitsMap((prev) => mergePlayLimitsMaps(prev, d.playLimits));
+      }
 
       const cloudProfiles = sanitizeProfilesList(d.profiles);
       if (cloudProfiles.length > 0) {
@@ -616,7 +786,7 @@ export default function App() {
 
   const isHe = lang === 'he';
   const isQuizTab = currentTab === 'quiz';
-  const hideChrome = isQuizTab && quizFocusLocked;
+  const hideChrome = isQuizTab && quizFocusLocked && !playLimitState.isLocked;
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -653,8 +823,12 @@ export default function App() {
           gender={gender}
           kidAge={kidAge}
           activeProfile={activeProfile}
+          limitState={playLimitState}
           onOpenProfilePicker={() => setShowProfilePicker(true)}
-          onOpenParentGate={() => setShowParentModal(true)}
+          onOpenParentGate={() => {
+            setParentModalUnlocked(false);
+            setShowParentModal(true);
+          }}
         />
       )}
 
@@ -821,6 +995,27 @@ export default function App() {
         </div>
       )}
 
+      {playLimitState.isLocked && (
+        <PlayTimeLockOverlay
+          key={`lock-${activeLimitKey}-${playLimitState.lockReason}`}
+          lang={lang}
+          gender={gender}
+          activeProfile={activeProfile}
+          profilesCount={profiles.length}
+          dailyStars={dailyStars}
+          limitEntry={activeLimitEntry}
+          limitState={playLimitState}
+          onGrantBonusMinutes={handleGrantBonusMinutes}
+          onStartNewSession={handleResetSessionTimer}
+          onResetTodayUsage={handleResetTodayUsage}
+          onOpenProfilePicker={() => setShowProfilePicker(true)}
+          onOpenParentSettings={() => {
+            setParentModalUnlocked(true);
+            setShowParentModal(true);
+          }}
+        />
+      )}
+
       <ProfilePickerModal
         open={showProfilePicker}
         onClose={() => setShowProfilePicker(false)}
@@ -831,14 +1026,22 @@ export default function App() {
         onSelectProfile={handleSelectProfile}
         onSaveProfile={handleSaveProfile}
         onDeleteProfile={handleDeleteProfile}
-        onOpenParentGate={() => setShowParentModal(true)}
+        onOpenParentGate={() => {
+          setParentModalUnlocked(false);
+          setShowParentModal(true);
+        }}
       />
 
       <ParentModal
         open={showParentModal}
-        onClose={() => setShowParentModal(false)}
+        onClose={() => {
+          setShowParentModal(false);
+          setParentModalUnlocked(false);
+        }}
         lang={lang}
         setLang={setLang}
+        kidAge={kidAge}
+        activeProfile={activeProfile}
         kidCursorEnabled={kidCursorEnabled}
         setKidCursorEnabled={setKidCursorEnabled}
         kidCursorSize={kidCursorSize}
@@ -864,6 +1067,13 @@ export default function App() {
         profilesCount={profiles.length}
         onOpenProfilePicker={() => setShowProfilePicker(true)}
         serverConfig={serverConfig}
+        limitEntry={activeLimitEntry}
+        limitState={playLimitState}
+        onUpdatePlayLimits={handleUpdatePlayLimits}
+        onResetSessionTimer={handleResetSessionTimer}
+        onResetTodayUsage={handleResetTodayUsage}
+        onGrantBonusMinutes={handleGrantBonusMinutes}
+        initialUnlocked={parentModalUnlocked}
       />
 
       <ProUpgradeModal
