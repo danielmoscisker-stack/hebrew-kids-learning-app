@@ -12,12 +12,109 @@ import {
   Flame,
   ArrowRight,
   BookOpen,
-  Volume2
+  Volume2,
+  HelpCircle
 } from 'lucide-react';
 import { AGE_TOPICS, generateMathArenaProblem } from '../data/mathArenaGenerator';
 import { playSound, playPhraseAudio } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { tr } from '../utils/i18n';
+
+/** Masks the final answer in hintMath so the detailed explanation guides without spoiling */
+function maskFinalAnswer(hintMath, answer) {
+  if (!hintMath) return null;
+  const escaped = String(answer).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Replace trailing "= <answer>" (with optional unit) by "= ?"
+  const masked = hintMath.replace(new RegExp(`=\\s*${escaped}(\\s*₪)?$`), '= ?$1');
+  return masked === hintMath ? null : masked;
+}
+
+/** Build a clear 3-step kid-friendly explanation of what the question asks and how to solve it */
+function buildDetailedExplanation(problem, lang) {
+  const whatByTopic = {
+    add_sub: {
+      he: 'יֵשׁ כָּאן תַּרְגִּיל חִבּוּר (+) אוֹ חִסּוּר (−). צָרִיךְ לִמְצֹא מָה הַתּוֹצָאָה בִּמְקוֹם סִימַן הַשְּׁאֵלָה (?).',
+      en: 'This is an addition (+) or subtraction (−) problem. Your goal is to find the number that replaces the question mark (?).',
+      es: 'Es un ejercicio de suma (+) o resta (−). Tu meta es encontrar el número que va en lugar del signo (?).'
+    },
+    missing: {
+      he: 'הָרִבּוּעַ הָרֵיק (□) מַסְתִּיר מִסְפָּר סוֹדִי! צָרִיךְ לִמְצֹא אֵיזֶה מִסְפָּר יַהֲפֹךְ אֶת הַתַּרְגִּיל לְנָכוֹן.',
+      en: 'The empty box (□) is hiding a secret number! Find which number fits in the box so both sides are equal.',
+      es: 'El cuadro vacío (□) esconde un número secreto. Encuentra qué número hace correcta la igualdad.'
+    },
+    mult_starter: {
+      he: 'הַסִּימָן × (כָּפוּל) אוֹמֵר כַּמָּה קְבוּצוֹת שָׁווֹת יֵשׁ לָנוּ. אֶפְשָׁר לִסְפֹּר אֶת כָּל הַפְּרִיטִים שֶׁבַּקְּבוּצוֹת יַחַד!',
+      en: 'The × sign means equal groups! Look at the picture groups below the equation and count how many items there are altogether.',
+      es: 'El signo × significa grupos iguales. Mira los grupos dibujados y cuenta cuántos hay en total.'
+    },
+    compare: {
+      he: 'יֵשׁ שְׁנֵי צְדָדִים וּבָאֶמְצַע עִגּוּל (◯). צָרִיךְ לִבְדֹּק אִם צַד שְׂמֹאל קָטָן מִ- (<), שָׁוֶה לְ- (=), אוֹ גָּדוֹל מִ- (>) צַד יָמִין.',
+      en: 'There are two sides separated by a circle (◯). Check whether the left side is smaller (<), equal (=), or bigger (>) than the right side.',
+      es: 'Hay dos lados con un círculo (◯) en medio. Comprueba si el lado izquierdo es menor (<), igual (=) o mayor (>) que el derecho.'
+    },
+    word_ils: {
+      he: 'זוֹ בְּעָיָה מִלּוּלִית עִם שְׁקָלִים (₪). קוֹרְאִים אֶת הַסִּפּוּר, מוֹצְאִים אֶת הַמִּסְפָּרִים וּמַחְלִיטִים אִם לְחַבֵּר (+) אוֹ לְחַסֵּר (−).',
+      en: 'This is a real-life shekel (₪) story problem! Read the story, spot the numbers, and decide whether to add (+), subtract (−), or multiply (×).',
+      es: 'Es un problema con shékels (₪). Lee la historia, identifica los números y decide si debes sumar (+), restar (−) o multiplicar (×).'
+    },
+    times_div: {
+      he: 'תַּרְגִּיל כֶּפֶל (×) מְחַשֵּׁב קְבוּצוֹת שָׁווֹת, וְתַרְגִּיל חִלּוּק (÷) מְחַלֵּק מִסְפָּר גָּדוֹל לַחֲלָקִים שָׁוִים.',
+      en: 'Multiplication (×) combines equal groups, and division (÷) splits a total into equal parts.',
+      es: 'Multiplicar (×) junta grupos iguales, y dividir (÷) reparte un total en partes iguales.'
+    },
+    mental_1000: {
+      he: 'כָּאן פּוֹתְרִים חִבּוּר אוֹ חִסּוּר עִם מִסְפָּרִים גְּדוֹלִים עַד 1,000. אַל תְּפַחֲדוּ — מְפָרְקִים לְמֵאוֹת וַעֲשָׂרוֹת!',
+      en: 'Here we add or subtract bigger numbers up to 1,000. Break them into hundreds, tens, and ones so it’s super easy!',
+      es: 'Aquí sumamos o restamos números hasta 1,000. Sepáralos en centenas, decenas y unidades.'
+    },
+    order_ops: {
+      he: 'בַּתַּרְגִּיל הַזֶּה יֵשׁ יוֹתֵר מִפְּעֻלָּה אַחַת! לֹא פּוֹתְרִים תָּמִיד מִשְּׂמֹאל לְיָמִין — עוֹקְבִים אַחֲרֵי סֵדֶר הַפְּעֻלּוֹת הַקָּבוּעַ.',
+      en: 'This equation has more than one operation! Don’t just go left-to-right — follow the fixed Order of Operations.',
+      es: 'Esta operación tiene más de un paso. No vayas solo de izquierda a derecha: sigue el orden de las operaciones.'
+    },
+    fractions: {
+      he: 'שֶׁבֶר מַרְאֶה חֵלֶק מִשָּׁלֵם. הַסַּרְגֵּל הַצִּבְעוֹנִי מַרְאֶה לְךָ בְּדִיּוּק כַּמָּה חֲלָקִים שָׁוִים יֵשׁ (לְמַטָּה) וְכַמָּה צְבוּעִים (לְמַעְלָה).',
+      en: 'A fraction shows part of a whole. Look at the colored bar: the bottom number is total equal slices, and the top number is the selected slices.',
+      es: 'Una fracción muestra una parte de un entero. Mira la barra: abajo está el total de partes iguales y arriba las partes elegidas.'
+    },
+    word_perimeter: {
+      he:
+        problem.visual?.type === 'perimeter'
+          ? 'הֶקֵּף הוּא הָאֹרֶךְ שֶׁל כָּל הַגָּדֵר מִסָּבִיב לַצּוּרָה! חַבְּרוּ אֶת כָּל 4 הַצְּלָעוֹת שֶׁמְּצֻיָּרוֹת בַּשִּׂרְטוּט.'
+          : 'זוֹ שְׁאֵלַת קְנִיָּה וְעֹדֶף בְּ-₪ בִּשְׁנֵי שְׁלַבִּים: קֹדֶם בּוֹדְקִים כַּמָּה עוֹלָה הַקְּנִיָּה, וְאָז כַּמָּה עֹדֶף חוֹזֵר מֵהַשְּׁטָר!',
+      en:
+        problem.visual?.type === 'perimeter'
+          ? 'Perimeter means the total distance walking all the way around the outside edge! Add all 4 sides shown on the diagram.'
+          : 'This is a 2-step shopping change problem: first find the total cost of the items, then subtract that from the bill paid!',
+      es:
+        problem.visual?.type === 'perimeter'
+          ? 'El perímetro es la distancia total alrededor de todo el borde. Suma los 4 lados del dibujo.'
+          : 'Es un problema de cambio en 2 pasos: primero calcula el costo total y luego réstalo del billete pagado.'
+    }
+  };
+
+  const whatObj = whatByTopic[problem.topic] || whatByTopic.add_sub;
+  const step1 = tr(lang, whatObj.he, whatObj.en, whatObj.es);
+  const step2 = tr(lang, problem.hint.he, problem.hint.en, problem.hint.es);
+  const step3 =
+    problem.answerType === 'compare'
+      ? tr(
+          lang,
+          'לַחֲצוּ לְמַטָּה עַל < (קָטָן מִ-), = (שָׁוֶה), אוֹ > (גָּדוֹל מִ-).',
+          'Tap < (smaller), = (equal), or > (bigger) below to answer.',
+          'Toca abajo < (menor), = (igual) o > (mayor) para responder.'
+        )
+      : tr(
+          lang,
+          'בַּחֲרוּ אֶת הַתְּשׁוּבָה הַנְּכוֹנָה מִבֵּין 4 הַכַּפְתּוֹרִים לְמַטָּה (אוֹ עִבְרוּ לְמִקְלֶדֶת).',
+          'Tap the matching answer from the 4 big buttons below (or switch to Keypad to type it).',
+          'Elige la respuesta correcta entre los 4 botones grandes de abajo (o usa el teclado).'
+        );
+
+  const starterMath = maskFinalAnswer(problem.hintMath, problem.answer);
+
+  return { step1, step2, step3, starterMath };
+}
 
 function stopMathSpeech() {
   try {
@@ -329,6 +426,7 @@ export default function IsraelMathArena({
   const [keypadWrongFlash, setKeypadWrongFlash] = useState(false);
   const [solved, setSolved] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [showExplain, setShowExplain] = useState(false);
   const [streak, setStreak] = useState(0);
   const [sessionStars, setSessionStars] = useState(0);
 
@@ -368,6 +466,7 @@ export default function IsraelMathArena({
       setKeypadWrongFlash(false);
       setSolved(false);
       setShowHint(openHintByDefault);
+      setShowExplain(false);
       setHadWrongThisQ(false);
       setLearningPause(false);
       if (resetMission) {
@@ -1010,14 +1109,36 @@ export default function IsraelMathArena({
             )}
             {problem.visual?.type === 'perimeter' && <PerimeterVisual visual={problem.visual} lang={lang} />}
 
-            {/* Smart Hint Button & Expandable Israeli School Trick Card */}
+            {/* Smart Hint + Explain in Detail Toolbar */}
             <div className="w-full max-w-xl flex flex-col items-center gap-2">
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('pop');
+                    setShowExplain((v) => !v);
+                    setShowHint(false);
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl border-2 font-black text-xs sm:text-sm transition btn-press-3d cursor-pointer ${
+                    showExplain
+                      ? 'bg-indigo-600 border-indigo-800 text-white shadow'
+                      : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-300 text-indigo-900'
+                  }`}
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  <span>
+                    {showExplain
+                      ? tr(lang, 'הַסְתֵּר הֶסְבֵּר', 'Hide Explanation', 'Ocultar explicación')
+                      : tr(lang, 'הַסְבֵּר לִי בְּפֵרוּט ❓', 'Explain Step-by-Step ❓', 'Explicar paso a paso ❓')}
+                  </span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
                     playSound('pop');
                     setShowHint((v) => !v);
+                    setShowExplain(false);
                   }}
                   className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl border-2 font-black text-xs sm:text-sm transition btn-press-3d cursor-pointer ${
                     showHint
@@ -1045,6 +1166,76 @@ export default function IsraelMathArena({
                   <span>{tr(lang, 'תַּרְגִּיל אַחֵר', 'New Question', 'Otro ejercicio')}</span>
                 </button>
               </div>
+
+              {showExplain && (() => {
+                const detail = buildDetailedExplanation(problem, lang);
+                return (
+                  <div className="w-full bg-indigo-50/90 border-2 border-indigo-300 rounded-3xl p-4 text-slate-800 flex flex-col gap-3 animate-pop-in text-start shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-indigo-200">
+                      <span className="font-black text-sm sm:text-base text-indigo-900 flex items-center gap-1.5">
+                        <span>🦉</span>
+                        <span>{tr(lang, 'הֶסְבֵּר מְפֹרָט: מָה עוֹשִׂים כָּאן?', 'Detailed Guide: What to Do', 'Guía detallada: ¿Qué hacemos?')}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          speakMathAloud(`${detail.step1}. ${detail.step2}. ${detail.step3}`, lang)
+                        }
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-white hover:bg-indigo-100 text-indigo-800 border border-indigo-300 rounded-full font-black text-xs cursor-pointer"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span>{tr(lang, '🔊 הַקְרֵא הַכֹּל', '🔊 Read All', '🔊 Leer todo')}</span>
+                      </button>
+                    </div>
+
+                    <ol className="flex flex-col gap-2 text-xs sm:text-sm font-bold leading-relaxed">
+                      <li className="flex items-start gap-2 bg-white/85 rounded-2xl p-2.5 border border-indigo-100">
+                        <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                          1
+                        </span>
+                        <div>
+                          <span className="font-black text-indigo-900 block">
+                            {tr(lang, 'מָה הַשְּׁאֵלָה שׁוֹאֶלֶת?', 'What is being asked?', '¿Qué pide la pregunta?')}
+                          </span>
+                          <span>{detail.step1}</span>
+                        </div>
+                      </li>
+
+                      <li className="flex items-start gap-2 bg-white/85 rounded-2xl p-2.5 border border-indigo-100">
+                        <span className="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                          2
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-black text-amber-900 block">
+                            {tr(lang, 'אֵיךְ פּוֹתְרִים שָׁלָב אַחַר שָׁלָב?', 'How to solve it:', 'Cómo resolverlo:')}
+                          </span>
+                          <span>{detail.step2}</span>
+                          {detail.starterMath && (
+                            <div
+                              dir="ltr"
+                              className="mt-1.5 inline-block px-3 py-1 bg-amber-50 border border-amber-300 rounded-xl font-black text-sm text-indigo-950"
+                            >
+                              {detail.starterMath}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+
+                      <li className="flex items-start gap-2 bg-white/85 rounded-2xl p-2.5 border border-indigo-100">
+                        <span className="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                          3
+                        </span>
+                        <div>
+                          <span className="font-black text-emerald-900 block">
+                            {tr(lang, 'אֵיךְ עוֹנִים?', 'How to answer:', 'Cómo responder:')}
+                          </span>
+                          <span>{detail.step3}</span>
+                        </div>
+                      </li>
+                    </ol>
+                  </div>
+                );
+              })()}
 
               {showHint && (
                 <div className="w-full bg-amber-50 border-2 border-amber-300 rounded-2xl p-3.5 sm:p-4 text-amber-950 flex flex-col items-center text-center gap-2 animate-pop-in">
