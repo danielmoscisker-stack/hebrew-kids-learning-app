@@ -47,7 +47,8 @@ export default function StarShop({
   onBuyItem,
   onEquipItem,
   onSetWishlist,
-  onGoPlay
+  onGoPlay,
+  onGoHabits
 }) {
   const isHe = lang === 'he';
   const [activeCategory, setActiveCategory] = useState('avatars');
@@ -490,26 +491,41 @@ export default function StarShop({
             <div className="text-xs font-bold text-indigo-800">
               {tr(
                 lang,
-                'כָּל תְּשׁוּבָה נְכוֹנָה מְבִיאָה כּוֹכָב, וְכָל מְשִׂימָה שֶׁל 5 שְׁאֵלוֹת מְבִיאָה +5 כּוֹכְבֵי בּוֹנוּס!',
-                'Every correct answer earns a star, and finishing a 5-question mission gives +5 bonus stars!',
-                '¡Cada respuesta correcta da una estrella y cada misión de 5 preguntas da +5 estrellas extra!'
+                'כָּל תְּשׁוּבָה נְכוֹנָה מְבִיאָה כּוֹכָב, סִיּוּם מְשִׂימָה נוֹתֵן +5 ⭐, וְגַם צִחְצוּחַ שִׁנַּיִם וְשֵׁנָה בַּזְּמַן!',
+                'Every right answer earns a star, finishing a mission gives +5 ⭐, and daily habits earn stars too!',
+                '¡Cada acierto da una estrella, las misiones dan +5 ⭐ y los hábitos diarios también!'
               )}
             </div>
           </div>
         </div>
-        {onGoPlay && (
-          <button
-            type="button"
-            onClick={() => {
-              playSound('pop');
-              onGoPlay();
-            }}
-            className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm flex items-center gap-2 shadow-md btn-press-3d cursor-pointer"
-          >
-            <Rocket className="w-4 h-4" />
-            <span>{tr(lang, 'בּוֹאוּ נְשַׂחֵק!', 'Let’s Play!', '¡A jugar!')}</span>
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {onGoHabits && (
+            <button
+              type="button"
+              onClick={() => {
+                playSound('pop');
+                onGoHabits();
+              }}
+              className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm flex items-center gap-1.5 shadow-md btn-press-3d cursor-pointer"
+            >
+              <span>🪥</span>
+              <span>{tr(lang, 'מְשִׂימוֹת יוֹמִיּוֹת', 'Daily Habits', 'Hábitos')}</span>
+            </button>
+          )}
+          {onGoPlay && (
+            <button
+              type="button"
+              onClick={() => {
+                playSound('pop');
+                onGoPlay();
+              }}
+              className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm flex items-center gap-2 shadow-md btn-press-3d cursor-pointer"
+            >
+              <Rocket className="w-4 h-4" />
+              <span>{tr(lang, 'בּוֹאוּ נְשַׂחֵק!', 'Let’s Play!', '¡A jugar!')}</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

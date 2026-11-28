@@ -294,6 +294,24 @@ export const ACTIVITY_TILES = [
     useSpeechFallback: true
   },
   {
+    id: 'habits',
+    ages: [4, 7, 9],
+    icon: '🪥',
+    badge: 'מְשִׂימוֹת + פְּרָסִים',
+    badgeEn: 'Habits & Prizes',
+    badgeEs: 'Hábitos y Premios',
+    titleHe: 'מְשִׂימוֹת יוֹמִיּוֹת וּפְרָסִים',
+    titleEn: 'Daily Habits & Prizes',
+    titleEs: 'Hábitos y Premios',
+    descHe: 'שִׁנַּיִם, שֵׁנָה בַּזְּמַן וּפְרָסִים מֵהַהוֹרִים',
+    descEn: 'Teeth, Bedtime & Parent Prizes',
+    descEs: 'Dientes, sueño y premios',
+    gradient: 'from-emerald-300 via-teal-200 to-cyan-300',
+    border: 'border-teal-500',
+    text: 'text-teal-950',
+    useSpeechFallback: true
+  },
+  {
     id: 'stickers',
     ages: [4, 7, 9],
     icon: '🎪',

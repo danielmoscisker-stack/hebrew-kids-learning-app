@@ -1,0 +1,852 @@
+import React, { useState } from 'react';
+import {
+  Star,
+  Check,
+  Clock,
+  Lock,
+  Unlock,
+  Plus,
+  Trash2,
+  Gift,
+  ShoppingBag,
+  Sparkles,
+  Trophy,
+  Fingerprint,
+  Volume2,
+  ShieldCheck
+} from 'lucide-react';
+import {
+  PRIZE_PRESETS,
+  CUSTOM_HABIT_ICONS,
+  CUSTOM_PRIZE_ICONS
+} from '../data/habitTrackerData';
+import { getTodayHabitLog } from '../utils/habitTracker';
+import { localTodayStr, generateParentGateChallenge } from '../utils/playLimits';
+import { verifyPinRecord, verifyBiometricForKid } from '../utils/fullscreenLock';
+import { playSound } from '../utils/audio';
+import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
+import { tr } from '../utils/i18n';
+import { speakPersonalText } from '../utils/personalize';
+
+export default function HabitTracker({
+  lang,
+  soundEnabled,
+  kidName = '',
+  kidAge = 4,
+  stars = 0,
+  habitEntry,
+  pinRecord = null,
+  biometricRecord = null,
+  onKidToggleHabit,
+  onParentApproveHabit,
+  onParentApproveAllPending,
+  onSetBedtime,
+  onAddHabit,
+  onDeleteHabit,
+  onToggleApprovalSetting,
+  onAddGoal,
+  onClaimGoal,
+  onDeleteGoal,
+  onGoToShop
+}) {
+  const isHe = lang === 'he';
+  const today = localTodayStr();
+  const todayLog = getTodayHabitLog(habitEntry, today);
+  const habits = habitEntry?.habits || [];
+  const goals = habitEntry?.goals || [];
+  const requireApproval = habitEntry?.requireParentApproval !== false;
+
+  const [parentUnlocked, setParentUnlocked] = useState(false);
+  const [showGate, setShowGate] = useState(false);
+  const [gatePin, setGatePin] = useState('');
+  const [gateError, setGateError] = useState('');
+  const [challenge, setChallenge] = useState(() => generateParentGateChallenge(kidAge >= 7));
+
+  // Parent Goal Builder state
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [goalTitle, setGoalTitle] = useState('');
+  const [goalIcon, setGoalIcon] = useState('🎁');
+  const [goalTarget, setGoalTarget] = useState(10);
+  const [goalHabitFilter, setGoalHabitFilter] = useState([]); // empty = any habit
+
+  // Parent Custom Habit state
+  const [showHabitForm, setShowHabitForm] = useState(false);
+  const [habitTitle, setHabitTitle] = useState('');
+  const [habitIcon, setHabitIcon] = useState('📚');
+  const [habitStars, setHabitStars] = useState(2);
+
+  // Bedtime input state
+  const [bedtimeDraft, setBedtimeDraft] = useState(todayLog.bedtime || '20:00');
+
+  const approvedCount = todayLog.approvedIds.length;
+  const pendingCount = todayLog.pendingIds.length;
+  const totalHabits = habits.length;
+  const todayPct = totalHabits > 0 ? Math.round((approvedCount / totalHabits) * 100) : 0;
+
+  const openParentGate = () => {
+    playSound('pop');
+    setGateError('');
+    setGatePin('');
+    setChallenge(generateParentGateChallenge(kidAge >= 7 || Boolean(pinRecord)));
+    setShowGate(true);
+  };
+
+  const handleBiometricGate = async () => {
+    if (!biometricRecord?.credIdB64) return;
+    try {
+      const ok = await verifyBiometricForKid(biometricRecord.credIdB64);
+      if (ok) {
+        playSound('star');
+        setParentUnlocked(true);
+        setShowGate(false);
+      } else {
+        setGateError(tr(lang, 'האימות לא הושלם', 'Verification cancelled', 'Verificación cancelada'));
+      }
+    } catch {
+      setGateError(tr(lang, 'האימות בוטל', 'Cancelled', 'Cancelado'));
+    }
+  };
+
+  const handlePinGateSubmit = async (e) => {
+    e.preventDefault();
+    if (!pinRecord) return;
+    const ok = await verifyPinRecord(gatePin, pinRecord);
+    if (ok) {
+      playSound('star');
+      setParentUnlocked(true);
+      setShowGate(false);
+      setGatePin('');
+    } else {
+      playSound('whoosh');
+      setGateError(tr(lang, 'קוד PIN שגוי', 'Wrong PIN', 'PIN incorrecto'));
+      setGatePin('');
+    }
+  };
+
+  const handleKidHabitPress = (habit, e) => {
+    const isApproved = todayLog.approvedIds.includes(habit.id);
+    const isPending = todayLog.pendingIds.includes(habit.id);
+
+    if (parentUnlocked) {
+      onParentApproveHabit(habit, today);
+      if (!isApproved) {
+        playSound('star');
+        if (e?.currentTarget) {
+          const r = e.currentTarget.getBoundingClientRect();
+          triggerStarBurst(r.left + r.width / 2, r.top + r.height / 2);
+        }
+      } else {
+        playSound('pop');
+      }
+      return;
+    }
+
+    if (isApproved) {
+      playSound('pop');
+      return;
+    }
+
+    if (!requireApproval) {
+      onKidToggleHabit(habit, today);
+      playSound('star');
+      triggerConfetti({ x: 0.5, y: 0.6 });
+      if (soundEnabled && kidName) {
+        speakPersonalText(
+          tr(lang, `כל הכבוד ${kidName}! קיבלת ${habit.stars} כוכבים!`, `Great job ${kidName}! You earned ${habit.stars} stars!`, `¡Muy bien ${kidName}! ¡Ganaste ${habit.stars} estrellas!`),
+          lang
+        );
+      }
+      return;
+    }
+
+    onKidToggleHabit(habit, today);
+    playSound(isPending ? 'whoosh' : 'pop');
+  };
+
+  // Last 7 days mini history
+  const last7Days = Array.from({ length: 7 }).map((_, offset) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - offset));
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const key = `${y}-${m}-${day}`;
+    const log = habitEntry?.logs?.[key];
+    return {
+      key,
+      label: `${day}/${m}`,
+      count: log?.approvedIds?.length || 0,
+      isToday: key === today
+    };
+  });
+
+  const activeGoals = goals.filter((g) => !g.claimed);
+  const claimedGoals = goals.filter((g) => g.claimed);
+
+  return (
+    <div className="max-w-5xl mx-auto px-3 sm:px-5 pt-4 pb-10 flex flex-col gap-5" dir={isHe ? 'rtl' : 'ltr'}>
+      {/* Hero Banner */}
+      <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 text-white border-4 border-emerald-200 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/25 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-4xl shadow-inner flex-shrink-0">
+              🌟
+            </div>
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-black leading-tight">
+                {tr(
+                  lang,
+                  kidName ? `הַמְּשִׂימוֹת הַיּוֹמִיּוֹת שֶׁל ${kidName}` : 'מְשִׂימוֹת יוֹמִיּוֹת וּפְרָסִים',
+                  kidName ? `${kidName}’s Daily Habits & Prizes` : 'Daily Habits & Prize Goals',
+                  kidName ? `Hábitos y Premios de ${kidName}` : 'Hábitos Diarios y Premios'
+                )}
+              </h2>
+              <p className="text-xs sm:text-sm font-bold text-white/95 mt-0.5">
+                {tr(
+                  lang,
+                  'צַחְצְחוּ שִׁנַּיִם, לְכוּ לִישֹׁן בַּזְּמַן וְהַרְוִיחוּ כּוֹכָבִים לַחֲנוּת וּלְפְרָסִים מֵאִמָּא וְאַבָּא!',
+                  'Brush teeth, go to bed on time & earn stars for the Star Shop and real-world parent prizes!',
+                  '¡Lávate los dientes, duerme a tiempo y gana estrellas para la tienda y premios de tus padres!'
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {onGoToShop && (
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('star');
+                  onGoToShop();
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-300 hover:bg-amber-400 text-amber-950 border-2 border-white font-black text-sm shadow-md btn-press-3d cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>{tr(lang, `חֲנוּת (${stars} ⭐)`, `Shop (${stars} ⭐)`, `Tienda (${stars} ⭐)`)}</span>
+              </button>
+            )}
+
+            {parentUnlocked ? (
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('pop');
+                  setParentUnlocked(false);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white text-emerald-900 border-2 border-emerald-200 font-black text-sm shadow-md btn-press-3d cursor-pointer"
+              >
+                <Unlock className="w-4 h-4 text-emerald-600" />
+                <span>{tr(lang, 'נְעַל מַצַּב הוֹרֶה', 'Lock Parent Mode', 'Bloquear')}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={openParentGate}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white border-2 border-white/50 font-black text-sm btn-press-3d cursor-pointer"
+              >
+                <Lock className="w-4 h-4" />
+                <span>{tr(lang, 'מַצַּב הוֹרֶה (אִשּׁוּר וּפְרָסִים)', 'Parent Mode (Approve & Goals)', 'Modo Padres')}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Today's progress bar */}
+        <div className="mt-4 bg-black/15 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <div className="flex items-center justify-between text-xs font-black mb-1">
+              <span>{tr(lang, 'הַהִתְקַדְּמוּת שֶׁל הַיּוֹם:', "Today's Progress:", 'Progreso de hoy:')}</span>
+              <bdi dir="ltr">
+                {approvedCount}/{totalHabits} ({todayPct}%)
+              </bdi>
+            </div>
+            <div className="w-full h-3 bg-white/25 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-300 rounded-full transition-all duration-500"
+                style={{ width: `${todayPct}%` }}
+              />
+            </div>
+          </div>
+
+          {pendingCount > 0 && (
+            <span className="px-3 py-1 rounded-full bg-amber-300 text-amber-950 font-black text-xs">
+              {tr(lang, `${pendingCount} מַמְתִּינִים לְאִשּׁוּר הוֹרֶה`, `${pendingCount} waiting for parent`, `${pendingCount} esperando aprobación`)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Inline Parent Gate Modal */}
+      {showGate && !parentUnlocked && (
+        <div className="bg-white rounded-3xl border-4 border-indigo-400 shadow-xl p-5 flex flex-col items-center text-center gap-3 animate-pop-in">
+          <div className="flex items-center gap-2 font-black text-indigo-950 text-lg">
+            <ShieldCheck className="w-6 h-6 text-indigo-600" />
+            <span>{tr(lang, 'כְּנִיסָה לְמַצַּב הוֹרֶה', 'Unlock Parent Controls', 'Desbloquear Modo Padres')}</span>
+          </div>
+
+          {biometricRecord?.credIdB64 && (
+            <button
+              type="button"
+              onClick={handleBiometricGate}
+              className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm flex items-center gap-2 shadow-md btn-press-3d cursor-pointer"
+            >
+              <Fingerprint className="w-5 h-5" />
+              <span>{tr(lang, 'אִמּוּת בִּטְבִיעַת אֶצְבַּע / פָּנִים', 'Unlock with Fingerprint / Face ID', 'Huella / Face ID')}</span>
+            </button>
+          )}
+
+          {pinRecord ? (
+            <form onSubmit={handlePinGateSubmit} className="flex items-center gap-2">
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={gatePin}
+                onChange={(e) => {
+                  setGatePin(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  setGateError('');
+                }}
+                placeholder="PIN"
+                className="w-32 px-3 py-2 rounded-xl border-2 border-indigo-300 text-center font-black tracking-widest"
+                dir="ltr"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm cursor-pointer"
+              >
+                {tr(lang, 'פְּתַח', 'Unlock', 'Abrir')}
+              </button>
+            </form>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <div className="text-2xl font-black text-indigo-700 bg-indigo-50 px-5 py-2 rounded-2xl border border-indigo-200" dir="ltr">
+                {challenge.text}
+              </div>
+              <div className="flex gap-2">
+                {challenge.options.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => {
+                      if (opt === challenge.ans) {
+                        playSound('star');
+                        setParentUnlocked(true);
+                        setShowGate(false);
+                      } else {
+                        playSound('whoosh');
+                        setGateError(tr(lang, 'נַסּוּ שׁוּב', 'Try again', 'Intenta de nuevo'));
+                        setChallenge(generateParentGateChallenge(kidAge >= 7));
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-base cursor-pointer"
+                  >
+                    <bdi dir="ltr">{opt}</bdi>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {gateError && <div className="text-xs font-black text-rose-600">{gateError}</div>}
+          <button
+            type="button"
+            onClick={() => setShowGate(false)}
+            className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
+          >
+            {tr(lang, 'בִּטּוּל', 'Cancel', 'Cancelar')}
+          </button>
+        </div>
+      )}
+
+      {/* ===================== PARENT PRIZE GOALS SECTION ===================== */}
+      <div className="bg-white rounded-3xl border-4 border-amber-300 shadow-lg p-4 sm:p-5 flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Gift className="w-6 h-6 text-pink-500" />
+            <h3 className="text-lg sm:text-xl font-black text-slate-900">
+              {tr(lang, 'פְּרָסִים מֵהַהוֹרִים (יַעֲדֵי הַסְכָּמָה)', 'Parent Prize Goals', 'Metas de Premios con Padres')}
+            </h3>
+          </div>
+
+          {parentUnlocked && (
+            <button
+              type="button"
+              onClick={() => {
+                playSound('pop');
+                setShowGoalForm((s) => !s);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-pink-600 hover:bg-pink-700 text-white font-black text-xs sm:text-sm btn-press-3d cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{tr(lang, 'הוֹסֵף יַעַד פְּרָס', 'Add Prize Goal', 'Añadir Premio')}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Add Prize Goal Form (Parent Unlocked) */}
+        {parentUnlocked && showGoalForm && (
+          <div className="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 flex flex-col gap-3 animate-pop-in">
+            <div className="text-xs font-black text-pink-900">
+              {tr(lang, 'בַּחֲרוּ רַעְיוֹן אוֹ כִּתְבוּ פְּרָס מֻסְכָּם:', 'Pick a preset or type your agreed prize:', 'Elige un premio o escribe uno personalizado:')}
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {PRIZE_PRESETS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    playSound('pop');
+                    setGoalIcon(p.icon);
+                    setGoalTitle(tr(lang, p.titleHe, p.titleEn, p.titleEs));
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-pink-100 border border-pink-300 text-xs font-black text-slate-800 cursor-pointer"
+                >
+                  {p.icon} {tr(lang, p.titleHe, p.titleEn, p.titleEs)}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex gap-1 flex-wrap">
+                {CUSTOM_PRIZE_ICONS.map((ic) => (
+                  <button
+                    key={ic}
+                    type="button"
+                    onClick={() => setGoalIcon(ic)}
+                    className={`w-9 h-9 rounded-xl border text-lg cursor-pointer ${
+                      goalIcon === ic ? 'bg-pink-600 border-pink-700 scale-105' : 'bg-white border-pink-200'
+                    }`}
+                  >
+                    {ic}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input
+                type="text"
+                value={goalTitle}
+                onChange={(e) => setGoalTitle(e.target.value)}
+                placeholder={tr(lang, 'לְמָשָׁל: גְּלִידָה עִם אַבָּא', 'e.g. Ice cream with Dad', 'Ej: Helado con Papá')}
+                className="sm:col-span-2 px-3 py-2.5 rounded-xl bg-white border-2 border-pink-200 font-bold text-sm"
+              />
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border-2 border-pink-200">
+                <span className="text-xs font-black text-slate-600">
+                  {tr(lang, 'כַּמָּה פְּעָמִים:', 'Target:', 'Meta:')}
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={goalTarget}
+                  onChange={(e) => setGoalTarget(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                  className="w-16 text-center font-black text-sm border border-slate-200 rounded-lg py-1"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+
+            {/* Optional: select specific habits that count toward this goal */}
+            <div>
+              <div className="text-xs font-black text-slate-700 mb-1.5">
+                {tr(
+                  lang,
+                  'אֵילוּ מְשִׂימוֹת נִסְפָּרוֹת לַיַּעַד? (לְלֹא בְּחִירָה = כָּל מְשִׂימָה):',
+                  'Which habits count? (None selected = all habits count):',
+                  '¿Qué hábitos cuentan? (Ninguno = todos):'
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {habits.map((h) => {
+                  const selected = goalHabitFilter.includes(h.id);
+                  return (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() =>
+                        setGoalHabitFilter((prev) =>
+                          prev.includes(h.id) ? prev.filter((x) => x !== h.id) : [...prev, h.id]
+                        )
+                      }
+                      className={`px-2.5 py-1 rounded-xl text-xs font-black border cursor-pointer ${
+                        selected
+                          ? 'bg-indigo-600 text-white border-indigo-700'
+                          : 'bg-white text-slate-700 border-slate-300'
+                      }`}
+                    >
+                      {h.icon} {tr(lang, h.titleHe, h.titleEn, h.titleEs)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowGoalForm(false)}
+                className="px-4 py-2 rounded-xl bg-white border border-slate-300 font-bold text-xs cursor-pointer"
+              >
+                {tr(lang, 'בִּטּוּל', 'Cancel', 'Cancelar')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!goalTitle.trim()) return;
+                  playSound('star');
+                  onAddGoal({
+                    icon: goalIcon,
+                    title: goalTitle.trim(),
+                    targetCount: goalTarget,
+                    habitIds: goalHabitFilter
+                  });
+                  setGoalTitle('');
+                  setGoalHabitFilter([]);
+                  setShowGoalForm(false);
+                }}
+                className="px-5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-black text-xs sm:text-sm cursor-pointer"
+              >
+                {tr(lang, 'שְׁמֹר יַעַד פְּרָס ✓', 'Save Prize Goal ✓', 'Guardar Premio ✓')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeGoals.length === 0 ? (
+          <div className="bg-amber-50 border-2 border-dashed border-amber-300 rounded-2xl p-4 text-center text-sm font-bold text-amber-900">
+            {tr(
+              lang,
+              'הוֹרִים יְכוֹלִים לִלְחֹץ עַל "מַצַּב הוֹרֶה" כְּדֵי לְהַגְדִּיר פְּרָס מֻסְכָּם (כְּמוֹ "יְצִיאָה עִם אַבָּא" אוֹ "מַתָּנָה")!',
+              'Parents can unlock Parent Mode above to set a real-world prize goal (like "Outing with Dad" or "Special Present")!',
+              '¡Los padres pueden abrir el Modo Padres arriba para fijar un premio real!'
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {activeGoals.map((goal) => {
+              const pct = Math.min(100, Math.round((goal.currentCount / Math.max(1, goal.targetCount)) * 100));
+              const ready = goal.currentCount >= goal.targetCount;
+              return (
+                <div
+                  key={goal.id}
+                  className={`rounded-2xl border-3 p-4 flex flex-col gap-2.5 ${
+                    ready ? 'bg-emerald-50 border-emerald-400 shadow-md' : 'bg-amber-50/70 border-amber-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-3xl">{goal.icon}</span>
+                      <div>
+                        <div className="font-black text-base text-slate-900">{goal.title}</div>
+                        <div className="text-xs font-bold text-slate-600">
+                          <bdi dir="ltr">
+                            {goal.currentCount} / {goal.targetCount}
+                          </bdi>{' '}
+                          {tr(lang, 'מְשִׂימוֹת הֻשְׁלְמוּ', 'habits completed', 'hábitos completados')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {parentUnlocked && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteGoal(goal.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 cursor-pointer"
+                        aria-label="Delete goal"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="w-full h-3 bg-white rounded-full overflow-hidden border border-amber-200">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        ready ? 'bg-emerald-500' : 'bg-gradient-to-r from-pink-500 to-amber-400'
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+
+                  {ready && (
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <span className="text-xs font-black text-emerald-800 flex items-center gap-1">
+                        <Trophy className="w-4 h-4" />
+                        {tr(lang, '🎉 הַפְּרָס מוּכָן! תֵּהָנוּ!', '🎉 Prize Ready to Claim!', '🎉 ¡Premio listo!')}
+                      </span>
+                      {parentUnlocked && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playSound('win');
+                            triggerConfetti();
+                            onClaimGoal(goal.id);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer"
+                        >
+                          {tr(lang, 'סַמֵּן שֶׁנִּתַּן ✓', 'Mark Claimed ✓', 'Marcar entregado ✓')}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {claimedGoals.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-bold text-slate-500">
+            <span>{tr(lang, 'פְּרָסִים שֶׁכְּבָר הֻשְּׂגוּ:', 'Claimed Prizes:', 'Premios ganados:')}</span>
+            {claimedGoals.slice(-4).map((g) => (
+              <span key={g.id} className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-900">
+                {g.icon} {g.title} ✓
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ===================== PARENT QUICK BAR (APPROVAL + BEDTIME + CUSTOM HABIT) ===================== */}
+      <div className="bg-white rounded-3xl border-4 border-sky-200 shadow-md p-4 sm:p-5 flex flex-col gap-4">
+        {/* Bedtime Logger + Parent Quick Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <Clock className="w-5 h-5 text-indigo-600" />
+            <span className="font-black text-sm text-slate-800">
+              {tr(lang, '🌙 שְׁעַת שֵׁנָה הַיּוֹם:', "Today's Bedtime:", 'Hora de dormir hoy:')}
+            </span>
+            <input
+              type="time"
+              value={bedtimeDraft}
+              onChange={(e) => {
+                setBedtimeDraft(e.target.value);
+                onSetBedtime(today, e.target.value);
+              }}
+              className="px-2.5 py-1 rounded-xl border-2 border-indigo-200 font-black text-sm text-indigo-950 bg-indigo-50"
+              dir="ltr"
+            />
+          </div>
+
+          {parentUnlocked && (
+            <div className="flex flex-wrap items-center gap-2">
+              {pendingCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('win');
+                    triggerConfetti();
+                    onParentApproveAllPending(today);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{tr(lang, `אַשֵּׁר הַכֹּל (${pendingCount}) ⭐`, `Approve All (${pendingCount}) ⭐`, `Aprobar todo (${pendingCount}) ⭐`)}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => onToggleApprovalSetting()}
+                className={`px-3 py-2 rounded-xl border-2 font-black text-xs cursor-pointer ${
+                  requireApproval
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-900'
+                    : 'bg-amber-50 border-amber-300 text-amber-900'
+                }`}
+              >
+                {requireApproval
+                  ? tr(lang, '🔒 נִדְרָשׁ אִשּׁוּר הוֹרֶה', '🔒 Parent Approval On', '🔒 Requiere aprobación')
+                  : tr(lang, '✅ אִשּׁוּר עַצְמִי לַיֶּלֶד', '✅ Kid Self-Check On', '✅ Auto-marcado')}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowHabitForm((s) => !s)}
+                className="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{tr(lang, 'מְשִׂימָה חֲדָשָׁה', 'Add Habit', 'Añadir Hábito')}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Add Custom Habit Form */}
+        {parentUnlocked && showHabitForm && (
+          <div className="bg-sky-50 border-2 border-sky-200 rounded-2xl p-3.5 flex flex-col gap-2.5 animate-pop-in">
+            <div className="flex flex-wrap gap-1">
+              {CUSTOM_HABIT_ICONS.map((ic) => (
+                <button
+                  key={ic}
+                  type="button"
+                  onClick={() => setHabitIcon(ic)}
+                  className={`w-9 h-9 rounded-xl border text-lg cursor-pointer ${
+                    habitIcon === ic ? 'bg-sky-600 border-sky-700' : 'bg-white border-sky-200'
+                  }`}
+                >
+                  {ic}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={habitTitle}
+                onChange={(e) => setHabitTitle(e.target.value)}
+                placeholder={tr(lang, 'שֵׁם הַמְּשִׂימָה (לְמָשָׁל: הֲכָנַת תִּיק)', 'Habit name (e.g. Pack school bag)', 'Nombre del hábito')}
+                className="flex-1 min-w-[200px] px-3 py-2 rounded-xl bg-white border-2 border-sky-200 font-bold text-sm"
+              />
+              <select
+                value={habitStars}
+                onChange={(e) => setHabitStars(Number(e.target.value))}
+                className="px-3 py-2 rounded-xl bg-white border-2 border-sky-200 font-black text-sm"
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    +{n} ⭐
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!habitTitle.trim()) return;
+                  playSound('star');
+                  onAddHabit({ icon: habitIcon, title: habitTitle.trim(), stars: habitStars });
+                  setHabitTitle('');
+                  setShowHabitForm(false);
+                }}
+                className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs sm:text-sm cursor-pointer"
+              >
+                {tr(lang, 'הוֹסֵף ✓', 'Add ✓', 'Añadir ✓')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Daily Habits Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {habits.map((habit) => {
+            const isApproved = todayLog.approvedIds.includes(habit.id);
+            const isPending = todayLog.pendingIds.includes(habit.id);
+            const title = tr(lang, habit.titleHe, habit.titleEn, habit.titleEs);
+
+            return (
+              <div
+                key={habit.id}
+                className={`rounded-2xl border-3 p-3.5 flex flex-col justify-between gap-3 transition ${
+                  isApproved
+                    ? 'bg-emerald-50 border-emerald-400 shadow-sm'
+                    : isPending
+                      ? 'bg-amber-50 border-amber-400 shadow-sm'
+                      : 'bg-slate-50 border-slate-200 hover:border-sky-300'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-3xl flex-shrink-0">{habit.icon}</span>
+                    <div>
+                      <div className="font-black text-sm sm:text-base text-slate-900 leading-snug">{title}</div>
+                      <span className="inline-flex items-center gap-0.5 text-xs font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full mt-1">
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
+                        <bdi dir="ltr">+{habit.stars}</bdi>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => speakPersonalText(title, lang)}
+                      aria-label={tr(lang, 'הַקְרֵא', 'Read aloud', 'Leer')}
+                      className="p-1.5 rounded-full hover:bg-white text-indigo-600 cursor-pointer"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                    {parentUnlocked && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteHabit(habit.id)}
+                        aria-label="Delete habit"
+                        className="p-1.5 rounded-full hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => handleKidHabitPress(habit, e)}
+                  className={`w-full py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 btn-press-3d cursor-pointer transition ${
+                    isApproved
+                      ? 'bg-emerald-500 text-white shadow-xs'
+                      : isPending
+                        ? parentUnlocked
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                          : 'bg-amber-300 text-amber-950'
+                        : 'bg-white hover:bg-sky-100 border-2 border-sky-300 text-sky-950'
+                  }`}
+                >
+                  {isApproved ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>
+                        {parentUnlocked
+                          ? tr(lang, 'אֻשַּׁר ✓ (בַּטֵּל)', 'Approved ✓ (Undo)', 'Aprobado ✓ (Quitar)')
+                          : tr(lang, 'בֻּצַּע וְאֻשַּׁר! ⭐', 'Done & Approved! ⭐', '¡Hecho y aprobado! ⭐')}
+                      </span>
+                    </>
+                  ) : isPending ? (
+                    parentUnlocked ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>{tr(lang, `אַשֵּׁר וְתֵן +${habit.stars} ⭐`, `Approve +${habit.stars} ⭐`, `Aprobar +${habit.stars} ⭐`)}</span>
+                      </>
+                    ) : (
+                      <span>{tr(lang, 'מַמְתִּין לְאִשּׁוּר הוֹרֶה ⏳', 'Waiting for Parent ⏳', 'Esperando padre ⏳')}</span>
+                    )
+                  ) : (
+                    <span>
+                      {parentUnlocked
+                        ? tr(lang, `סַמֵּן בֻּצַּע (+${habit.stars} ⭐)`, `Mark Done (+${habit.stars} ⭐)`, `Marcar (+${habit.stars} ⭐)`)
+                        : tr(lang, 'עָשִׂיתִי אֶת זֶה! 🙋', 'I Did It! 🙋', '¡Lo hice! 🙋')}
+                    </span>
+                  )}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 7-Day Consistency Strip */}
+        <div className="pt-2 border-t border-slate-100">
+          <div className="text-xs font-black text-slate-500 mb-2">
+            {tr(lang, '📅 הִתְקַדְּמוּת 7 הַיָּמִים הָאַחֲרוֹנִים:', '📅 Last 7 Days:', '📅 Últimos 7 días:')}
+          </div>
+          <div className="grid grid-cols-7 gap-1.5" dir="ltr">
+            {last7Days.map((day) => (
+              <div
+                key={day.key}
+                className={`rounded-xl p-2 text-center border ${
+                  day.isToday
+                    ? 'bg-emerald-50 border-emerald-400'
+                    : day.count > 0
+                      ? 'bg-amber-50 border-amber-200'
+                      : 'bg-slate-50 border-slate-200'
+                }`}
+              >
+                <div className="text-[10px] font-bold text-slate-500">{day.label}</div>
+                <div className="text-sm font-black text-slate-900 mt-0.5">{day.count}✓</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

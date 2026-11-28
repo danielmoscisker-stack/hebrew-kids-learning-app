@@ -21,6 +21,7 @@ import IsraelMathArena from './components/IsraelMathArena';
 import SchoolSkillArena from './components/SchoolSkillArena';
 import EnglishLearnStudio from './components/EnglishLearnStudio';
 import StarShop from './components/StarShop';
+import HabitTracker from './components/HabitTracker';
 import PlayTimeLockOverlay from './components/PlayTimeLockOverlay';
 import FullscreenUnlockModal from './components/FullscreenUnlockModal';
 import AccessibilityMenu from './components/AccessibilityMenu';
@@ -74,6 +75,14 @@ import {
   saveLocalShopMap,
   mergeShopMaps
 } from './utils/starShop';
+import {
+  getHabitKey,
+  createDefaultHabitEntry,
+  normalizeHabitEntry,
+  loadLocalHabitMap,
+  saveLocalHabitMap,
+  mergeHabitMaps
+} from './utils/habitTracker';
 
 const APP_BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
 
@@ -150,6 +159,10 @@ export default function App() {
   const activeShopKey = getShopKey(activeProfileId);
   const activeShopEntry = starShopMap[activeShopKey] || createDefaultShopEntry();
   const activeThemeBgClass = getThemeBgClass(activeShopEntry.equippedTheme);
+
+  const [habitTrackersMap, setHabitTrackersMap] = useState(() => loadLocalHabitMap());
+  const activeHabitKey = getHabitKey(activeProfileId);
+  const activeHabitEntry = habitTrackersMap[activeHabitKey] || createDefaultHabitEntry();
 
   const [kidAge, setKidAge] = useState(() => {
     const localList = loadLocalProfiles();
@@ -354,6 +367,10 @@ export default function App() {
     saveLocalShopMap(starShopMap);
   }, [starShopMap]);
 
+  useEffect(() => {
+    saveLocalHabitMap(habitTrackersMap);
+  }, [habitTrackersMap]);
+
   // Browser Fullscreen Lock guards: re-lock overlay if Esc/gesture exits fullscreen, block accidental Back/close
   useEffect(() => {
     if (!fullscreenLockActive) return undefined;
@@ -463,6 +480,9 @@ export default function App() {
         if (d.starShop && typeof d.starShop === 'object') {
           setStarShopMap((prev) => mergeShopMaps(prev, d.starShop));
         }
+        if (d.habitTrackers && typeof d.habitTrackers === 'object') {
+          setHabitTrackersMap((prev) => mergeHabitMaps(prev, d.habitTrackers));
+        }
 
         const cloudProfiles = sanitizeProfilesList(d.profiles);
         if (cloudProfiles.length > 0) {
@@ -519,7 +539,8 @@ export default function App() {
           activeProfileId,
           playLimits: playLimitsRef.current,
           kidLocks: kidLocksMap,
-          starShop: starShopMap
+          starShop: starShopMap,
+          habitTrackers: habitTrackersMap
         }
       });
     }, 900);
@@ -539,7 +560,8 @@ export default function App() {
     usageCloudBucket,
     playLimitState.isLocked,
     kidLocksMap,
-    starShopMap
+    starShopMap,
+    habitTrackersMap
   ]);
 
   const { isTouch } = useDeviceType();
@@ -990,6 +1012,277 @@ export default function App() {
     [activeShopKey]
   );
 
+  const applyHabitApprovalDelta = (goals, habitId, delta) =>
+    (goals || []).map((g) => {
+      if (g.claimed) return g;
+      const countsThis = !g.habitIds || g.habitIds.length === 0 || g.habitIds.includes(habitId);
+      if (!countsThis) return g;
+      return { ...g, currentCount: Math.max(0, (g.currentCount || 0) + delta) };
+    });
+
+  const handleKidToggleHabit = useCallback(
+    (habit, dateStr) => {
+      if (!habit) return;
+      const requireApproval = activeHabitEntry.requireParentApproval !== false;
+      let earnedStars = 0;
+
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], bedtime: '' };
+        if (day.approvedIds.includes(habit.id)) return prev;
+
+        if (!requireApproval) {
+          earnedStars = habit.stars || 2;
+          return {
+            ...prev,
+            [activeHabitKey]: {
+              ...cur,
+              logs: {
+                ...cur.logs,
+                [dateStr]: {
+                  ...day,
+                  approvedIds: [...day.approvedIds, habit.id],
+                  pendingIds: day.pendingIds.filter((id) => id !== habit.id)
+                }
+              },
+              goals: applyHabitApprovalDelta(cur.goals, habit.id, 1)
+            }
+          };
+        }
+
+        const alreadyPending = day.pendingIds.includes(habit.id);
+        return {
+          ...prev,
+          [activeHabitKey]: {
+            ...cur,
+            logs: {
+              ...cur.logs,
+              [dateStr]: {
+                ...day,
+                pendingIds: alreadyPending
+                  ? day.pendingIds.filter((id) => id !== habit.id)
+                  : [...day.pendingIds, habit.id]
+              }
+            }
+          }
+        };
+      });
+
+      if (earnedStars > 0) {
+        handleEarnStar(earnedStars);
+      }
+    },
+    [activeHabitKey, activeHabitEntry.requireParentApproval, handleEarnStar]
+  );
+
+  const handleParentApproveHabit = useCallback(
+    (habit, dateStr) => {
+      if (!habit) return;
+      const dayLog = activeHabitEntry.logs?.[dateStr] || { approvedIds: [] };
+      const wasApproved = dayLog.approvedIds.includes(habit.id);
+      const starReward = habit.stars || 2;
+
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], bedtime: '' };
+        const nextApproved = wasApproved
+          ? day.approvedIds.filter((id) => id !== habit.id)
+          : [...day.approvedIds, habit.id];
+        return {
+          ...prev,
+          [activeHabitKey]: {
+            ...cur,
+            logs: {
+              ...cur.logs,
+              [dateStr]: {
+                ...day,
+                approvedIds: nextApproved,
+                pendingIds: day.pendingIds.filter((id) => id !== habit.id)
+              }
+            },
+            goals: applyHabitApprovalDelta(cur.goals, habit.id, wasApproved ? -1 : 1)
+          }
+        };
+      });
+
+      if (!wasApproved) {
+        handleEarnStar(starReward);
+      } else {
+        setStars((s) => Math.max(0, s - starReward));
+        if (activeProfileId) {
+          setProfiles((prev) =>
+            prev.map((p) =>
+              p.id === activeProfileId ? { ...p, stars: Math.max(0, (p.stars || 0) - starReward) } : p
+            )
+          );
+        }
+      }
+    },
+    [activeHabitKey, activeHabitEntry.logs, activeProfileId, handleEarnStar]
+  );
+
+  const handleParentApproveAllPending = useCallback(
+    (dateStr) => {
+      const dayLog = activeHabitEntry.logs?.[dateStr] || { approvedIds: [], pendingIds: [] };
+      const toApprove = dayLog.pendingIds.filter((id) => !dayLog.approvedIds.includes(id));
+      if (toApprove.length === 0) return;
+
+      let totalStars = 0;
+      for (const hid of toApprove) {
+        const h = activeHabitEntry.habits.find((x) => x.id === hid);
+        totalStars += h?.stars || 2;
+      }
+
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], bedtime: '' };
+        let nextGoals = cur.goals;
+        for (const hid of toApprove) {
+          nextGoals = applyHabitApprovalDelta(nextGoals, hid, 1);
+        }
+        return {
+          ...prev,
+          [activeHabitKey]: {
+            ...cur,
+            logs: {
+              ...cur.logs,
+              [dateStr]: {
+                ...day,
+                approvedIds: [...new Set([...day.approvedIds, ...toApprove])],
+                pendingIds: []
+              }
+            },
+            goals: nextGoals
+          }
+        };
+      });
+
+      if (totalStars > 0) {
+        handleEarnStar(totalStars);
+      }
+    },
+    [activeHabitKey, activeHabitEntry.logs, activeHabitEntry.habits, handleEarnStar]
+  );
+
+  const handleSetBedtime = useCallback(
+    (dateStr, bedtime) => {
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], bedtime: '' };
+        return {
+          ...prev,
+          [activeHabitKey]: {
+            ...cur,
+            logs: {
+              ...cur.logs,
+              [dateStr]: { ...day, bedtime }
+            }
+          }
+        };
+      });
+    },
+    [activeHabitKey]
+  );
+
+  const handleAddHabit = useCallback(
+    ({ icon, title, stars: habitStars }) => {
+      const newHabit = {
+        id: `hab_${Date.now()}`,
+        icon: icon || '⭐',
+        stars: habitStars || 2,
+        titleHe: title,
+        titleEn: title,
+        titleEs: title
+      };
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        return {
+          ...prev,
+          [activeHabitKey]: { ...cur, habits: [...cur.habits, newHabit] }
+        };
+      });
+    },
+    [activeHabitKey]
+  );
+
+  const handleDeleteHabit = useCallback(
+    (habitId) => {
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        return {
+          ...prev,
+          [activeHabitKey]: { ...cur, habits: cur.habits.filter((h) => h.id !== habitId) }
+        };
+      });
+    },
+    [activeHabitKey]
+  );
+
+  const handleToggleApprovalSetting = useCallback(() => {
+    setHabitTrackersMap((prev) => {
+      const cur = normalizeHabitEntry(prev[activeHabitKey]);
+      return {
+        ...prev,
+        [activeHabitKey]: { ...cur, requireParentApproval: !cur.requireParentApproval }
+      };
+    });
+  }, [activeHabitKey]);
+
+  const handleAddHabitGoal = useCallback(
+    ({ icon, title, targetCount, habitIds }) => {
+      const newGoal = {
+        id: `goal_${Date.now()}`,
+        icon: icon || '🎁',
+        title,
+        targetCount: Math.max(1, Number(targetCount) || 10),
+        currentCount: 0,
+        habitIds: Array.isArray(habitIds) ? habitIds : [],
+        claimed: false,
+        createdAt: new Date().toISOString()
+      };
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        return {
+          ...prev,
+          [activeHabitKey]: { ...cur, goals: [newGoal, ...cur.goals] }
+        };
+      });
+    },
+    [activeHabitKey]
+  );
+
+  const handleClaimHabitGoal = useCallback(
+    (goalId) => {
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        return {
+          ...prev,
+          [activeHabitKey]: {
+            ...cur,
+            goals: cur.goals.map((g) => (g.id === goalId ? { ...g, claimed: true } : g))
+          }
+        };
+      });
+    },
+    [activeHabitKey]
+  );
+
+  const handleDeleteHabitGoal = useCallback(
+    (goalId) => {
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        return {
+          ...prev,
+          [activeHabitKey]: {
+            ...cur,
+            goals: cur.goals.filter((g) => g.id !== goalId)
+          }
+        };
+      });
+    },
+    [activeHabitKey]
+  );
+
   const handleAuthSuccess = useCallback((result) => {
     cloudHydratedRef.current = true;
     trackEvent('google_signin', { isTouch, lang });
@@ -1010,6 +1303,9 @@ export default function App() {
       }
       if (d.starShop && typeof d.starShop === 'object') {
         setStarShopMap((prev) => mergeShopMaps(prev, d.starShop));
+      }
+      if (d.habitTrackers && typeof d.habitTrackers === 'object') {
+        setHabitTrackersMap((prev) => mergeHabitMaps(prev, d.habitTrackers));
       }
 
       const cloudProfiles = sanitizeProfilesList(d.profiles);
@@ -1315,6 +1611,31 @@ export default function App() {
             onEquipItem={handleEquipShopItem}
             onSetWishlist={handleSetWishlist}
             onGoPlay={() => setCurrentTab('home')}
+            onGoHabits={() => setCurrentTab('habits')}
+          />
+        )}
+        {currentTab === 'habits' && (
+          <HabitTracker
+            key={`habits-${activeHabitKey}`}
+            lang={lang}
+            soundEnabled={soundEnabled}
+            kidName={activeProfile?.name || ''}
+            kidAge={kidAge}
+            stars={stars}
+            habitEntry={activeHabitEntry}
+            pinRecord={activePinRecord}
+            biometricRecord={activeBiometricRecord}
+            onKidToggleHabit={handleKidToggleHabit}
+            onParentApproveHabit={handleParentApproveHabit}
+            onParentApproveAllPending={handleParentApproveAllPending}
+            onSetBedtime={handleSetBedtime}
+            onAddHabit={handleAddHabit}
+            onDeleteHabit={handleDeleteHabit}
+            onToggleApprovalSetting={handleToggleApprovalSetting}
+            onAddGoal={handleAddHabitGoal}
+            onClaimGoal={handleClaimHabitGoal}
+            onDeleteGoal={handleDeleteHabitGoal}
+            onGoToShop={() => setCurrentTab('shop')}
           />
         )}
         {currentTab === 'stickers' && (
