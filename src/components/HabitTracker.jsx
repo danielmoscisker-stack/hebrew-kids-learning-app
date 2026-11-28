@@ -20,7 +20,7 @@ import {
   CUSTOM_HABIT_ICONS,
   CUSTOM_PRIZE_ICONS
 } from '../data/habitTrackerData';
-import { getTodayHabitLog } from '../utils/habitTracker';
+import { getTodayHabitLog, createDefaultHabitEntry } from '../utils/habitTracker';
 import { localTodayStr, generateParentGateChallenge } from '../utils/playLimits';
 import { verifyPinRecord, verifyBiometricForKid } from '../utils/fullscreenLock';
 import { playSound } from '../utils/audio';
@@ -35,6 +35,9 @@ export default function HabitTracker({
   kidAge = 4,
   stars = 0,
   habitEntry,
+  profiles = [],
+  activeProfileId = null,
+  habitTrackersMap = {},
   pinRecord = null,
   biometricRecord = null,
   onKidToggleHabit,
@@ -57,6 +60,7 @@ export default function HabitTracker({
   const requireApproval = habitEntry?.requireParentApproval !== false;
 
   const [parentUnlocked, setParentUnlocked] = useState(false);
+  const [chartProfileId, setChartProfileId] = useState(activeProfileId || null);
   const [showGate, setShowGate] = useState(false);
   const [gatePin, setGatePin] = useState('');
   const [gateError, setGateError] = useState('');
@@ -163,7 +167,17 @@ export default function HabitTracker({
     playSound(isPending ? 'whoosh' : 'pop');
   };
 
-  // Last 7 days mini history
+  // Weekly 7-Day Chart target kid (defaults to active kid, switchable if multiple profiles exist)
+  const effectiveChartId =
+    chartProfileId && profiles.some((p) => p.id === chartProfileId) ? chartProfileId : activeProfileId;
+  const chartProfile = profiles.find((p) => p.id === effectiveChartId) || null;
+  const isViewingActiveKidChart = effectiveChartId === activeProfileId;
+  const chartEntry = isViewingActiveKidChart
+    ? habitEntry
+    : habitTrackersMap[effectiveChartId || 'guest'] || createDefaultHabitEntry();
+  const chartHabits = chartEntry?.habits || [];
+
+  const localeCode = lang === 'he' ? 'he-IL' : lang === 'es' ? 'es-ES' : 'en-US';
   const last7Days = Array.from({ length: 7 }).map((_, offset) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - offset));
@@ -171,11 +185,26 @@ export default function HabitTracker({
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     const key = `${y}-${m}-${day}`;
-    const log = habitEntry?.logs?.[key];
+    const log = chartEntry?.logs?.[key] || { approvedIds: [], pendingIds: [], bedtime: '' };
+    let weekday = '';
+    try {
+      weekday = new Intl.DateTimeFormat(localeCode, { weekday: 'short' }).format(d);
+    } catch {
+      weekday = `${day}/${m}`;
+    }
+    const approvedCountDay = (log.approvedIds || []).filter((id) =>
+      chartHabits.some((h) => h.id === id)
+    ).length;
+    const pct = chartHabits.length > 0 ? Math.round((approvedCountDay / chartHabits.length) * 100) : 0;
     return {
       key,
+      weekday,
       label: `${day}/${m}`,
-      count: log?.approvedIds?.length || 0,
+      approvedIds: log.approvedIds || [],
+      pendingIds: log.pendingIds || [],
+      bedtime: log.bedtime || '',
+      count: approvedCountDay,
+      pct,
       isToday: key === today
     };
   });
@@ -823,28 +852,204 @@ export default function HabitTracker({
           })}
         </div>
 
-        {/* 7-Day Consistency Strip */}
-        <div className="pt-2 border-t border-slate-100">
-          <div className="text-xs font-black text-slate-500 mb-2">
-            {tr(lang, '📅 הִתְקַדְּמוּת 7 הַיָּמִים הָאַחֲרוֹנִים:', '📅 Last 7 Days:', '📅 Últimos 7 días:')}
+      </div>
+
+      {/* ===================== 7-DAY WEEKLY PROGRESS CHART (PER KID) ===================== */}
+      <div className="bg-white rounded-3xl border-4 border-indigo-200 shadow-lg p-4 sm:p-5 flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+              <span>📅</span>
+              <span>
+                {tr(
+                  lang,
+                  chartProfile?.name ? `טַבְלַת שָׁבוּעַ (7 יָמִים) — ${chartProfile.name}` : 'טַבְלַת שָׁבוּעַ (7 יָמִים)',
+                  chartProfile?.name ? `7-Day Weekly Chart — ${chartProfile.name}` : '7-Day Weekly Chart',
+                  chartProfile?.name ? `Gráfico Semanal (7 días) — ${chartProfile.name}` : 'Gráfico Semanal (7 días)'
+                )}
+              </span>
+            </h3>
+            <p className="text-xs font-bold text-slate-500 mt-0.5">
+              {tr(
+                lang,
+                'מַעֲקָב יוֹמִי אַחֲרֵי כָּל מְשִׂימָה וּשְׁעַת שֵׁנָה בְּמֶשֶׁךְ 7 הַיָּמִים הָאַחֲרוֹנִים',
+                'See what was completed or missed each day across the 7-day week',
+                'Mira lo que hizo o faltó cada día durante la semana de 7 días'
+              )}
+            </p>
           </div>
-          <div className="grid grid-cols-7 gap-1.5" dir="ltr">
+
+          {/* Multi-kid switcher if family has 2+ profiles */}
+          {profiles.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {profiles.map((p) => {
+                const selected = p.id === effectiveChartId;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      playSound('pop');
+                      setChartProfileId(p.id);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl font-black text-xs border-2 transition cursor-pointer ${
+                      selected
+                        ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-indigo-50'
+                    }`}
+                  >
+                    <span>{p.avatar || '👦'}</span>
+                    <span>{p.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 7-Day Visual Completion Bar Chart */}
+        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-3 sm:p-4">
+          <div className="grid grid-cols-7 gap-2 items-end h-28" dir="ltr">
             {last7Days.map((day) => (
-              <div
-                key={day.key}
-                className={`rounded-xl p-2 text-center border ${
-                  day.isToday
-                    ? 'bg-emerald-50 border-emerald-400'
-                    : day.count > 0
-                      ? 'bg-amber-50 border-amber-200'
-                      : 'bg-slate-50 border-slate-200'
-                }`}
-              >
-                <div className="text-[10px] font-bold text-slate-500">{day.label}</div>
-                <div className="text-sm font-black text-slate-900 mt-0.5">{day.count}✓</div>
+              <div key={day.key} className="flex flex-col items-center justify-end h-full gap-1">
+                <span className="text-[10px] font-black text-slate-600">{day.pct}%</span>
+                <div className="w-full max-w-[34px] flex-1 bg-slate-200 rounded-t-xl overflow-hidden flex items-end">
+                  <div
+                    className={`w-full rounded-t-xl transition-all duration-500 ${
+                      day.pct >= 80
+                        ? 'bg-emerald-500'
+                        : day.pct >= 40
+                          ? 'bg-amber-400'
+                          : day.pct > 0
+                            ? 'bg-sky-400'
+                            : 'bg-slate-300'
+                    }`}
+                    style={{ height: `${Math.max(day.pct > 0 ? 12 : 4, day.pct)}%` }}
+                  />
+                </div>
+                <span className={`text-[10px] font-black ${day.isToday ? 'text-indigo-700' : 'text-slate-500'}`}>
+                  {day.weekday}
+                </span>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Detailed 7-Day Matrix (Habits × Days) */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr className="border-b-2 border-slate-200">
+                <th className="py-2 px-2 text-start font-black text-slate-700 min-w-[140px]">
+                  {tr(lang, 'מְשִׂימָה', 'Habit', 'Hábito')}
+                </th>
+                {last7Days.map((day) => (
+                  <th
+                    key={day.key}
+                    className={`py-2 px-1.5 text-center font-black min-w-[52px] rounded-t-xl ${
+                      day.isToday ? 'bg-indigo-50 text-indigo-900' : 'text-slate-600'
+                    }`}
+                  >
+                    <div className="text-[11px]">{day.weekday}</div>
+                    <div className="text-[10px] font-bold opacity-75" dir="ltr">
+                      {day.label}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {chartHabits.map((h) => (
+                <tr key={h.id} className="border-b border-slate-100 hover:bg-slate-50/70">
+                  <td className="py-2 px-2 font-bold text-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base">{h.icon}</span>
+                      <span className="truncate max-w-[180px]">{tr(lang, h.titleHe, h.titleEn, h.titleEs)}</span>
+                    </div>
+                  </td>
+                  {last7Days.map((day) => {
+                    const done = day.approvedIds.includes(h.id);
+                    const pending = !done && day.pendingIds.includes(h.id);
+                    const canParentEdit = parentUnlocked && isViewingActiveKidChart;
+                    return (
+                      <td
+                        key={day.key}
+                        className={`py-1.5 px-1 text-center ${day.isToday ? 'bg-indigo-50/60' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          disabled={!canParentEdit}
+                          onClick={() => {
+                            if (!canParentEdit) return;
+                            onParentApproveHabit(h, day.key);
+                            playSound(done ? 'pop' : 'star');
+                          }}
+                          title={
+                            canParentEdit
+                              ? tr(lang, 'לחץ לשינוי מצב', 'Tap to toggle', 'Tocar para cambiar')
+                              : done
+                                ? tr(lang, 'בוצע ✓', 'Done ✓', 'Hecho ✓')
+                                : pending
+                                  ? tr(lang, 'ממתין לאישור', 'Pending', 'Pendiente')
+                                  : tr(lang, 'לא בוצע', 'Not done', 'No hecho')
+                          }
+                          className={`w-8 h-8 rounded-xl inline-flex items-center justify-center font-black text-sm transition ${
+                            done
+                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                              : pending
+                                ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                                : day.isToday
+                                  ? 'bg-slate-100 text-slate-400 border border-slate-200'
+                                  : 'bg-rose-50 text-rose-400 border border-rose-200'
+                          } ${canParentEdit ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
+                        >
+                          {done ? '✓' : pending ? '⏳' : day.isToday ? '·' : '✕'}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+
+              {/* Bedtime Row */}
+              <tr className="bg-indigo-50/40">
+                <td className="py-2 px-2 font-black text-indigo-950">
+                  <div className="flex items-center gap-1.5">
+                    <span>🌙</span>
+                    <span>{tr(lang, 'שְׁעַת שֵׁנָה', 'Bedtime', 'Hora de dormir')}</span>
+                  </div>
+                </td>
+                {last7Days.map((day) => (
+                  <td key={day.key} className="py-2 px-1 text-center font-black text-[11px] text-indigo-900" dir="ltr">
+                    {day.bedtime || '—'}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-slate-500 pt-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1">
+              <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-300 inline-flex items-center justify-center font-black">✓</span>
+              {tr(lang, 'בֻּצַּע', 'Done', 'Hecho')}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="w-5 h-5 rounded-md bg-amber-100 text-amber-700 border border-amber-300 inline-flex items-center justify-center font-black">⏳</span>
+              {tr(lang, 'מַמְתִּין לְאִשּׁוּר', 'Pending', 'Pendiente')}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="w-5 h-5 rounded-md bg-rose-50 text-rose-400 border border-rose-200 inline-flex items-center justify-center font-black">✕</span>
+              {tr(lang, 'לֹא בֻּצַּע', 'Missed', 'Faltó')}
+            </span>
+          </div>
+          {parentUnlocked && isViewingActiveKidChart && (
+            <span className="text-indigo-700 font-black">
+              {tr(lang, '💡 בְּמַצַּב הוֹרֶה אֶפְשָׁר לִלְחֹץ עַל כָּל מִשְׁבֶּצֶת כְּדֵי לְעַדְכֵּן יוֹם קוֹדֵם', '💡 Parent Mode: tap any cell to update past days', '💡 Modo Padres: toca cualquier celda para editar')}
+            </span>
+          )}
         </div>
       </div>
     </div>

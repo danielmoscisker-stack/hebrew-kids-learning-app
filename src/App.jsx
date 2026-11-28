@@ -1623,6 +1623,9 @@ export default function App() {
             kidAge={kidAge}
             stars={stars}
             habitEntry={activeHabitEntry}
+            profiles={profiles}
+            activeProfileId={activeProfileId}
+            habitTrackersMap={habitTrackersMap}
             pinRecord={activePinRecord}
             biometricRecord={activeBiometricRecord}
             onKidToggleHabit={handleKidToggleHabit}
