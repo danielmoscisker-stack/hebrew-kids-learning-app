@@ -66,6 +66,9 @@ export function normalizeHabitEntry(raw) {
         pendingIds: Array.isArray(dayLog.pendingIds)
           ? [...new Set(dayLog.pendingIds.filter((x) => typeof x === 'string'))]
           : [],
+        rejectedIds: Array.isArray(dayLog.rejectedIds)
+          ? [...new Set(dayLog.rejectedIds.filter((x) => typeof x === 'string'))]
+          : [],
         bedtime: typeof dayLog.bedtime === 'string' ? dayLog.bedtime.slice(0, 10) : ''
       };
     }

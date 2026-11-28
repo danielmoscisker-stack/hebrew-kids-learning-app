@@ -12,7 +12,8 @@ import {
   Sparkles,
   Trophy,
   Volume2,
-  ShieldCheck
+  ShieldCheck,
+  X
 } from 'lucide-react';
 import {
   PRIZE_PRESETS,
@@ -41,6 +42,7 @@ export default function HabitTracker({
   biometricRecord = null,
   onKidToggleHabit,
   onParentApproveHabit,
+  onParentRejectHabit,
   onParentApproveAllPending,
   onSetBedtime,
   onAddHabit,
@@ -116,6 +118,11 @@ export default function HabitTracker({
     }
 
     if (isApproved) {
+      if (!requireApproval) {
+        onKidToggleHabit(habit, today);
+        playSound('whoosh');
+        return;
+      }
       playSound('pop');
       return;
     }
@@ -703,6 +710,7 @@ export default function HabitTracker({
           {habits.map((habit) => {
             const isApproved = todayLog.approvedIds.includes(habit.id);
             const isPending = todayLog.pendingIds.includes(habit.id);
+            const isRejected = (todayLog.rejectedIds || []).includes(habit.id);
             const title = tr(lang, habit.titleHe, habit.titleEn, habit.titleEs);
 
             return (
@@ -713,7 +721,9 @@ export default function HabitTracker({
                     ? 'bg-emerald-50 border-emerald-400 shadow-sm'
                     : isPending
                       ? 'bg-amber-50 border-amber-400 shadow-sm'
-                      : 'bg-slate-50 border-slate-200 hover:border-sky-300'
+                      : isRejected
+                        ? 'bg-rose-50/60 border-rose-300'
+                        : 'bg-slate-50 border-slate-200 hover:border-sky-300'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -750,49 +760,72 @@ export default function HabitTracker({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => handleKidHabitPress(habit, e)}
-                  className={`w-full py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 btn-press-3d cursor-pointer transition ${
-                    isApproved
-                      ? 'bg-emerald-500 text-white shadow-xs'
-                      : isPending
-                        ? parentUnlocked
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
-                          : 'bg-amber-300 text-amber-950'
-                        : isAdultOnly && !parentUnlocked
-                          ? 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-600'
-                          : 'bg-white hover:bg-sky-100 border-2 border-sky-300 text-sky-950'
-                  }`}
-                >
-                  {isApproved ? (
-                    <>
+                {isRejected && !isApproved && !isPending && (
+                  <div className="text-[11px] font-black text-rose-700 bg-rose-100 border border-rose-200 rounded-lg px-2.5 py-1 text-center">
+                    {tr(lang, 'לֹא אֻשַּׁר עַל יְדֵי הוֹרֶה — נַסּוּ שׁוּב', 'Not approved by parent — try again', 'No aprobado — intenta de nuevo')}
+                  </div>
+                )}
+
+                {isPending && parentUnlocked ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => handleKidHabitPress(habit, e)}
+                      className="flex-1 py-2.5 px-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm btn-press-3d cursor-pointer transition"
+                    >
                       <Check className="w-4 h-4" />
-                      <span>
-                        {parentUnlocked
-                          ? tr(lang, 'אֻשַּׁר ✓ (בַּטֵּל)', 'Approved ✓ (Undo)', 'Aprobado ✓ (Quitar)')
-                          : tr(lang, 'בֻּצַּע וְאֻשַּׁר! ⭐', 'Done & Approved! ⭐', '¡Hecho y aprobado! ⭐')}
-                      </span>
-                    </>
-                  ) : isPending ? (
-                    parentUnlocked ? (
+                      <span>{tr(lang, `אַשֵּׁר +${habit.stars} ⭐`, `Approve +${habit.stars} ⭐`, `Aprobar +${habit.stars} ⭐`)}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('whoosh');
+                        onParentRejectHabit?.(habit, today);
+                      }}
+                      className="py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1 bg-rose-500 hover:bg-rose-600 text-white shadow-sm btn-press-3d cursor-pointer transition"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>{tr(lang, 'דְּחֵה', 'Reject', 'Rechazar')}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => handleKidHabitPress(habit, e)}
+                    className={`w-full py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 btn-press-3d cursor-pointer transition ${
+                      isApproved
+                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs'
+                        : isPending
+                          ? 'bg-amber-300 hover:bg-amber-400 text-amber-950'
+                          : isAdultOnly && !parentUnlocked
+                            ? 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-600'
+                            : 'bg-white hover:bg-sky-100 border-2 border-sky-300 text-sky-950'
+                    }`}
+                  >
+                    {isApproved ? (
                       <>
                         <Check className="w-4 h-4" />
-                        <span>{tr(lang, `אַשֵּׁר וְתֵן +${habit.stars} ⭐`, `Approve +${habit.stars} ⭐`, `Aprobar +${habit.stars} ⭐`)}</span>
+                        <span>
+                          {parentUnlocked
+                            ? tr(lang, 'אֻשַּׁר ✓ (בַּטֵּל)', 'Approved ✓ (Undo)', 'Aprobado ✓ (Quitar)')
+                            : !requireApproval
+                              ? tr(lang, 'בֻּצַּע! ⭐ (לַחַץ לְהָסִיר)', 'Done! ⭐ (Tap to Remove)', '¡Hecho! ⭐ (Quitar)')
+                              : tr(lang, 'בֻּצַּע וְאֻשַּׁר! ⭐', 'Done & Approved! ⭐', '¡Hecho y aprobado! ⭐')}
+                        </span>
                       </>
+                    ) : isPending ? (
+                      <span>{tr(lang, 'מַמְתִּין לְאִשּׁוּר ⏳ (לַחַץ לְהָסִיר)', 'Waiting ⏳ (Tap to Remove)', 'Esperando ⏳ (Toca para quitar)')}</span>
                     ) : (
-                      <span>{tr(lang, 'מַמְתִּין לְאִשּׁוּר הוֹרֶה ⏳', 'Waiting for Parent ⏳', 'Esperando padre ⏳')}</span>
-                    )
-                  ) : (
-                    <span>
-                      {parentUnlocked
-                        ? tr(lang, `סַמֵּן בֻּצַּע (+${habit.stars} ⭐)`, `Mark Done (+${habit.stars} ⭐)`, `Marcar (+${habit.stars} ⭐)`)
-                        : isAdultOnly
-                          ? tr(lang, '🔒 הוֹרֶה מְסַמֵּן בִּלְבַד', '🔒 Parent Marks Only', '🔒 Solo marca el adulto')
-                          : tr(lang, 'עָשִׂיתִי אֶת זֶה! 🙋', 'I Did It! 🙋', '¡Lo hice! 🙋')}
-                    </span>
-                  )}
-                </button>
+                      <span>
+                        {parentUnlocked
+                          ? tr(lang, `סַמֵּן בֻּצַּע (+${habit.stars} ⭐)`, `Mark Done (+${habit.stars} ⭐)`, `Marcar (+${habit.stars} ⭐)`)
+                          : isAdultOnly
+                            ? tr(lang, '🔒 הוֹרֶה מְסַמֵּן בִּלְבַד', '🔒 Parent Marks Only', '🔒 Solo marca el adulto')
+                            : tr(lang, 'עָשִׂיתִי אֶת זֶה! 🙋', 'I Did It! 🙋', '¡Lo hice! 🙋')}
+                      </span>
+                    )}
+                  </button>
+                )}
               </div>
             );
           })}

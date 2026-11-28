@@ -1027,15 +1027,19 @@ export default function App() {
         activeHabitEntry.trackingMode || (activeHabitEntry.requireParentApproval === false ? 'kid_self' : 'parent_approval');
       if (mode === 'adult_only') return;
       const requireApproval = mode !== 'kid_self';
-      let earnedStars = 0;
+      const dayLog = activeHabitEntry.logs?.[dateStr] || { approvedIds: [], pendingIds: [], rejectedIds: [] };
+      const wasApproved = dayLog.approvedIds.includes(habit.id);
+      const starReward = habit.stars || 2;
 
-      setHabitTrackersMap((prev) => {
-        const cur = normalizeHabitEntry(prev[activeHabitKey]);
-        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], bedtime: '' };
-        if (day.approvedIds.includes(habit.id)) return prev;
+      if (requireApproval && wasApproved) return;
 
-        if (!requireApproval) {
-          earnedStars = habit.stars || 2;
+      if (!requireApproval) {
+        setHabitTrackersMap((prev) => {
+          const cur = normalizeHabitEntry(prev[activeHabitKey]);
+          const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], rejectedIds: [], bedtime: '' };
+          const nextApproved = wasApproved
+            ? day.approvedIds.filter((id) => id !== habit.id)
+            : [...day.approvedIds, habit.id];
           return {
             ...prev,
             [activeHabitKey]: {
@@ -1044,15 +1048,35 @@ export default function App() {
                 ...cur.logs,
                 [dateStr]: {
                   ...day,
-                  approvedIds: [...day.approvedIds, habit.id],
-                  pendingIds: day.pendingIds.filter((id) => id !== habit.id)
+                  approvedIds: nextApproved,
+                  pendingIds: day.pendingIds.filter((id) => id !== habit.id),
+                  rejectedIds: (day.rejectedIds || []).filter((id) => id !== habit.id)
                 }
               },
-              goals: applyHabitApprovalDelta(cur.goals, habit.id, 1)
+              goals: applyHabitApprovalDelta(cur.goals, habit.id, wasApproved ? -1 : 1)
             }
           };
-        }
+        });
 
+        if (!wasApproved) {
+          handleEarnStar(starReward);
+        } else {
+          setStars((s) => Math.max(0, s - starReward));
+          if (activeProfileId) {
+            setProfiles((prev) =>
+              prev.map((p) =>
+                p.id === activeProfileId ? { ...p, stars: Math.max(0, (p.stars || 0) - starReward) } : p
+              )
+            );
+          }
+        }
+        return;
+      }
+
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], rejectedIds: [], bedtime: '' };
+        if (day.approvedIds.includes(habit.id)) return prev;
         const alreadyPending = day.pendingIds.includes(habit.id);
         return {
           ...prev,
@@ -1064,18 +1088,17 @@ export default function App() {
                 ...day,
                 pendingIds: alreadyPending
                   ? day.pendingIds.filter((id) => id !== habit.id)
-                  : [...day.pendingIds, habit.id]
+                  : [...day.pendingIds, habit.id],
+                rejectedIds: alreadyPending
+                  ? day.rejectedIds || []
+                  : (day.rejectedIds || []).filter((id) => id !== habit.id)
               }
             }
           }
         };
       });
-
-      if (earnedStars > 0) {
-        handleEarnStar(earnedStars);
-      }
     },
-    [activeHabitKey, activeHabitEntry.trackingMode, activeHabitEntry.requireParentApproval, handleEarnStar]
+    [activeHabitKey, activeHabitEntry.trackingMode, activeHabitEntry.requireParentApproval, activeHabitEntry.logs, activeProfileId, handleEarnStar]
   );
 
   const handleParentApproveHabit = useCallback(
@@ -1087,7 +1110,7 @@ export default function App() {
 
       setHabitTrackersMap((prev) => {
         const cur = normalizeHabitEntry(prev[activeHabitKey]);
-        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], bedtime: '' };
+        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], rejectedIds: [], bedtime: '' };
         const nextApproved = wasApproved
           ? day.approvedIds.filter((id) => id !== habit.id)
           : [...day.approvedIds, habit.id];
@@ -1100,7 +1123,8 @@ export default function App() {
               [dateStr]: {
                 ...day,
                 approvedIds: nextApproved,
-                pendingIds: day.pendingIds.filter((id) => id !== habit.id)
+                pendingIds: day.pendingIds.filter((id) => id !== habit.id),
+                rejectedIds: (day.rejectedIds || []).filter((id) => id !== habit.id)
               }
             },
             goals: applyHabitApprovalDelta(cur.goals, habit.id, wasApproved ? -1 : 1)
@@ -1124,6 +1148,31 @@ export default function App() {
     [activeHabitKey, activeHabitEntry.logs, activeProfileId, handleEarnStar]
   );
 
+  const handleParentRejectHabit = useCallback(
+    (habit, dateStr) => {
+      if (!habit) return;
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], rejectedIds: [], bedtime: '' };
+        return {
+          ...prev,
+          [activeHabitKey]: {
+            ...cur,
+            logs: {
+              ...cur.logs,
+              [dateStr]: {
+                ...day,
+                pendingIds: day.pendingIds.filter((id) => id !== habit.id),
+                rejectedIds: [...new Set([...(day.rejectedIds || []), habit.id])]
+              }
+            }
+          }
+        };
+      });
+    },
+    [activeHabitKey]
+  );
+
   const handleParentApproveAllPending = useCallback(
     (dateStr) => {
       const dayLog = activeHabitEntry.logs?.[dateStr] || { approvedIds: [], pendingIds: [] };
@@ -1138,7 +1187,7 @@ export default function App() {
 
       setHabitTrackersMap((prev) => {
         const cur = normalizeHabitEntry(prev[activeHabitKey]);
-        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], bedtime: '' };
+        const day = cur.logs[dateStr] || { approvedIds: [], pendingIds: [], rejectedIds: [], bedtime: '' };
         let nextGoals = cur.goals;
         for (const hid of toApprove) {
           nextGoals = applyHabitApprovalDelta(nextGoals, hid, 1);
@@ -1152,7 +1201,8 @@ export default function App() {
               [dateStr]: {
                 ...day,
                 approvedIds: [...new Set([...day.approvedIds, ...toApprove])],
-                pendingIds: []
+                pendingIds: [],
+                rejectedIds: (day.rejectedIds || []).filter((id) => !toApprove.includes(id))
               }
             },
             goals: nextGoals
@@ -1640,6 +1690,7 @@ export default function App() {
             biometricRecord={activeBiometricRecord}
             onKidToggleHabit={handleKidToggleHabit}
             onParentApproveHabit={handleParentApproveHabit}
+            onParentRejectHabit={handleParentRejectHabit}
             onParentApproveAllPending={handleParentApproveAllPending}
             onSetBedtime={handleSetBedtime}
             onAddHabit={handleAddHabit}
