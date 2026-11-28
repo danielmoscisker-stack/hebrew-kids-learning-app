@@ -46,7 +46,7 @@ export default function HabitTracker({
   onSetBedtime,
   onAddHabit,
   onDeleteHabit,
-  onToggleApprovalSetting,
+  onSetTrackingMode,
   onAddGoal,
   onClaimGoal,
   onDeleteGoal,
@@ -57,7 +57,10 @@ export default function HabitTracker({
   const todayLog = getTodayHabitLog(habitEntry, today);
   const habits = habitEntry?.habits || [];
   const goals = habitEntry?.goals || [];
-  const requireApproval = habitEntry?.requireParentApproval !== false;
+  const trackingMode =
+    habitEntry?.trackingMode || (habitEntry?.requireParentApproval === false ? 'kid_self' : 'parent_approval');
+  const isAdultOnly = trackingMode === 'adult_only';
+  const requireApproval = trackingMode !== 'kid_self';
 
   const [parentUnlocked, setParentUnlocked] = useState(false);
   const [chartProfileId, setChartProfileId] = useState(activeProfileId || null);
@@ -142,6 +145,12 @@ export default function HabitTracker({
       } else {
         playSound('pop');
       }
+      return;
+    }
+
+    if (isAdultOnly) {
+      playSound('whoosh');
+      openParentGate();
       return;
     }
 
@@ -651,11 +660,14 @@ export default function HabitTracker({
             <input
               type="time"
               value={bedtimeDraft}
+              disabled={isAdultOnly && !parentUnlocked}
               onChange={(e) => {
                 setBedtimeDraft(e.target.value);
                 onSetBedtime(today, e.target.value);
               }}
-              className="px-2.5 py-1 rounded-xl border-2 border-indigo-200 font-black text-sm text-indigo-950 bg-indigo-50"
+              className={`px-2.5 py-1 rounded-xl border-2 border-indigo-200 font-black text-sm text-indigo-950 bg-indigo-50 ${
+                isAdultOnly && !parentUnlocked ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
               dir="ltr"
             />
           </div>
@@ -677,19 +689,48 @@ export default function HabitTracker({
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => onToggleApprovalSetting()}
-                className={`px-3 py-2 rounded-xl border-2 font-black text-xs cursor-pointer ${
-                  requireApproval
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-900'
-                    : 'bg-amber-50 border-amber-300 text-amber-900'
-                }`}
-              >
-                {requireApproval
-                  ? tr(lang, '🔒 נִדְרָשׁ אִשּׁוּר הוֹרֶה', '🔒 Parent Approval On', '🔒 Requiere aprobación')
-                  : tr(lang, '✅ אִשּׁוּר עַצְמִי לַיֶּלֶד', '✅ Kid Self-Check On', '✅ Auto-marcado')}
-              </button>
+              {/* 3-Way Marking Mode Selector */}
+              <div className="flex flex-wrap items-center bg-slate-100 border border-slate-300 rounded-xl p-0.5 gap-0.5">
+                {[
+                  {
+                    id: 'adult_only',
+                    he: '🔒 הוֹרֶה בִּלְבַד',
+                    en: '🔒 Adult Only',
+                    es: '🔒 Solo Padres'
+                  },
+                  {
+                    id: 'parent_approval',
+                    he: '🙋 יֶלֶד + אִשּׁוּר',
+                    en: '🙋 Kid + Approval',
+                    es: '🙋 Niño + Aprob.'
+                  },
+                  {
+                    id: 'kid_self',
+                    he: '✅ סִמּוּן עַצְמִי',
+                    en: '✅ Kid Self-Check',
+                    es: '✅ Auto-marcado'
+                  }
+                ].map((m) => {
+                  const active = trackingMode === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        playSound('pop');
+                        onSetTrackingMode?.(m.id);
+                      }}
+                      className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] sm:text-xs transition cursor-pointer ${
+                        active
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-700 hover:bg-white'
+                      }`}
+                    >
+                      {tr(lang, m.he, m.en, m.es)}
+                    </button>
+                  );
+                })}
+              </div>
 
               <button
                 type="button"
@@ -818,7 +859,9 @@ export default function HabitTracker({
                         ? parentUnlocked
                           ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
                           : 'bg-amber-300 text-amber-950'
-                        : 'bg-white hover:bg-sky-100 border-2 border-sky-300 text-sky-950'
+                        : isAdultOnly && !parentUnlocked
+                          ? 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-600'
+                          : 'bg-white hover:bg-sky-100 border-2 border-sky-300 text-sky-950'
                   }`}
                 >
                   {isApproved ? (
@@ -843,7 +886,9 @@ export default function HabitTracker({
                     <span>
                       {parentUnlocked
                         ? tr(lang, `סַמֵּן בֻּצַּע (+${habit.stars} ⭐)`, `Mark Done (+${habit.stars} ⭐)`, `Marcar (+${habit.stars} ⭐)`)
-                        : tr(lang, 'עָשִׂיתִי אֶת זֶה! 🙋', 'I Did It! 🙋', '¡Lo hice! 🙋')}
+                        : isAdultOnly
+                          ? tr(lang, '🔒 הוֹרֶה מְסַמֵּן בִּלְבַד', '🔒 Parent Marks Only', '🔒 Solo marca el adulto')
+                          : tr(lang, 'עָשִׂיתִי אֶת זֶה! 🙋', 'I Did It! 🙋', '¡Lo hice! 🙋')}
                     </span>
                   )}
                 </button>

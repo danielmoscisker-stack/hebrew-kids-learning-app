@@ -1023,7 +1023,10 @@ export default function App() {
   const handleKidToggleHabit = useCallback(
     (habit, dateStr) => {
       if (!habit) return;
-      const requireApproval = activeHabitEntry.requireParentApproval !== false;
+      const mode =
+        activeHabitEntry.trackingMode || (activeHabitEntry.requireParentApproval === false ? 'kid_self' : 'parent_approval');
+      if (mode === 'adult_only') return;
+      const requireApproval = mode !== 'kid_self';
       let earnedStars = 0;
 
       setHabitTrackersMap((prev) => {
@@ -1072,7 +1075,7 @@ export default function App() {
         handleEarnStar(earnedStars);
       }
     },
-    [activeHabitKey, activeHabitEntry.requireParentApproval, handleEarnStar]
+    [activeHabitKey, activeHabitEntry.trackingMode, activeHabitEntry.requireParentApproval, handleEarnStar]
   );
 
   const handleParentApproveHabit = useCallback(
@@ -1218,15 +1221,22 @@ export default function App() {
     [activeHabitKey]
   );
 
-  const handleToggleApprovalSetting = useCallback(() => {
-    setHabitTrackersMap((prev) => {
-      const cur = normalizeHabitEntry(prev[activeHabitKey]);
-      return {
-        ...prev,
-        [activeHabitKey]: { ...cur, requireParentApproval: !cur.requireParentApproval }
-      };
-    });
-  }, [activeHabitKey]);
+  const handleSetTrackingMode = useCallback(
+    (nextMode) => {
+      setHabitTrackersMap((prev) => {
+        const cur = normalizeHabitEntry(prev[activeHabitKey]);
+        return {
+          ...prev,
+          [activeHabitKey]: normalizeHabitEntry({
+            ...cur,
+            trackingMode: nextMode,
+            requireParentApproval: nextMode !== 'kid_self'
+          })
+        };
+      });
+    },
+    [activeHabitKey]
+  );
 
   const handleAddHabitGoal = useCallback(
     ({ icon, title, targetCount, habitIds }) => {
@@ -1634,7 +1644,7 @@ export default function App() {
             onSetBedtime={handleSetBedtime}
             onAddHabit={handleAddHabit}
             onDeleteHabit={handleDeleteHabit}
-            onToggleApprovalSetting={handleToggleApprovalSetting}
+            onSetTrackingMode={handleSetTrackingMode}
             onAddGoal={handleAddHabitGoal}
             onClaimGoal={handleClaimHabitGoal}
             onDeleteGoal={handleDeleteHabitGoal}

@@ -11,6 +11,7 @@ export function getHabitKey(profileId) {
 
 export function createDefaultHabitEntry() {
   return {
+    trackingMode: 'parent_approval', // 'parent_approval' | 'adult_only' | 'kid_self'
     requireParentApproval: true,
     habits: DEFAULT_HABITS.map((h) => ({ ...h })),
     // { [YYYY-MM-DD]: { approvedIds: string[], pendingIds: string[], bedtime: string } }
@@ -82,8 +83,16 @@ export function normalizeHabitEntry(raw) {
     ? raw.goals.map(normalizeGoalItem).filter((g) => g && g.title)
     : [];
 
+  const validModes = ['parent_approval', 'adult_only', 'kid_self'];
+  const trackingMode = validModes.includes(raw.trackingMode)
+    ? raw.trackingMode
+    : raw.requireParentApproval === false
+      ? 'kid_self'
+      : 'parent_approval';
+
   return {
-    requireParentApproval: typeof raw.requireParentApproval === 'boolean' ? raw.requireParentApproval : true,
+    trackingMode,
+    requireParentApproval: trackingMode !== 'kid_self',
     habits: habits.length > 0 ? habits : base.habits,
     logs,
     goals
@@ -144,6 +153,7 @@ export function mergeHabitMaps(localMap, cloudMap) {
         };
       }
       merged[key] = normalizeHabitEntry({
+        trackingMode: c.trackingMode || l.trackingMode,
         requireParentApproval: c.requireParentApproval,
         habits: c.habits.length > 0 ? c.habits : l.habits,
         logs: mergedLogs,
