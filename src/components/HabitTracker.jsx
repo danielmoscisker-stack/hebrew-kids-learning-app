@@ -11,7 +11,6 @@ import {
   ShoppingBag,
   Sparkles,
   Trophy,
-  Fingerprint,
   Volume2,
   ShieldCheck
 } from 'lucide-react';
@@ -21,12 +20,12 @@ import {
   CUSTOM_PRIZE_ICONS
 } from '../data/habitTrackerData';
 import { getTodayHabitLog, createDefaultHabitEntry } from '../utils/habitTracker';
-import { localTodayStr, generateParentGateChallenge } from '../utils/playLimits';
-import { verifyPinRecord, verifyBiometricForKid } from '../utils/fullscreenLock';
+import { localTodayStr } from '../utils/playLimits';
 import { playSound } from '../utils/audio';
 import { triggerConfetti, triggerStarBurst } from '../utils/confetti';
 import { tr } from '../utils/i18n';
 import { speakPersonalText } from '../utils/personalize';
+import ParentGate from './ParentGate';
 
 export default function HabitTracker({
   lang,
@@ -65,9 +64,6 @@ export default function HabitTracker({
   const [parentUnlocked, setParentUnlocked] = useState(false);
   const [chartProfileId, setChartProfileId] = useState(activeProfileId || null);
   const [showGate, setShowGate] = useState(false);
-  const [gatePin, setGatePin] = useState('');
-  const [gateError, setGateError] = useState('');
-  const [challenge, setChallenge] = useState(() => generateParentGateChallenge(kidAge >= 7));
 
   // Parent Goal Builder state
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -92,42 +88,7 @@ export default function HabitTracker({
 
   const openParentGate = () => {
     playSound('pop');
-    setGateError('');
-    setGatePin('');
-    setChallenge(generateParentGateChallenge(kidAge >= 7 || Boolean(pinRecord)));
     setShowGate(true);
-  };
-
-  const handleBiometricGate = async () => {
-    if (!biometricRecord?.credIdB64) return;
-    try {
-      const ok = await verifyBiometricForKid(biometricRecord.credIdB64);
-      if (ok) {
-        playSound('star');
-        setParentUnlocked(true);
-        setShowGate(false);
-      } else {
-        setGateError(tr(lang, 'האימות לא הושלם', 'Verification cancelled', 'Verificación cancelada'));
-      }
-    } catch {
-      setGateError(tr(lang, 'האימות בוטל', 'Cancelled', 'Cancelado'));
-    }
-  };
-
-  const handlePinGateSubmit = async (e) => {
-    e.preventDefault();
-    if (!pinRecord) return;
-    const ok = await verifyPinRecord(gatePin, pinRecord);
-    if (ok) {
-      playSound('star');
-      setParentUnlocked(true);
-      setShowGate(false);
-      setGatePin('');
-    } else {
-      playSound('whoosh');
-      setGateError(tr(lang, 'קוד PIN שגוי', 'Wrong PIN', 'PIN incorrecto'));
-      setGatePin('');
-    }
   };
 
   const handleKidHabitPress = (habit, e) => {
@@ -322,78 +283,18 @@ export default function HabitTracker({
             <ShieldCheck className="w-6 h-6 text-indigo-600" />
             <span>{tr(lang, 'כְּנִיסָה לְמַצַּב הוֹרֶה', 'Unlock Parent Controls', 'Desbloquear Modo Padres')}</span>
           </div>
-
-          {biometricRecord?.credIdB64 && (
-            <button
-              type="button"
-              onClick={handleBiometricGate}
-              className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm flex items-center gap-2 shadow-md btn-press-3d cursor-pointer"
-            >
-              <Fingerprint className="w-5 h-5" />
-              <span>{tr(lang, 'אִמּוּת בִּטְבִיעַת אֶצְבַּע / פָּנִים', 'Unlock with Fingerprint / Face ID', 'Huella / Face ID')}</span>
-            </button>
-          )}
-
-          {pinRecord ? (
-            <form onSubmit={handlePinGateSubmit} className="flex items-center gap-2">
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                value={gatePin}
-                onChange={(e) => {
-                  setGatePin(e.target.value.replace(/\D/g, '').slice(0, 6));
-                  setGateError('');
-                }}
-                placeholder="PIN"
-                className="w-32 px-3 py-2 rounded-xl border-2 border-indigo-300 text-center font-black tracking-widest"
-                dir="ltr"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm cursor-pointer"
-              >
-                {tr(lang, 'פְּתַח', 'Unlock', 'Abrir')}
-              </button>
-            </form>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <div className="text-2xl font-black text-indigo-700 bg-indigo-50 px-5 py-2 rounded-2xl border border-indigo-200" dir="ltr">
-                {challenge.text}
-              </div>
-              <div className="flex gap-2">
-                {challenge.options.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => {
-                      if (opt === challenge.ans) {
-                        playSound('star');
-                        setParentUnlocked(true);
-                        setShowGate(false);
-                      } else {
-                        playSound('whoosh');
-                        setGateError(tr(lang, 'נַסּוּ שׁוּב', 'Try again', 'Intenta de nuevo'));
-                        setChallenge(generateParentGateChallenge(kidAge >= 7));
-                      }
-                    }}
-                    className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-base cursor-pointer"
-                  >
-                    <bdi dir="ltr">{opt}</bdi>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {gateError && <div className="text-xs font-black text-rose-600">{gateError}</div>}
-          <button
-            type="button"
-            onClick={() => setShowGate(false)}
-            className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
-          >
-            {tr(lang, 'בִּטּוּל', 'Cancel', 'Cancelar')}
-          </button>
+          <ParentGate
+            lang={lang}
+            hardMode={kidAge >= 7 || Boolean(pinRecord)}
+            pinRecord={pinRecord}
+            biometricRecord={biometricRecord}
+            compact={true}
+            onUnlock={() => {
+              setParentUnlocked(true);
+              setShowGate(false);
+            }}
+            onCancel={() => setShowGate(false)}
+          />
         </div>
       )}
 

@@ -1684,6 +1684,8 @@ export default function App() {
           dailyStars={dailyStars}
           limitEntry={activeLimitEntry}
           limitState={playLimitState}
+          pinRecord={activePinRecord}
+          biometricRecord={activeBiometricRecord}
           onGrantBonusMinutes={handleGrantBonusMinutes}
           onStartNewSession={handleResetSessionTimer}
           onResetTodayUsage={handleResetTodayUsage}

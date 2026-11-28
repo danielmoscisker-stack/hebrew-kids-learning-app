@@ -206,15 +206,15 @@ export function generateParentGateChallenge(hardMode = false) {
     };
   }
 
-  const a = 3 + Math.floor(Math.random() * 5);
-  const b = 2 + Math.floor(Math.random() * 4);
+  const a = 14 + Math.floor(Math.random() * 15); // 14..28
+  const b = 15 + Math.floor(Math.random() * 15); // 15..29
   const ans = a + b;
   const opts = new Set([ans]);
   let guard = 0;
   while (opts.size < 4 && guard < 30) {
     guard += 1;
-    const cand = ans + (Math.floor(Math.random() * 5) - 2);
-    if (cand > 1) opts.add(cand);
+    const cand = ans + (Math.floor(Math.random() * 11) - 5);
+    if (cand > 10) opts.add(cand);
   }
   return {
     text: `${a} + ${b} = ?`,

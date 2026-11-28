@@ -26,10 +26,10 @@ import {
   DAILY_PRESETS,
   SESSION_PRESETS,
   formatMinutesSeconds,
-  formatUsedMinutes,
-  generateParentGateChallenge
+  formatUsedMinutes
 } from '../utils/playLimits';
 import { isBiometricAvailable } from '../utils/fullscreenLock';
+import ParentGate from './ParentGate';
 
 /**
  * Parental Gate + Settings / Screen Time Limits / Fullscreen Kid Lock / Optional Google Sign-In Modal.
@@ -74,8 +74,6 @@ export default function ParentModal({
   const { isTouch } = useDeviceType();
   const hardGate = kidAge >= 7 || Boolean(limitState?.hasLimit) || Boolean(pinRecord);
   const [unlocked, setUnlocked] = useState(Boolean(initialUnlocked));
-  const [challenge, setChallenge] = useState(() => generateParentGateChallenge(hardGate));
-  const [wrong, setWrong] = useState(false);
   const [authStatus, setAuthStatus] = useState(null);
   const [customDailyInput, setCustomDailyInput] = useState('');
   const [customSessionInput, setCustomSessionInput] = useState('');
@@ -99,7 +97,6 @@ export default function ParentModal({
   useEffect(() => {
     if (open) {
       setUnlocked(Boolean(initialUnlocked));
-      setWrong(false);
       setAuthStatus(null);
       setNewPinInput('');
       setPinMsg('');
@@ -107,11 +104,10 @@ export default function ParentModal({
       setCustomDailyInput(limitEntry?.dailyLimitMin ? String(limitEntry.dailyLimitMin) : '');
       setCustomSessionInput(limitEntry?.sessionLimitMin ? String(limitEntry.sessionLimitMin) : '');
       if (!initialUnlocked) {
-        setChallenge(generateParentGateChallenge(hardGate));
         playAudioFile('/audio/phrases/parents_only.mp3');
       }
     }
-  }, [open, initialUnlocked, hardGate, limitEntry?.dailyLimitMin, limitEntry?.sessionLimitMin]);
+  }, [open, initialUnlocked, limitEntry?.dailyLimitMin, limitEntry?.sessionLimitMin]);
 
   // Render Google Sign-In button inside unlocked Parent Zone when GOOGLE_CLIENT_ID is configured
   useEffect(() => {
@@ -200,41 +196,19 @@ export default function ParentModal({
         </div>
 
         {!unlocked ? (
-          <div className="text-center py-4 flex flex-col items-center gap-4">
-            <p className="text-slate-600 font-bold text-base">
-              {tr(
-                lang,
-                'כְּדֵי לְהִכָּנֵס לַהַגְדָּרוֹת, פִּתְרוּ אֶת הַתַּרְגִּיל:',
-                'To access parent settings, solve this quick question:',
-                'Para acceder a los ajustes para padres, resuelve esta pregunta:'
-              )}
-            </p>
-            <div className="text-4xl font-black text-indigo-700 bg-indigo-50 border-2 border-indigo-200 px-8 py-4 rounded-2xl" dir="ltr">
-              {challenge.text}
-            </div>
-            <div className="grid grid-cols-4 gap-3 w-full max-w-xs">
-              {challenge.options.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => {
-                    if (opt === challenge.ans) {
-                      playSound('star');
-                      setUnlocked(true);
-                    } else {
-                      playSound('whoosh');
-                      setWrong(true);
-                      setChallenge(generateParentGateChallenge(hardGate));
-                    }
-                  }}
-                  className="py-3 rounded-2xl bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-xl text-slate-900 btn-press-3d cursor-pointer"
-                >
-                  <bdi dir="ltr">{opt}</bdi>
-                </button>
-              ))}
-            </div>
-            {wrong && <p className="text-sm font-bold text-rose-600">{tr(lang, 'נַסּוּ שׁוּב :)', 'Try again :)', 'Inténtalo de nuevo :)')}</p>}
-          </div>
+          <ParentGate
+            lang={lang}
+            hardMode={hardGate}
+            pinRecord={pinRecord}
+            biometricRecord={biometricRecord}
+            subtitle={tr(
+              lang,
+              'כְּדֵי לְהִכָּנֵס לַהַגְדָּרוֹת, הַזִּינוּ אֶת קוֹד הַהוֹרִים אוֹ פִּתְרוּ אֶת הַתַּרְגִּיל:',
+              'To access parent settings, unlock below:',
+              'Para acceder a los ajustes para padres, desbloquea abajo:'
+            )}
+            onUnlock={() => setUnlocked(true)}
+          />
         ) : (
           <div className="space-y-4 text-sm text-slate-700">
             {/* Play Time Limits (Per Day & Per Session) */}

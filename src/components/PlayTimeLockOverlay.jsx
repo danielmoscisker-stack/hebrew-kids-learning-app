@@ -3,9 +3,9 @@ import { Lock, Clock, Star, Users, PlusCircle, RotateCcw, Settings, Volume2 } fr
 import { playSound } from '../utils/audio';
 import { tr } from '../utils/i18n';
 import {
-  formatUsedMinutes,
-  generateParentGateChallenge
+  formatUsedMinutes
 } from '../utils/playLimits';
+import ParentGate from './ParentGate';
 
 function speakNotice(text, lang) {
   try {
@@ -28,6 +28,8 @@ export default function PlayTimeLockOverlay({
   dailyStars = 0,
   limitEntry,
   limitState,
+  pinRecord = null,
+  biometricRecord = null,
   onGrantBonusMinutes,
   onStartNewSession,
   onResetTodayUsage,
@@ -37,8 +39,6 @@ export default function PlayTimeLockOverlay({
   const isHe = lang === 'he';
   const [gateOpen, setGateOpen] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
-  const [wrong, setWrong] = useState(false);
-  const [challenge, setChallenge] = useState(() => generateParentGateChallenge(true));
 
   const isDailyLock = limitState?.lockReason === 'daily';
   const kidName = activeProfile?.name || '';
@@ -77,8 +77,6 @@ export default function PlayTimeLockOverlay({
 
   const openGate = () => {
     playSound('pop');
-    setChallenge(generateParentGateChallenge(true));
-    setWrong(false);
     setUnlocked(false);
     setGateOpen(true);
   };
@@ -179,48 +177,17 @@ export default function PlayTimeLockOverlay({
             </button>
           </div>
         ) : !unlocked ? (
-          <div className="p-4 rounded-2xl bg-slate-50 border-2 border-slate-200 flex flex-col items-center gap-3">
-            <div className="flex items-center gap-1.5 text-sm font-black text-slate-800">
-              <Lock className="w-4 h-4 text-indigo-600" />
-              <span>{tr(lang, 'אִשּׁוּר הוֹרֶה — פִּתְרוּ אֶת הַתַּרְגִּיל:', 'Parent Check — Solve to Unlock:', 'Control Parental — Resuelve:')}</span>
-            </div>
-            <div className="text-3xl font-black text-indigo-700 bg-white border-2 border-indigo-200 px-6 py-2.5 rounded-2xl" dir="ltr">
-              {challenge.text}
-            </div>
-            <div className="grid grid-cols-4 gap-2 w-full">
-              {challenge.options.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => {
-                    if (opt === challenge.ans) {
-                      playSound('star');
-                      setUnlocked(true);
-                      setWrong(false);
-                    } else {
-                      playSound('whoosh');
-                      setWrong(true);
-                      setChallenge(generateParentGateChallenge(true));
-                    }
-                  }}
-                  className="py-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-lg text-slate-900 btn-press-3d cursor-pointer"
-                >
-                  <bdi dir="ltr">{opt}</bdi>
-                </button>
-              ))}
-            </div>
-            {wrong && (
-              <p className="text-xs font-bold text-rose-600">
-                {tr(lang, 'לֹא מְדֻיָּק — נַסּוּ תַּרְגִּיל חָדָשׁ', 'Not quite — try the new question', 'Incorrecto — prueba de nuevo')}
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={() => setGateOpen(false)}
-              className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
-            >
-              {tr(lang, 'בִּטּוּל', 'Cancel', 'Cancelar')}
-            </button>
+          <div className="p-4 rounded-2xl bg-slate-50 border-2 border-slate-200">
+            <ParentGate
+              lang={lang}
+              hardMode={true}
+              pinRecord={pinRecord}
+              biometricRecord={biometricRecord}
+              compact={true}
+              title={tr(lang, 'אִשּׁוּר הוֹרֶה — פְּתִיחָה:', 'Parent Check — Unlock:', 'Control Parental — Abrir:')}
+              onUnlock={() => setUnlocked(true)}
+              onCancel={() => setGateOpen(false)}
+            />
           </div>
         ) : (
           <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 flex flex-col gap-3">
